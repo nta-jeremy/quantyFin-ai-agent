@@ -1,67 +1,138 @@
-# Code Style and Conventions - QuantyFinAI Agent
+# Code Style and Conventions for QuantyFinAI Agent
 
-## Python Guidelines
+## Python Style Guidelines
 
-### PEP 8 Compliance
-- **Indentation**: 4 spaces per level
-- **Line Length**: Maximum 79 characters (99 for docstrings/comments)
-- **Imports**: Grouped as standard library, third-party, local (separated by blank lines)
-- **Use isort** for automatic import sorting
+### General Principles
+- **Functional Programming**: Prefer functional programming over OOP
+- **OOP Classes**: Use only for connectors and interfaces to external systems
+- **Pure Functions**: Business logic should use pure functions with clear input/output
+- **No Hidden State**: Functions must ONLY modify their return values
+- **Minimal Changes**: Make minimal, focused changes following DRY, KISS, YAGNI
 
-### Naming Conventions
-- **Modules**: `snake_case.py` (short, lowercase)
-- **Packages**: `lowercase` (no underscores)
-- **Classes**: `CamelCase`
-- **Functions/Methods**: `snake_case`
-- **Variables**: `snake_case`
-- **Constants**: `ALL_CAPS_WITH_UNDERSCORES`
-- **Private Members**: `_single_underscore_prefix`
-- **Type Variables**: `CamelCase`
+### Type Safety
+- **Strict Typing**: Use strict type hints for function returns and variables
+- **Named Parameters**: Use named parameters in function calls when possible
+- **No Any Types**: Avoid `Any` type usage except for external API responses
+- **Pydantic Models**: Prefer Pydantic over TypedDict for data models
+- **Custom Types**: Create proper type definitions for non-trivial data structures
 
-### Type Hints
-- **Mandatory**: All function arguments and return values must be type-hinted
-- **Use proper types**: Avoid `Any` type except for external API responses
-- **Pydantic models**: Preferred over TypedDict for data models
-- **Strict typing**: Use specific types rather than generic collections when possible
+### Code Organization
+- **File Length**: Keep logic in each file under 500 lines (except test files)
+- **No Default Parameters**: Never use default parameter values in function definitions
+- **Single Responsibility**: Each function should have a single, clear responsibility
+- **Clear Naming**: Use descriptive, meaningful names for functions and variables
 
-### Documentation
-- **Docstrings**: Google Style format with triple double quotes
-- **Required**: All modules, classes, methods, and functions must have docstrings
-- **Comments**: Explain "why" not "what" - use sparingly
+### Async Patterns
+- **Consistent Async**: Always use async/await for all database operations
+- **No Blocking Operations**: Avoid blocking operations in async contexts
+- **Timeout Handling**: Implement proper timeout handling for external API calls
 
 ### Error Handling
-- **Specific exceptions**: Use specific error types (ValueError, TypeError) rather than generic Exception
-- **Never ignore**: Always raise errors explicitly, never silently ignore them
-- **Logging**: Log errors with appropriate context before raising them
+- **Explicit Errors**: Always raise errors explicitly, never silently ignore them
+- **Specific Exceptions**: Use specific error types (ValueError, TypeError, etc.)
+- **Immediate Raising**: Raise errors immediately when they occur
+- **Error Context**: Log errors with appropriate context before raising them
 
-### Async/Await Patterns
-- **Consistency**: Use async/await consistently throughout the application
-- **Database operations**: All database operations must be async
-- **External APIs**: Use async HTTP clients for external API calls
+## Configuration and Settings
 
-### Architecture Patterns
-- **Repository Pattern**: All database operations use repository pattern with abstract interfaces
+### Pydantic Settings
+- **field_validator**: Use `field_validator` instead of deprecated `validator`
+- **Environment Variables**: Use environment-specific configurations
+- **Secret Management**: Use SecretStr for sensitive configuration
+- **Nested Configuration**: Use nested configuration groups
+
+### Database Operations
+- **Repository Pattern**: Use repository pattern with abstract interfaces
 - **Dependency Injection**: Services use dependency injection for testability
-- **Hexagonal Architecture**: Business logic separated from external concerns
-- **Clean Code**: Functions must ONLY modify return values, never input parameters or global state
+- **Connection Pooling**: Use connection pooling for PostgreSQL connections
 
-### Functional Programming
-- **Prefer pure functions**: Clear input/output, no hidden state changes
-- **Avoid OOP**: Use separate OOP classes only for connectors and external system interfaces
-- **Immutable data**: Design functions to be pure and side-effect free
+## Documentation Standards
 
-### Testing
-- **TDD**: Write tests before implementation
-- **pytest-asyncio**: Use for async tests
-- **Test structure**: Unit, integration, and e2e tests
-- **Factory patterns**: Use factory-boy for test data generation
+### Docstrings
+- **English Only**: Comments and docstrings must be in English
+- **Comprehensive**: Document purpose, parameters, return values, and exceptions
+- **Consistent Format**: Use consistent docstring format throughout the codebase
 
-### Configuration
-- **Pydantic Settings**: Use for all configuration management
-- **Environment-specific**: Support different environments (dev, staging, prod)
-- **Secret management**: Use SecretStr for sensitive data
+### Comments
+- **Purposeful**: Only add comments that provide value
+- **Code Clarity**: Code should be self-documenting where possible
+- **TODO Comments**: Use TODO comments for future improvements
 
-### File Organization
-- **500-line limit**: Keep logic in each file under 500 lines (except test files)
-- **Clear structure**: Follow hexagonal architecture layout
-- **Module cohesion**: Related functionality should be grouped together
+## Testing Conventions
+
+### Test Structure
+- **Test Organization**: Separate unit, integration, and e2e tests
+- **Async Testing**: Use pytest-asyncio for async tests
+- **Test Data**: Use factory-boy for test data generation
+- **Coverage**: Maintain comprehensive test coverage
+
+### Test Patterns
+```python
+# Use pytest-asyncio for async tests
+@pytest.mark.asyncio
+async def test_user_creation():
+    # Arrange
+    user_data = UserCreate(email="test@example.com", ...)
+
+    # Act
+    created_user = await user_repo.create(user_data)
+
+    # Assert
+    assert created_user.email == user_data.email
+    assert created_user.id is not None
+```
+
+## API Development
+
+### FastAPI Patterns
+- **Dependency Injection**: Use dependency injection for FastAPI endpoints
+- **Response Models**: Implement proper response models with Pydantic
+- **OpenAPI Documentation**: Include comprehensive OpenAPI documentation
+- **Security**: Validate JWT tokens on protected endpoints
+
+### Security Practices
+- **Input Validation**: Always validate input data with Pydantic models
+- **SQL Injection**: Use parameterized queries to prevent SQL injection
+- **CORS**: Implement proper CORS configuration
+- **HTTPS**: Use HTTPS in production environments
+
+## Performance Considerations
+
+### Database Optimization
+- **Connection Pooling**: Use connection pooling for PostgreSQL connections
+- **Indexing Strategy**: Implement proper indexing strategy for vector search
+- **Batch Operations**: Use batch operations for multiple database operations
+- **Redis Caching**: Use Redis caching for frequently accessed data
+
+### Code Quality Tools
+- **Black**: Code formatting with line length 79
+- **isort**: Import sorting with Black profile
+- **flake8**: Linting for code quality
+- **mypy**: Static type checking with strict settings
+
+## File Naming and Structure
+
+### Python Files
+- **snake_case**: Use snake_case for Python file names
+- **Module Organization**: Group related functionality in modules
+- **Clear Separation**: Maintain clear separation between layers
+
+### Configuration Files
+- **pyproject.toml**: Use pyproject.toml for project configuration
+- **Environment Files**: Use .env files for environment-specific settings
+- **Docker Configuration**: Maintain separate Docker configurations for different environments
+
+## Code Review Guidelines
+
+### Review Focus
+- **Type Safety**: Check for proper type hints and mypy compliance
+- **Error Handling**: Ensure proper error handling and logging
+- **Performance**: Consider performance implications of changes
+- **Security**: Review for security vulnerabilities
+- **Testing**: Verify adequate test coverage for new features
+
+### Code Quality Metrics
+- **Complexity**: Keep function complexity low
+- **Duplication**: Eliminate code duplication
+- **Maintainability**: Write maintainable, readable code
+- **Documentation**: Ensure code is well-documented
