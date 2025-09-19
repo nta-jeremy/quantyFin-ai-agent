@@ -82,6 +82,25 @@ async def test_user_creation():
     assert created_user.id is not None
 ```
 
+## Agent Development Conventions
+
+### Agent Structure
+- **Base Agent**: All agents must extend `BaseAgent` from `base_agent.py`
+- **State Management**: Use `AgentState` from `agent_state.py` for state handling
+- **Type Definitions**: Use types from `agent_types.py` for agent-specific types
+- **Workflow Integration**: Agents must be compatible with `LangGraphWorkflow`
+
+### Agent Naming
+- **Agent Classes**: Use descriptive names ending with "Agent" (e.g., `GuardAgent`)
+- **Agent Methods**: Use descriptive action-oriented names (e.g., `validate_input`, `generate_embeddings`)
+- **Agent Variables**: Use clear, descriptive names for agent state variables
+
+### Agent Error Handling
+- **Agent-Specific Errors**: Create custom exception classes for agent errors
+- **Graceful Degradation**: Implement fallback behavior for agent failures
+- **Error Logging**: Log agent errors with appropriate context
+- **Recovery**: Implement agent recovery mechanisms where applicable
+
 ## API Development
 
 ### FastAPI Patterns
@@ -104,11 +123,28 @@ async def test_user_creation():
 - **Batch Operations**: Use batch operations for multiple database operations
 - **Redis Caching**: Use Redis caching for frequently accessed data
 
-### Code Quality Tools
+### Vector Search Optimization
+- **HNSW Indexes**: Use HNSW indexes for efficient vector similarity search
+- **Embedding Dimensions**: Optimize embedding dimensions for your use case
+- **Batch Processing**: Process vector embeddings in batches for better performance
+- **Caching**: Cache frequently accessed vector results
+
+## Code Quality Tools
+
+### Tool Configuration
 - **Black**: Code formatting with line length 79
 - **isort**: Import sorting with Black profile
 - **flake8**: Linting for code quality
 - **mypy**: Static type checking with strict settings
+
+### Pre-commit Hooks
+```bash
+# Install pre-commit hooks
+poetry run pre-commit install
+
+# Run all hooks
+poetry run pre-commit run --all-files
+```
 
 ## File Naming and Structure
 
@@ -121,6 +157,20 @@ async def test_user_creation():
 - **pyproject.toml**: Use pyproject.toml for project configuration
 - **Environment Files**: Use .env files for environment-specific settings
 - **Docker Configuration**: Maintain separate Docker configurations for different environments
+
+## Agent-Specific Patterns
+
+### LangGraph Integration
+- **Workflow Nodes**: Each agent should be a separate node in the workflow
+- **State Passing**: Pass state between agents using the workflow state
+- **Conditional Logic**: Use LangGraph's conditional routing for agent selection
+- **Error Handling**: Implement workflow-level error handling
+
+### Agent Communication
+- **Standardized Input/Output**: Use standardized input/output formats for agents
+- **State Updates**: Update workflow state consistently across agents
+- **Error Propagation**: Propagate errors through the workflow appropriately
+- **Logging**: Log agent actions and decisions consistently
 
 ## Code Review Guidelines
 
@@ -136,3 +186,62 @@ async def test_user_creation():
 - **Duplication**: Eliminate code duplication
 - **Maintainability**: Write maintainable, readable code
 - **Documentation**: Ensure code is well-documented
+
+## Database Code Conventions
+
+### Repository Pattern
+```python
+# Abstract interface
+class UserRepository(ABC):
+    @abstractmethod
+    async def create(self, user: User) -> User:
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, user_id: UUID) -> Optional[User]:
+        pass
+
+# PostgreSQL implementation
+class PostgreSQLUserRepository(UserRepository):
+    async def create(self, user: User) -> User:
+        # Implementation with asyncpg
+        pass
+```
+
+### Vector Database Operations
+- **Embedding Storage**: Store embeddings using the vector database adapter
+- **Similarity Search**: Use the vector database adapter for similarity search
+- **Index Management**: Manage vector indexes through the adapter
+- **Batch Operations**: Use batch operations for vector insertions and updates
+
+## Authentication and Security
+
+### JWT Token Handling
+- **Token Validation**: Validate JWT tokens on all protected endpoints
+- **Token Refresh**: Implement token refresh mechanism
+- **Token Expiration**: Handle token expiration gracefully
+- **Token Storage**: Store tokens securely on the client side
+
+### Keycloak Integration
+- **User Management**: Use Keycloak for user management
+- **Role-Based Access**: Implement role-based access control
+- **Session Management**: Use Keycloak for session management
+- **Token Validation**: Validate tokens with Keycloak public keys
+
+## API Response Standards
+
+### Response Format
+- **Consistent Structure**: Use consistent response structure across endpoints
+- **Error Responses**: Use standardized error response format
+- **Success Responses**: Use standardized success response format
+- **Pagination**: Implement pagination for large datasets
+
+### Status Codes
+- **200 OK**: Successful GET requests
+- **201 Created**: Successful POST requests
+- **400 Bad Request**: Invalid request data
+- **401 Unauthorized**: Authentication required
+- **403 Forbidden**: Insufficient permissions
+- **404 Not Found**: Resource not found
+- **422 Unprocessable Entity**: Validation errors
+- **500 Internal Server Error**: Server errors

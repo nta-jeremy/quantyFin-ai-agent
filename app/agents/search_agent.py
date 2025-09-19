@@ -17,6 +17,7 @@ from .agent_types import (
     ExternalSearchResult,
     QueryType,
     SearchResult,
+    WorkflowConfig,
 )
 from .base_agent import LLMBasedAgent
 

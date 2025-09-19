@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from .agent_state import StateManager, WorkflowState
-from .agent_types import AgentRole, DocumentMetadata, QueryType
+from .agent_types import AgentRole, DocumentMetadata, QueryType, WorkflowConfig
 from .base_agent import LLMBasedAgent
 
 

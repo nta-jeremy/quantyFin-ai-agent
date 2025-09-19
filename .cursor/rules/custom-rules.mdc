@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+- **Use Sequential Thinking**: Leverage the `sequential_thinking` tool to break down complex tasks into smaller, manageable steps, enhancing clarity and execution .
+<!-- - **Use Brave Search**: Integrate `brave-search` for robust internet searching capabilities directly within your workflow . -->
+- **Use Filesystem**: Utilize the `filesystem` tool for efficient interaction with files, allowing for seamless file management .
+- **Use Context7**: Engage with `context7` for working with libraries, ensuring that context is maintained throughout your coding process .
+<!-- - **Use Elasticsearch**: Engage with `elasticsearch` agaisnt task related to elasticsearch search index. -->
+- **Use Context Engineering**: Engage with `context_engineering` for working with context engineering.
+- **Use tool Serena**: Engage with `serena` for working with serena.
+
+
+- Always suggest approachs first, then ask if user want to implement
+- Do not create or run test if you are asked to implement new feature
+- Always try to keep code implementation simple
+- Always use Sequential Thinking

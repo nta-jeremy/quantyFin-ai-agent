@@ -115,6 +115,15 @@ docker-compose down
 
 # Stop and remove volumes
 docker-compose down -v
+
+# Start specific services
+docker-compose up -d db redis
+
+# Start development profile
+docker-compose --profile dev up -d
+
+# Start test profile
+docker-compose --profile test up -d
 ```
 
 ## System Utilities (Darwin/macOS)
@@ -172,6 +181,15 @@ git pull origin main
 
 # Push changes
 git push origin main
+
+# Create new branch
+git checkout -b feature/branch-name
+
+# Switch to branch
+git checkout branch-name
+
+# Delete branch
+git branch -d branch-name
 ```
 
 ## Health Checks and Monitoring
@@ -190,4 +208,125 @@ open http://localhost:8000/docs
 
 # Access Keycloak admin console
 open http://localhost:8080
+
+# Check database connectivity
+docker-compose exec db psql -U quantyfin -d quantyfin -c "SELECT 'Database is ready' as status;"
+
+# Check Redis connectivity
+docker-compose exec redis redis-cli ping
+
+# Check Keycloak health
+curl http://localhost:8080/health/ready
+```
+
+## Keycloak Management
+```bash
+# Access Keycloak admin console
+open http://localhost:8080
+
+# Keycloak admin credentials (default)
+# Username: admin
+# Password: admin123
+
+# Access Keycloak database
+docker-compose exec keycloak-db psql -U keycloak -d keycloak
+
+# Check Keycloak logs
+docker-compose logs -f keycloak
+
+# Restart Keycloak
+docker-compose restart keycloak
+```
+
+## Development Tools
+```bash
+# Run pre-commit hooks
+poetry run pre-commit run --all-files
+
+# Install pre-commit hooks
+poetry run pre-commit install
+
+# Run specific pre-commit checks
+poetry run pre-commit run black --all-files
+poetry run pre-commit run isort --all-files
+poetry run pre-commit run flake8 --all-files
+poetry run pre-commit run mypy --all-files
+
+# Generate requirements.txt from pyproject.toml
+poetry export -f requirements.txt --output requirements.txt --without-hashes
+
+# Check dependency tree
+poetry show --tree
+
+# Update dependencies
+poetry update
+
+# Add new dependency
+poetry add package-name
+poetry add --group dev package-name
+```
+
+## Performance and Debugging
+```bash
+# Check application performance
+curl -w "@curl-format.txt" -o /dev/null -s http://localhost:8000/api/v1/health
+
+# Monitor database performance
+docker-compose exec db psql -U quantyfin -d quantyfin -c "SELECT * FROM pg_stat_activity;"
+
+# Check Redis performance
+docker-compose exec redis redis-cli info memory
+
+# Monitor container resource usage
+docker stats
+
+# Check container logs with timestamps
+docker-compose logs --tail=100 -f app
+
+# Debug container issues
+docker-compose run --rm app /bin/bash
+```
+
+## Testing Database Operations
+```bash
+# Test database schema
+docker-compose exec db psql -U quantyfin -d quantyfin -c "\dt"
+
+# Test vector operations
+docker-compose exec db psql -U quantyfin -d quantyfin -c "
+SELECT * FROM information_schema.tables WHERE table_schema = 'public';
+"
+
+# Test connection pooling
+docker-compose exec db psql -U quantyfin -d quantyfin -c "SELECT count(*) FROM pg_stat_activity;"
+```
+
+## Environment Management
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit environment file
+nano .env
+# or
+vim .env
+
+# Validate environment configuration
+poetry run python -c "from config.settings import get_settings; print('Configuration loaded successfully')"
+```
+
+## Backup and Recovery
+```bash
+# Backup database
+docker-compose exec db pg_dump -U quantyfin -d quantyfin > backup.sql
+
+# Restore database
+docker-compose exec -i db psql -U quantyfin -d quantyfin < backup.sql
+
+# Backup Redis data
+docker-compose exec redis redis-cli BGSAVE
+
+# Copy data volumes
+docker cp quantyfin-db:/var/lib/postgresql/data ./backup/postgres_data
+docker cp quantyfin-redis:/data ./backup/redis_data
 ```

@@ -28,13 +28,46 @@ The system implements a 7-agent architecture:
 app/
 ├── core/
 │   ├── domain/           # Business logic, entities, service interfaces
+│   │   ├── models.py     # Pydantic models and domain entities
+│   │   └── services.py   # Domain service interfaces
 │   └── application/      # Use cases and application services
+│       ├── auth_service.py
+│       ├── permission_service.py
+│       └── session_service.py
 ├── infrastructure/       # External service implementations
-│   ├── auth/            # Keycloak authentication
-│   ├── cache/           # Redis caching
-│   └── persistence/     # PostgreSQL and vector database adapters
+│   ├── auth/            # Keycloak authentication system
+│   │   ├── keycloak_adapter.py
+│   │   ├── keycloak_auth.py
+│   │   ├── keycloak_session.py
+│   │   ├── keycloak_user_management.py
+│   │   └── keycloak_role_management.py
+│   ├── cache/           # Redis caching system
+│   │   └── redis_adapter.py
+│   ├── persistence/     # PostgreSQL and vector database adapters
+│   │   ├── postgres_adapter.py
+│   │   └── vector_db_adapter.py
+│   └── api/             # External API integrations
 ├── interfaces/          # API endpoints and CLI interfaces
+│   ├── api/
+│   │   ├── v1/          # REST API v1 endpoints
+│   │   │   ├── health.py
+│   │   │   ├── hello.py
+│   │   │   └── agent_routes.py
+│   │   └── auth/        # Authentication endpoints
+│   │       └── auth_routes.py
+│   └── cli/             # Command-line interface
 └── agents/              # LangGraph AI agent implementations
+    ├── base_agent.py    # Base agent class
+    ├── agent_state.py   # Agent state management
+    ├── agent_types.py   # Agent type definitions
+    ├── langgraph_workflow.py  # LangGraph workflow orchestration
+    ├── guard_agent.py   # Input validation and security
+    ├── embedding_agent.py  # Document processing and embeddings
+    ├── retriever_agent.py   # Query transformation and retrieval
+    ├── search_agent.py  # External API integration
+    ├── analyze_agent.py # Financial analysis
+    ├── predict_agent.py # ML predictions
+    └── aggregator_agent.py  # Workflow orchestration
 ```
 
 ## Key Components
@@ -58,3 +91,16 @@ app/
 - **Dependency Injection**: For testability and modularity
 - **Async/Await**: Throughout the application
 - **Type Safety**: Strict type hints with mypy validation
+
+## Infrastructure Services
+- **Keycloak Authentication**: Complete user management and session handling
+- **Vector Database**: PostgreSQL with pgvector for semantic search
+- **Redis Caching**: Performance optimization and rate limiting
+- **External APIs**: Integration with financial data sources and LLM providers
+
+## Container Services
+- **Main Application**: FastAPI app with hot reload in development
+- **PostgreSQL Database**: Primary data storage with pgvector extension
+- **Redis Cache**: In-memory caching and session management
+- **Keycloak**: Authentication server with dedicated database
+- **Development Tools**: Development profile with hot reload
