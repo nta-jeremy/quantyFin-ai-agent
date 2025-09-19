@@ -67,6 +67,7 @@ class ExternalAPISettings(BaseModel):
 
     news_api_key: Optional[SecretStr] = Field(default=None)
     alpha_vantage_api_key: Optional[SecretStr] = Field(default=None)
+    vnstock_api_key: Optional[SecretStr] = Field(default=None)
 
     timeout: int = Field(default=30, ge=1)
     retry_attempts: int = Field(default=3, ge=1)
