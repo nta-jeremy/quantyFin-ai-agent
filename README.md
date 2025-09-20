@@ -22,7 +22,7 @@ AI-powered financial analysis and stock prediction system implementing a 7-agent
 7. **Aggregator Agent**: Workflow orchestration and response synthesis
 
 ### Technology Stack
-- **Backend**: Python 3.11+ with FastAPI
+- **Backend**: Python 3.12+ with FastAPI
 - **Database**: PostgreSQL 16 with pgvector extension
 - **Cache**: Redis for session management and rate limiting
 - **Authentication**: Keycloak with JWT token management
@@ -34,7 +34,7 @@ AI-powered financial analysis and stock prediction system implementing a 7-agent
 
 ### Prerequisites
 - Docker and Docker Compose
-- Python 3.11+ (for local development)
+- Python 3.12+ (for local development)
 - Poetry (dependency management)
 
 ### Installation

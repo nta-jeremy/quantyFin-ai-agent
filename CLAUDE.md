@@ -124,6 +124,18 @@ poetry run alembic revision --autogenerate -m "description"
 This project follows hexagonal architecture (ports and adapters pattern) with clean separation of concerns:
 
 - **Domain Layer** (`app/core/domain/`): Business logic, entities, and service interfaces
+  - **Models**: 22 Pydantic models organized into 9 focused files:
+    - `enums.py`: VietnameseExchange, VnstockDataSource, VietnameseMarketGroup
+    - `user_models.py`: User, Role
+    - `company_models.py`: Company, VietnameseCompany
+    - `stock_models.py`: StockData, VietnameseStock
+    - `financial_models.py`: 4 financial model classes
+    - `document_models.py`: DocumentEmbedding
+    - `query_models.py`: Query, QueryResult
+    - `prediction_models.py`: Prediction, SentimentAnalysis
+    - `vietnamese_market_data.py`: 5 Vietnamese market models
+  - **Services**: Abstract interfaces following hexagonal architecture
+  - **Backward Compatibility**: All models available via package-level imports
 - **Application Layer** (`app/core/application/`): Use cases and application services
 - **Infrastructure Layer** (`app/infrastructure/`): External service implementations
 - **Interface Layer** (`app/interfaces/`): API endpoints and CLI interfaces
@@ -373,6 +385,21 @@ async def get_user(
 - Code quality checks (Black, isort, flake8, mypy)
 - Security scanning with Trivy
 - Automated Docker builds and deployment
+
+### Domain Models Organization
+The domain models are organized into logically-separated files within `app/core/domain/` for better maintainability:
+
+- **enums.py**: VietnameseExchange, VnstockDataSource, VietnameseMarketGroup
+- **user_models.py**: User, Role
+- **company_models.py**: Company, VietnameseCompany
+- **stock_models.py**: StockData, VietnameseStock
+- **financial_models.py**: FinancialReport, VietnameseFinancialReport, FinancialMetrics, VietnameseFinancialMetrics
+- **document_models.py**: DocumentEmbedding
+- **query_models.py**: Query, QueryResult
+- **prediction_models.py**: Prediction, SentimentAnalysis
+- **vietnamese_market_data.py**: VietnameseMarketData, VietnameseNews, VietnameseEvent, VietnameseDividend, VietnameseShareholder
+
+**Backward Compatibility**: All existing imports continue to work via `app/core/domain/__init__.py` which re-exports all models.
 
 ### Code Style
 - Always use async/await for all database operations

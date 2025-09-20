@@ -6,17 +6,17 @@ following hexagonal architecture principles.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from .models import (
+from . import (
     Company,
     DocumentEmbedding,
     FinancialMetrics,
     FinancialReport,
     Prediction,
     Query,
-    QueryResult,
     Role,
     SentimentAnalysis,
     StockData,

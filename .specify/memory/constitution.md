@@ -1,8 +1,10 @@
 <!--
 Sync Impact Report:
-- Version change: None → 1.0.0 (Initial version)
-- Modified principles: None → All 5 principles newly defined
-- Added sections: Core Principles, Technical Standards, Development Workflow, Governance
+- Version change: 1.0.0 → 1.1.0 (Minor version - added timezone and Pydantic requirements)
+- Modified principles:
+  - IV. Async-First Development (added timezone.utc requirement)
+  - Code Quality Standards (added Pydantic field_validator requirement)
+- Added sections: None
 - Removed sections: None
 - Templates requiring updates:
   ✅ .specify/templates/plan-template.md (Constitution Check section)
@@ -25,7 +27,7 @@ All financial analysis features MUST implement the 7-agent RAG architecture usin
 Strict type hints MUST be used throughout the codebase with mypy validation. Functional programming MUST be preferred over OOP for business logic, with OOP reserved only for external system connectors. All business logic functions MUST be pure functions with clear input/output and NO hidden state changes. Pydantic models MUST be used for data validation instead of generic dictionaries.
 
 ### IV. Async-First Development
-All database operations and external API calls MUST use async/await patterns. NO blocking operations are permitted in async contexts. Connection pooling MUST be used for PostgreSQL connections. Redis caching MUST be implemented for performance optimization and rate limiting. All external API calls MUST implement proper timeout handling.
+All database operations and external API calls MUST use async/await patterns. NO blocking operations are permitted in async contexts. Connection pooling MUST be used for PostgreSQL connections. Redis caching MUST be implemented for performance optimization and rate limiting. All external API calls MUST implement proper timeout handling. All datetime operations MUST use timezone.utc for consistency.
 
 ### V. Vector Database Integration
 PostgreSQL with pgvector extension MUST be used for all vector storage and similarity search operations. HNSW indexing MUST be implemented for efficient vector search. Vector embeddings MUST be processed in batches for performance optimization. Vector operations MUST follow the repository pattern with dedicated vector database adapters.
@@ -46,6 +48,7 @@ PostgreSQL with pgvector extension MUST be used for all vector storage and simil
 - **Linting**: flake8 for code quality enforcement
 - **Type Checking**: mypy with strict settings, NO Any types allowed
 - **Testing**: pytest with unit, integration, and e2e test coverage
+- **Pydantic Validation**: Use `field_validator` instead of deprecated `validator` in Pydantic models
 
 ### File Organization
 - **File Length Limit**: Maximum 500 lines of logic per file (test files excluded)
@@ -102,4 +105,4 @@ Constitution amendments require:
 - **Documentation**: CLAUDE.md MUST be updated to reflect constitutional requirements
 - **Training**: Team members MUST be trained on constitutional principles and practices
 
-**Version**: 1.0.0 | **Ratified**: 2025-09-20 | **Last Amended**: 2025-09-20
+**Version**: 1.1.0 | **Ratified**: 2025-09-20 | **Last Amended**: 2025-09-20

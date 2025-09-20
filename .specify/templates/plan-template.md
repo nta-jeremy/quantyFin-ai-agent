@@ -59,6 +59,8 @@
 - [ ] Async/await patterns used for all database and API operations
 - [ ] Pydantic models used for data validation (no generic dictionaries)
 - [ ] Type safety maintained with strict type hints throughout
+- [ ] Timezone operations use timezone.utc for consistency
+- [ ] Pydantic field_validator used instead of deprecated validator
 
 ### Development Workflow Compliance
 - [ ] TDD approach planned (tests before implementation)
