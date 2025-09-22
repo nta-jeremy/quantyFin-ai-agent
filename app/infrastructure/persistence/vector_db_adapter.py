@@ -13,7 +13,7 @@ from uuid import UUID
 import asyncpg
 from asyncpg.exceptions import PostgresError
 
-from app.core.domain.models import DocumentEmbedding
+from app.core.domain import DocumentEmbedding
 from app.core.domain.services import VectorDatabaseConnection
 from config.settings import get_settings
 

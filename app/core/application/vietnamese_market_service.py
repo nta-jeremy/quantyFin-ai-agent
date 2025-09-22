@@ -7,18 +7,21 @@ from typing import Any, Dict, List, Optional, Union
 import structlog
 from pydantic import BaseModel
 
-from app.core.domain.models import (
+from app.core.domain.company_models import (
     VietnameseCompany,
-    VietnameseExchange,
     VietnameseFinancialMetrics,
     VietnameseFinancialReport,
+)
+from app.core.domain.enums import VietnameseExchange, VnstockDataSource
+from app.core.domain.stock_models import (
     VietnameseMarketData,
     VietnameseNews,
     VietnameseStock,
-    VnstockDataSource,
 )
 from app.infrastructure.data_sources import MSNAdapter, TCBSAdapter, VCIAdapter
-from app.infrastructure.data_sources.vnstock_adapter import VnstockAdapterConfig
+from app.infrastructure.data_sources.vnstock_adapter import (
+    VnstockAdapterConfig,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -112,9 +115,7 @@ class VietnameseMarketService:
         """
         data_source = data_source or self.config.default_data_source
         sources_to_try = [data_source] + (
-            self.config.fallback_sources
-            if self.config.enable_fallback
-            else []
+            self.config.fallback_sources if self.config.enable_fallback else []
         )
 
         last_error = None
@@ -180,9 +181,7 @@ class VietnameseMarketService:
         """
         data_source = data_source or self.config.default_data_source
         sources_to_try = [data_source] + (
-            self.config.fallback_sources
-            if self.config.enable_fallback
-            else []
+            self.config.fallback_sources if self.config.enable_fallback else []
         )
 
         for source in sources_to_try:
@@ -235,9 +234,7 @@ class VietnameseMarketService:
         """
         data_source = data_source or self.config.default_data_source
         sources_to_try = [data_source] + (
-            self.config.fallback_sources
-            if self.config.enable_fallback
-            else []
+            self.config.fallback_sources if self.config.enable_fallback else []
         )
 
         last_error = None
@@ -298,9 +295,7 @@ class VietnameseMarketService:
         """
         data_source = data_source or self.config.default_data_source
         sources_to_try = [data_source] + (
-            self.config.fallback_sources
-            if self.config.enable_fallback
-            else []
+            self.config.fallback_sources if self.config.enable_fallback else []
         )
 
         for source in sources_to_try:
@@ -353,9 +348,7 @@ class VietnameseMarketService:
         """
         data_source = data_source or self.config.default_data_source
         sources_to_try = [data_source] + (
-            self.config.fallback_sources
-            if self.config.enable_fallback
-            else []
+            self.config.fallback_sources if self.config.enable_fallback else []
         )
 
         for source in sources_to_try:
@@ -406,9 +399,7 @@ class VietnameseMarketService:
         """
         data_source = data_source or self.config.default_data_source
         sources_to_try = [data_source] + (
-            self.config.fallback_sources
-            if self.config.enable_fallback
-            else []
+            self.config.fallback_sources if self.config.enable_fallback else []
         )
 
         all_news = []
@@ -459,9 +450,7 @@ class VietnameseMarketService:
         """
         data_source = data_source or self.config.default_data_source
         sources_to_try = [data_source] + (
-            self.config.fallback_sources
-            if self.config.enable_fallback
-            else []
+            self.config.fallback_sources if self.config.enable_fallback else []
         )
 
         all_symbols = []
@@ -493,7 +482,9 @@ class VietnameseMarketService:
         # Remove duplicates and return
         return list(set(all_symbols))
 
-    def _deduplicate_news(self, news_list: List[VietnameseNews]) -> List[VietnameseNews]:
+    def _deduplicate_news(
+        self, news_list: List[VietnameseNews]
+    ) -> List[VietnameseNews]:
         """Remove duplicate news items based on title and published_at.
 
         Args:
@@ -582,14 +573,11 @@ class VietnameseMarketService:
         adapter = self._adapters[data_source]
 
         # Execute quotes in parallel
-        tasks = [
-            adapter.get_real_time_quote(symbol)
-            for symbol in symbols
-        ]
+        tasks = [adapter.get_real_time_quote(symbol) for symbol in symbols]
 
         try:
             quotes = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             result = {}
             for symbol, quote in zip(symbols, quotes):
                 if isinstance(quote, Exception):
@@ -605,7 +593,9 @@ class VietnameseMarketService:
             self.logger.info(
                 "Fetched multiple quotes",
                 symbol_count=len(symbols),
-                successful_quotes=sum(1 for q in result.values() if q is not None),
+                successful_quotes=sum(
+                    1 for q in result.values() if q is not None
+                ),
             )
 
             return result

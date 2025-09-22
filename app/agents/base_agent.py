@@ -8,7 +8,12 @@ from uuid import UUID, uuid4
 
 import structlog
 from langchain_core.documents import Document
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+)
 from pydantic import BaseModel, Field
 
 from .agent_state import StateManager, WorkflowState

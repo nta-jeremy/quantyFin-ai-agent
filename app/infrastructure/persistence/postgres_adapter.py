@@ -13,7 +13,7 @@ from uuid import UUID
 import asyncpg
 from asyncpg.exceptions import PostgresError
 
-from app.core.domain.models import (
+from app.core.domain import (
     Company,
     DocumentEmbedding,
     FinancialMetrics,
