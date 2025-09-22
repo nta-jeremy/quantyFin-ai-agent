@@ -8,11 +8,8 @@ from uuid import uuid4
 import pandas as pd
 from vnstock.explorer.msn import Listing, Quote
 
-from app.core.domain.models import (
-    VietnameseExchange,
-    VietnameseStock,
-    VnstockDataSource,
-)
+from app.core.domain.enums import VietnameseExchange, VnstockDataSource
+from app.core.domain.stock_models import VietnameseStock
 
 from .vnstock_adapter import VnstockAdapter, VnstockAdapterConfig
 
@@ -74,18 +71,18 @@ class MSNAdapter(VnstockAdapter):
         async def _fetch_data():
             await self._rate_limit()
             quote_client = await self._get_quote_client()
-            
+
             # Convert datetime to string format expected by vnstock
             start_str = start_date.strftime("%Y-%m-%d")
             end_str = end_date.strftime("%Y-%m-%d")
-            
+
             df = quote_client.history(
                 symbol=symbol,
                 start=start_str,
                 end=end_str,
                 interval=interval,
             )
-            
+
             return self._convert_dataframe_to_stocks(df, symbol)
 
         return await self._execute_with_retry(_fetch_data)
@@ -152,7 +149,9 @@ class MSNAdapter(VnstockAdapter):
         )
         return None
 
-    async def get_real_time_quote(self, symbol: str) -> Optional[VietnameseStock]:
+    async def get_real_time_quote(
+        self, symbol: str
+    ) -> Optional[VietnameseStock]:
         """Get real-time quote from MSN.
 
         Args:
@@ -168,22 +167,28 @@ class MSNAdapter(VnstockAdapter):
         async def _fetch_quote():
             await self._rate_limit()
             quote_client = await self._get_quote_client()
-            
+
             # Get latest data (1 day)
             end_date = datetime.now()
-            start_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            
+            start_date = end_date.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+
             df = quote_client.history(
                 symbol=symbol,
                 start=start_date.strftime("%Y-%m-%d"),
                 end=end_date.strftime("%Y-%m-%d"),
                 interval="1D",
             )
-            
+
             if df is None or df.empty:
                 return None
 
-            return self._convert_dataframe_to_stocks(df, symbol)[0] if len(self._convert_dataframe_to_stocks(df, symbol)) > 0 else None
+            return (
+                self._convert_dataframe_to_stocks(df, symbol)[0]
+                if len(self._convert_dataframe_to_stocks(df, symbol)) > 0
+                else None
+            )
 
         return await self._execute_with_retry(_fetch_quote)
 
@@ -252,10 +257,10 @@ class MSNAdapter(VnstockAdapter):
         async def _search():
             await self._rate_limit()
             listing_client = await self._get_listing_client()
-            
+
             # Search for symbol ID
             search_result = listing_client.search_symbol_id(query)
-            
+
             if search_result is None or search_result.empty:
                 return []
 
@@ -275,7 +280,7 @@ class MSNAdapter(VnstockAdapter):
         models for international markets.
         """
         stocks = []
-        
+
         for _, row in df.iterrows():
             try:
                 stock = VietnameseStock(
@@ -318,7 +323,9 @@ class MSNAdapter(VnstockAdapter):
         Returns:
             List of Forex data
         """
-        return await self.get_historical_data(symbol, start_date, end_date, interval)
+        return await self.get_historical_data(
+            symbol, start_date, end_date, interval
+        )
 
     async def get_crypto_data(
         self,
@@ -338,7 +345,9 @@ class MSNAdapter(VnstockAdapter):
         Returns:
             List of crypto data
         """
-        return await self.get_historical_data(symbol, start_date, end_date, interval)
+        return await self.get_historical_data(
+            symbol, start_date, end_date, interval
+        )
 
     async def get_world_index_data(
         self,
@@ -358,4 +367,6 @@ class MSNAdapter(VnstockAdapter):
         Returns:
             List of index data
         """
-        return await self.get_historical_data(symbol, start_date, end_date, interval)
+        return await self.get_historical_data(
+            symbol, start_date, end_date, interval
+        )

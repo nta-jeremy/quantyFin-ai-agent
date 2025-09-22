@@ -8,15 +8,24 @@ from typing import Any, Dict, List, Optional, Union
 import structlog
 from pydantic import BaseModel
 
-from app.core.domain.models import (
-    VietnameseCompany,
-    VietnameseExchange,
+from app.core.domain.company_models import VietnameseCompany
+from app.core.domain.enums import VietnameseExchange, VnstockDataSource
+from app.core.domain.financial_models import (
     VietnameseFinancialMetrics,
     VietnameseFinancialReport,
+)
+from app.core.domain.listing_models import (
+    ExchangeSymbol,
+    ICBIndustry,
+    IndustrySymbol,
+    InternationalSymbol,
+    ListingData,
+    StockSymbol,
+)
+from app.core.domain.stock_models import VietnameseStock
+from app.core.domain.vietnamese_market_data import (
     VietnameseMarketData,
     VietnameseNews,
-    VietnameseStock,
-    VnstockDataSource,
 )
 
 logger = structlog.get_logger(__name__)
@@ -71,7 +80,9 @@ class VnstockAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_company_info(self, symbol: str) -> Optional[VietnameseCompany]:
+    async def get_company_info(
+        self, symbol: str
+    ) -> Optional[VietnameseCompany]:
         """Get company information.
 
         Args:
@@ -121,7 +132,9 @@ class VnstockAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_real_time_quote(self, symbol: str) -> Optional[VietnameseStock]:
+    async def get_real_time_quote(
+        self, symbol: str
+    ) -> Optional[VietnameseStock]:
         """Get real-time stock quote.
 
         Args:
@@ -183,6 +196,106 @@ class VnstockAdapter(ABC):
         """
         pass
 
+    # Listing API Methods
+    @abstractmethod
+    async def get_all_symbols(self) -> List[StockSymbol]:
+        """Get all Vietnamese stock symbols.
+
+        Returns:
+            List of all stock symbols
+        """
+        pass
+
+    @abstractmethod
+    async def get_symbols_by_exchange(
+        self, exchange: VietnameseExchange
+    ) -> List[ExchangeSymbol]:
+        """Get symbols filtered by exchange.
+
+        Args:
+            exchange: Vietnamese exchange to filter by
+
+        Returns:
+            List of symbols from the specified exchange
+        """
+        pass
+
+    @abstractmethod
+    async def get_vn30_constituents(self) -> List[str]:
+        """Get VN30 index constituent symbols.
+
+        Returns:
+            List of VN30 ticker symbols
+        """
+        pass
+
+    @abstractmethod
+    async def get_symbols_by_group(self, group_name: str) -> List[StockSymbol]:
+        """Get symbols filtered by market group.
+
+        Args:
+            group_name: Market group name (e.g., VN30, VN100, HNX30)
+
+        Returns:
+            List of symbols from the specified market group
+        """
+        pass
+
+    @abstractmethod
+    async def get_industry_symbols(
+        self, industry_name: Optional[str] = None
+    ) -> List[IndustrySymbol]:
+        """Get symbols with industry classification.
+
+        Args:
+            industry_name: Optional industry name filter
+
+        Returns:
+            List of symbols with industry data
+        """
+        pass
+
+    @abstractmethod
+    async def get_icb_industries(self) -> List[ICBIndustry]:
+        """Get ICB industry classification hierarchy.
+
+        Returns:
+            List of ICB industry classifications
+        """
+        pass
+
+    @abstractmethod
+    async def search_international_symbols(
+        self, query: str
+    ) -> List[InternationalSymbol]:
+        """Search international market instruments.
+
+        Args:
+            query: Search query for international symbols
+
+        Returns:
+            List of matching international symbols
+        """
+        pass
+
+    @abstractmethod
+    async def get_exchange_metadata(self) -> Dict[str, Any]:
+        """Get exchange metadata information.
+
+        Returns:
+            Dictionary with exchange metadata
+        """
+        pass
+
+    @abstractmethod
+    async def get_market_group_metadata(self) -> Dict[str, Any]:
+        """Get market group metadata information.
+
+        Returns:
+            Dictionary with market group metadata
+        """
+        pass
+
     async def _execute_with_retry(
         self,
         operation: callable,
@@ -238,7 +351,7 @@ class VnstockAdapter(ABC):
 
             if attempt < self.config.retry_attempts - 1:
                 await asyncio.sleep(
-                    self.config.retry_delay_seconds * (2 ** attempt)
+                    self.config.retry_delay_seconds * (2**attempt)
                 )
 
         self.logger.error(
@@ -295,9 +408,7 @@ class VnstockAdapter(ABC):
         # Check if date range is not too large (e.g., more than 5 years)
         max_days = 365 * 5
         if (end_date - start_date).days > max_days:
-            raise ValueError(
-                f"Date range cannot exceed {max_days} days"
-            )
+            raise ValueError(f"Date range cannot exceed {max_days} days")
 
     def _log_operation(
         self,

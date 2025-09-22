@@ -7,7 +7,7 @@ from .vnstock_adapter import VnstockAdapter
 
 __all__ = [
     "VnstockAdapter",
-    "VCIAdapter", 
+    "VCIAdapter",
     "TCBSAdapter",
     "MSNAdapter",
 ]

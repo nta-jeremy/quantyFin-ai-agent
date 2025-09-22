@@ -1,12 +1,14 @@
 # Vnstock Listing API Implementation Draft
 
-**Date:** 2025-01-27  
-**Author:** AI Assistant  
+**Date:** 2025-09-20
+**Author:** AI Assistant
 **Purpose:** Research and implementation plan for vnstock listing information API integration
 
 ## Overview
 
 This document outlines the research findings and implementation approach for integrating vnstock's listing information API into the quantyFin-ai-agent project. The vnstock library provides comprehensive listing data for Vietnamese stock markets, including symbols, exchanges, industry classifications, and market groups.
+
+**Architecture Context**: This implementation extends the existing hexagonal architecture pattern, leveraging the established VnstockAdapter abstract class and following the project's functional programming approach.
 
 ## Vnstock Listing API Capabilities
 
@@ -82,19 +84,24 @@ The vnstock library supports multiple data sources:
 
 ### 1. Extend Domain Models
 
-Add new models to `app/core/domain/models.py`:
+#### 1.1 Update VietnameseMarketGroup Enum
+
+Extend `app/core/domain/enums.py` with additional vnstock market groups:
 
 ```python
-from pydantic import BaseModel
-from typing import List, Optional
-from enum import Enum
+class VietnameseMarketGroup(str, Enum):
+    """Vietnamese market group enumeration."""
 
-class MarketGroup(str, Enum):
-    """Vietnamese market groups."""
+    # Existing groups
     VN30 = "VN30"
+    VNMIDCAP = "VNMIDCAP"
+    VNSMALLCAP = "VNSMALLCAP"
+    ETF = "ETF"
+    CW = "CW"
+    BOND = "BOND"
+
+    # Additional vnstock groups
     VN100 = "VN100"
-    VN_MID_CAP = "VNMidCap"
-    VN_SMALL_CAP = "VNSmallCap"
     VN_ALL_SHARE = "VNAllShare"
     HNX30 = "HNX30"
     HNX_CON = "HNXCon"
@@ -102,232 +109,295 @@ class MarketGroup(str, Enum):
     HNX_L_CAP = "HNXLCap"
     HNX_MS_CAP = "HNXMSCap"
     HNX_MAN = "HNXMan"
-    ETF = "ETF"
     FU_INDEX = "FU_INDEX"
-    CW = "CW"
+```
+
+#### 1.2 Create Listing Models
+
+Create `app/core/domain/listing_models.py`:
+
+```python
+"""
+Listing data domain models for QuantyFinAI Agent.
+
+This module contains models specifically for vnstock listing information.
+"""
+
+from typing import List, Optional
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
+
+from .enums import VietnameseExchange, VietnameseMarketGroup
+
 
 class ICBIndustry(BaseModel):
     """Industry Classification Benchmark industry."""
-    icb_name: str
-    en_icb_name: str
-    icb_code: str
-    level: int
+    icb_name: str = Field(..., min_length=1)
+    en_icb_name: str = Field(..., min_length=1)
+    icb_code: str = Field(..., min_length=1)
+    level: int = Field(..., ge=1, le=4)
+
 
 class StockSymbol(BaseModel):
-    """Stock symbol information."""
-    ticker: str
-    organ_name: str
-    symbol_id: Optional[int] = None
-    exchange: Optional[str] = None
-    icb_industry: Optional[str] = None
+    """Basic stock symbol information."""
+    ticker: str = Field(..., min_length=1, max_length=10)
+    organ_name: str = Field(..., min_length=1)
+
 
 class ExchangeSymbol(BaseModel):
     """Detailed symbol information by exchange."""
-    symbol: str
-    symbol_id: int
-    type: str
-    exchange: str
-    en_organ_name: Optional[str] = None
-    en_organ_short_name: Optional[str] = None
-    organ_short_name: Optional[str] = None
-    organ_name: Optional[str] = None
+    symbol: str = Field(..., min_length=1, max_length=10)
+    symbol_id: int = Field(..., ge=1)
+    type: str = Field(..., min_length=1)
+    exchange: VietnameseExchange = Field(...)
+    en_organ_name: Optional[str] = Field(default=None, max_length=200)
+    en_organ_short_name: Optional[str] = Field(default=None, max_length=50)
+    organ_short_name: Optional[str] = Field(default=None, max_length=50)
+    organ_name: Optional[str] = Field(default=None, max_length=200)
+
 
 class IndustrySymbol(BaseModel):
     """Symbol with industry classification."""
-    symbol: str
-    organ_name: str
-    en_organ_name: Optional[str] = None
-    icb_name3: str
-    en_icb_name3: Optional[str] = None
-    icb_name2: Optional[str] = None
-    en_icb_name2: Optional[str] = None
-    icb_name4: Optional[str] = None
-    en_icb_name4: Optional[str] = None
-    com_type_code: Optional[str] = None
-    icb_code1: Optional[str] = None
-    icb_code2: Optional[str] = None
-    icb_code3: Optional[str] = None
-    icb_code4: Optional[str] = None
+    symbol: str = Field(..., min_length=1, max_length=10)
+    organ_name: str = Field(..., min_length=1)
+    en_organ_name: Optional[str] = Field(default=None, max_length=200)
+    icb_name3: str = Field(..., min_length=1)
+    en_icb_name3: Optional[str] = Field(default=None, max_length=100)
+    icb_name2: Optional[str] = Field(default=None, max_length=100)
+    en_icb_name2: Optional[str] = Field(default=None, max_length=100)
+    icb_name4: Optional[str] = Field(default=None, max_length=100)
+    en_icb_name4: Optional[str] = Field(default=None, max_length=100)
+    com_type_code: Optional[str] = Field(default=None, max_length=10)
+    icb_code1: Optional[str] = Field(default=None, max_length=10)
+    icb_code2: Optional[str] = Field(default=None, max_length=10)
+    icb_code3: Optional[str] = Field(default=None, max_length=10)
+    icb_code4: Optional[str] = Field(default=None, max_length=10)
+
 
 class InternationalSymbol(BaseModel):
     """International market symbol."""
-    symbol: str
-    symbol_id: str
-    exchange_name: str
-    exchange_code_mic: str
-    short_name: str
-    friendly_name: str
-    eng_name: str
-    description: str
-    local_name: str
-    locale: str
+    symbol: str = Field(..., min_length=1, max_length=20)
+    symbol_id: str = Field(..., min_length=1)
+    exchange_name: str = Field(..., min_length=1)
+    exchange_code_mic: str = Field(..., min_length=1)
+    short_name: str = Field(..., min_length=1)
+    friendly_name: str = Field(..., min_length=1)
+    eng_name: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    local_name: str = Field(..., min_length=1)
+    locale: str = Field(..., min_length=1)
+
+
+class ListingData(BaseModel):
+    """Listing data with metadata."""
+    id: UUID = Field(default_factory=uuid4)
+    data_source: str = Field(..., min_length=1)
+    retrieved_at: Optional[str] = Field(default=None)
+    is_cached: bool = Field(default=False)
+    cache_ttl_seconds: int = Field(default=3600)
+```
+
+#### 1.3 Update Domain Package
+
+Update `app/core/domain/__init__.py` to include new listing models:
+
+```python
+# Import all listing-related models
+from .listing_models import (
+    ICBIndustry,
+    StockSymbol,
+    ExchangeSymbol,
+    IndustrySymbol,
+    InternationalSymbol,
+    ListingData,
+)
+
+# Add to __all__ list
+__all__ = [
+    # ... existing models ...
+    # Listing models
+    "ICBIndustry",
+    "StockSymbol",
+    "ExchangeSymbol",
+    "IndustrySymbol",
+    "InternationalSymbol",
+    "ListingData",
+]
 ```
 
 ### 2. Extend VnstockAdapter
 
-Add new methods to `app/infrastructure/data_sources/vnstock_adapter.py`:
+Extend `app/infrastructure/data_sources/vnstock_adapter.py` with new listing methods:
 
 ```python
-from typing import List, Optional
-from app.core.domain.models import (
-    StockSymbol, ExchangeSymbol, IndustrySymbol, 
-    ICBIndustry, InternationalSymbol, MarketGroup
+# Add to existing imports
+from app.core.domain.listing_models import (
+    ICBIndustry,
+    StockSymbol,
+    ExchangeSymbol,
+    IndustrySymbol,
+    InternationalSymbol,
 )
 
-class VnstockAdapter(ABC):
-    # ... existing methods ...
+# Add to VnstockAdapter class
+@abstractmethod
+async def get_all_symbols(self) -> List[StockSymbol]:
+    """Get all stock symbols.
 
-    @abstractmethod
-    async def get_all_symbols(self) -> List[StockSymbol]:
-        """Get all stock symbols.
-        
-        Returns:
-            List of all available stock symbols
-        """
-        pass
+    Returns:
+        List of all available stock symbols
+    """
+    pass
 
-    @abstractmethod
-    async def get_symbols_by_exchange(self) -> List[ExchangeSymbol]:
-        """Get symbols by exchange.
-        
-        Returns:
-            List of symbols with exchange details
-        """
-        pass
+@abstractmethod
+async def get_symbols_by_exchange(self) -> List[ExchangeSymbol]:
+    """Get symbols by exchange.
 
-    @abstractmethod
-    async def get_symbols_by_group(self, group: MarketGroup) -> List[str]:
-        """Get symbols by market group.
-        
-        Args:
-            group: Market group (VN30, VN100, etc.)
-            
-        Returns:
-            List of symbols in the group
-        """
-        pass
+    Returns:
+        List of symbols with exchange details
+    """
+    pass
 
-    @abstractmethod
-    async def get_symbols_by_industry(self) -> List[IndustrySymbol]:
-        """Get symbols by industry classification.
-        
-        Returns:
-            List of symbols with industry details
-        """
-        pass
+@abstractmethod
+async def get_symbols_by_group(self, group: VietnameseMarketGroup) -> List[str]:
+    """Get symbols by market group.
 
-    @abstractmethod
-    async def get_icb_industries(self) -> List[ICBIndustry]:
-        """Get ICB industry classifications.
-        
-        Returns:
-            List of industry classifications
-        """
-        pass
+    Args:
+        group: Market group (VN30, VN100, etc.)
 
-    @abstractmethod
-    async def search_international_symbols(
-        self, 
-        query: str
-    ) -> List[InternationalSymbol]:
-        """Search international symbols.
-        
-        Args:
-            query: Search query (e.g., 'USD', 'BTC')
-            
-        Returns:
-            List of matching international symbols
-        """
-        pass
+    Returns:
+        List of symbols in the group
+    """
+    pass
+
+@abstractmethod
+async def get_symbols_by_industry(self) -> List[IndustrySymbol]:
+    """Get symbols by industry classification.
+
+    Returns:
+        List of symbols with industry details
+    """
+    pass
+
+@abstractmethod
+async def get_icb_industries(self) -> List[ICBIndustry]:
+    """Get ICB industry classifications.
+
+    Returns:
+        List of industry classifications
+    """
+    pass
+
+@abstractmethod
+async def search_international_symbols(
+    self,
+    query: str
+) -> List[InternationalSymbol]:
+    """Search international symbols.
+
+    Args:
+        query: Search query (e.g., 'USD', 'BTC')
+
+    Returns:
+        List of matching international symbols
+    """
+    pass
 ```
 
-### 3. Create Concrete Implementation
+### 3. Update Concrete Implementation
 
-Create `app/infrastructure/data_sources/vnstock_listing_adapter.py`:
+Extend the existing vnstock implementation in `app/infrastructure/data_sources/vnstock_adapter.py` (or create a new listing-specific implementation):
 
 ```python
-"""Concrete implementation of vnstock listing adapter."""
+"""Update existing vnstock adapter with listing methods."""
 
-import asyncio
-from typing import List, Optional
-import pandas as pd
+# Add to imports
 from vnstock import Listing
 from vnstock.explorer.msn.listing import Listing as MSNListing
-
-from app.core.domain.models import (
-    StockSymbol, ExchangeSymbol, IndustrySymbol, 
-    ICBIndustry, InternationalSymbol, MarketGroup
+from app.core.domain.listing_models import (
+    ICBIndustry,
+    StockSymbol,
+    ExchangeSymbol,
+    IndustrySymbol,
+    InternationalSymbol,
 )
-from app.infrastructure.data_sources.vnstock_adapter import VnstockAdapter, VnstockAdapterConfig
 
-class VnstockListingAdapter(VnstockAdapter):
-    """Concrete implementation for vnstock listing data."""
-    
+# Update the existing adapter class or create listing methods
+class VnstockConcreteAdapter(VnstockAdapter):
+    """Extended concrete implementation for vnstock data with listing functionality."""
+
     def __init__(self, config: VnstockAdapterConfig):
         super().__init__(config)
         self.listing = Listing(source=config.data_source.value)
         self.msn_listing = MSNListing() if config.data_source.value == 'MSN' else None
-    
+
     async def get_all_symbols(self) -> List[StockSymbol]:
         """Get all stock symbols."""
         await self._rate_limit()
-        
+
         def _fetch_symbols():
             df = self.listing.all_symbols()
             return [
                 StockSymbol(
-                    ticker=row['ticker'],
-                    organ_name=row['organ_name']
+                    ticker=str(row['ticker']),
+                    organ_name=str(row['organ_name'])
                 )
                 for _, row in df.iterrows()
             ]
-        
+
         return await self._execute_with_retry(_fetch_symbols)
-    
+
     async def get_symbols_by_exchange(self) -> List[ExchangeSymbol]:
         """Get symbols by exchange."""
         await self._rate_limit()
-        
+
         def _fetch_exchange_symbols():
             df = self.listing.symbols_by_exchange()
-            return [
-                ExchangeSymbol(
-                    symbol=row['symbol'],
-                    symbol_id=row['id'],
-                    type=row['type'],
-                    exchange=row['exchange'],
-                    en_organ_name=row.get('en_organ_name'),
-                    en_organ_short_name=row.get('en_organ_short_name'),
-                    organ_short_name=row.get('organ_short_name'),
-                    organ_name=row.get('organ_name')
-                )
-                for _, row in df.iterrows()
-            ]
-        
+            results = []
+            for _, row in df.iterrows():
+                try:
+                    exchange = VietnameseExchange(row['exchange'])
+                    symbol = ExchangeSymbol(
+                        symbol=str(row['symbol']),
+                        symbol_id=int(row['id']),
+                        type=str(row['type']),
+                        exchange=exchange,
+                        en_organ_name=row.get('en_organ_name'),
+                        en_organ_short_name=row.get('en_organ_short_name'),
+                        organ_short_name=row.get('organ_short_name'),
+                        organ_name=row.get('organ_name')
+                    )
+                    results.append(symbol)
+                except ValueError:
+                    # Skip invalid exchange values
+                    continue
+            return results
+
         return await self._execute_with_retry(_fetch_exchange_symbols)
-    
-    async def get_symbols_by_group(self, group: MarketGroup) -> List[str]:
+
+    async def get_symbols_by_group(self, group: VietnameseMarketGroup) -> List[str]:
         """Get symbols by market group."""
         await self._rate_limit()
-        
+
         def _fetch_group_symbols():
             series = self.listing.symbols_by_group(group.value)
-            return series.tolist()
-        
+            return [str(symbol) for symbol in series.tolist()]
+
         return await self._execute_with_retry(_fetch_group_symbols)
-    
+
     async def get_symbols_by_industry(self) -> List[IndustrySymbol]:
         """Get symbols by industry classification."""
         await self._rate_limit()
-        
+
         def _fetch_industry_symbols():
             df = self.listing.symbols_by_industries()
             return [
                 IndustrySymbol(
-                    symbol=row['symbol'],
-                    organ_name=row['organ_name'],
+                    symbol=str(row['symbol']),
+                    organ_name=str(row['organ_name']),
                     en_organ_name=row.get('en_organ_name'),
-                    icb_name3=row['icb_name3'],
+                    icb_name3=str(row['icb_name3']),
                     en_icb_name3=row.get('en_icb_name3'),
                     icb_name2=row.get('icb_name2'),
                     en_icb_name2=row.get('en_icb_name2'),
@@ -341,256 +411,449 @@ class VnstockListingAdapter(VnstockAdapter):
                 )
                 for _, row in df.iterrows()
             ]
-        
+
         return await self._execute_with_retry(_fetch_industry_symbols)
-    
+
     async def get_icb_industries(self) -> List[ICBIndustry]:
         """Get ICB industry classifications."""
         await self._rate_limit()
-        
+
         def _fetch_industries():
             df = self.listing.industries_icb()
             return [
                 ICBIndustry(
-                    icb_name=row['icb_name'],
-                    en_icb_name=row['en_icb_name'],
-                    icb_code=row['icb_code'],
-                    level=row['level']
+                    icb_name=str(row['icb_name']),
+                    en_icb_name=str(row['en_icb_name']),
+                    icb_code=str(row['icb_code']),
+                    level=int(row['level'])
                 )
                 for _, row in df.iterrows()
             ]
-        
+
         return await self._execute_with_retry(_fetch_industries)
-    
+
     async def search_international_symbols(
-        self, 
+        self,
         query: str
     ) -> List[InternationalSymbol]:
         """Search international symbols."""
         if not self.msn_listing:
             raise ValueError("MSN listing not available for current data source")
-        
+
         await self._rate_limit()
-        
+
         def _search_symbols():
             df = self.msn_listing.search_symbol_id(query)
             return [
                 InternationalSymbol(
-                    symbol=row['symbol'],
-                    symbol_id=row['symbol_id'],
-                    exchange_name=row['exchange_name'],
-                    exchange_code_mic=row['exchange_code_mic'],
-                    short_name=row['short_name'],
-                    friendly_name=row['friendly_name'],
-                    eng_name=row['eng_name'],
-                    description=row['description'],
-                    local_name=row['local_name'],
-                    locale=row['locale']
+                    symbol=str(row['symbol']),
+                    symbol_id=str(row['symbol_id']),
+                    exchange_name=str(row['exchange_name']),
+                    exchange_code_mic=str(row['exchange_code_mic']),
+                    short_name=str(row['short_name']),
+                    friendly_name=str(row['friendly_name']),
+                    eng_name=str(row['eng_name']),
+                    description=str(row['description']),
+                    local_name=str(row['local_name']),
+                    locale=str(row['locale'])
                 )
                 for _, row in df.iterrows()
             ]
-        
+
         return await self._execute_with_retry(_search_symbols)
-    
-    # Implement other required abstract methods...
-    async def get_historical_data(self, symbol: str, start_date: datetime, 
-                                end_date: datetime, interval: str = "1D") -> List[VietnameseStock]:
-        # Implementation for historical data
-        pass
-    
-    # ... other abstract method implementations
 ```
 
-### 4. Create Service Layer
+**Note**: This implementation extends the existing adapter pattern rather than creating a separate adapter class, maintaining consistency with the existing architecture.
 
-Create `app/core/application/listing_service.py`:
+### 4. Create Service Layer (Functional Approach)
+
+Create `app/core/application/listing_services.py` using functional programming patterns:
 
 ```python
-"""Service for listing data operations."""
+"""Listing data services using functional programming approach."""
 
-from typing import List, Optional
-from app.core.domain.models import (
-    StockSymbol, ExchangeSymbol, IndustrySymbol, 
-    ICBIndustry, InternationalSymbol, MarketGroup
+from typing import List, Optional, Callable
+from functools import lru_cache
+
+from app.core.domain.listing_models import (
+    ICBIndustry,
+    StockSymbol,
+    ExchangeSymbol,
+    IndustrySymbol,
+    InternationalSymbol,
 )
+from app.core.domain.enums import VietnameseMarketGroup, VietnameseExchange
 from app.infrastructure.data_sources.vnstock_adapter import VnstockAdapter
+from app.infrastructure.cache.redis_adapter import RedisCacheManager
 
-class ListingService:
-    """Service for listing data operations."""
-    
-    def __init__(self, vnstock_adapter: VnstockAdapter):
-        self.vnstock_adapter = vnstock_adapter
-    
-    async def get_all_symbols(self) -> List[StockSymbol]:
-        """Get all stock symbols."""
-        return await self.vnstock_adapter.get_all_symbols()
-    
-    async def get_symbols_by_exchange(self) -> List[ExchangeSymbol]:
-        """Get symbols by exchange."""
-        return await self.vnstock_adapter.get_symbols_by_exchange()
-    
-    async def get_vn30_symbols(self) -> List[str]:
-        """Get VN30 constituent symbols."""
-        return await self.vnstock_adapter.get_symbols_by_group(MarketGroup.VN30)
-    
-    async def get_symbols_by_industry(self) -> List[IndustrySymbol]:
-        """Get symbols by industry classification."""
-        return await self.vnstock_adapter.get_symbols_by_industry()
-    
-    async def get_icb_industries(self) -> List[ICBIndustry]:
-        """Get ICB industry classifications."""
-        return await self.vnstock_adapter.get_icb_industries()
-    
-    async def search_international_symbols(self, query: str) -> List[InternationalSymbol]:
-        """Search international symbols."""
-        return await self.vnstock_adapter.search_international_symbols(query)
-    
-    async def get_symbols_by_exchange_name(self, exchange: str) -> List[ExchangeSymbol]:
-        """Get symbols filtered by exchange name."""
-        all_symbols = await self.get_symbols_by_exchange()
-        return [s for s in all_symbols if s.exchange == exchange]
-    
-    async def get_symbols_by_industry_name(self, industry_name: str) -> List[IndustrySymbol]:
-        """Get symbols filtered by industry name."""
-        all_symbols = await self.get_symbols_by_industry()
-        return [s for s in all_symbols if industry_name.lower() in s.icb_name3.lower()]
+
+async def get_all_symbols(vnstock_adapter: VnstockAdapter) -> List[StockSymbol]:
+    """Get all stock symbols.
+
+    Args:
+        vnstock_adapter: The vnstock adapter instance
+
+    Returns:
+        List of all available stock symbols
+    """
+    return await vnstock_adapter.get_all_symbols()
+
+
+async def get_symbols_by_exchange(vnstock_adapter: VnstockAdapter) -> List[ExchangeSymbol]:
+    """Get symbols by exchange.
+
+    Args:
+        vnstock_adapter: The vnstock adapter instance
+
+    Returns:
+        List of symbols with exchange details
+    """
+    return await vnstock_adapter.get_symbols_by_exchange()
+
+
+async def get_symbols_by_group(
+    vnstock_adapter: VnstockAdapter,
+    group: VietnameseMarketGroup
+) -> List[str]:
+    """Get symbols by market group.
+
+    Args:
+        vnstock_adapter: The vnstock adapter instance
+        group: Market group to filter by
+
+    Returns:
+        List of symbols in the specified group
+    """
+    return await vnstock_adapter.get_symbols_by_group(group)
+
+
+async def get_vn30_symbols(vnstock_adapter: VnstockAdapter) -> List[str]:
+    """Get VN30 constituent symbols.
+
+    Args:
+        vnstock_adapter: The vnstock adapter instance
+
+    Returns:
+        List of VN30 constituent symbols
+    """
+    return await get_symbols_by_group(vnstock_adapter, VietnameseMarketGroup.VN30)
+
+
+async def get_symbols_by_industry(vnstock_adapter: VnstockAdapter) -> List[IndustrySymbol]:
+    """Get symbols by industry classification.
+
+    Args:
+        vnstock_adapter: The vnstock adapter instance
+
+    Returns:
+        List of symbols with industry details
+    """
+    return await vnstock_adapter.get_symbols_by_industry()
+
+
+async def get_icb_industries(vnstock_adapter: VnstockAdapter) -> List[ICBIndustry]:
+    """Get ICB industry classifications.
+
+    Args:
+        vnstock_adapter: The vnstock adapter instance
+
+    Returns:
+        List of industry classifications
+    """
+    return await vnstock_adapter.get_icb_industries()
+
+
+async def search_international_symbols(
+    vnstock_adapter: VnstockAdapter,
+    query: str
+) -> List[InternationalSymbol]:
+    """Search international symbols.
+
+    Args:
+        vnstock_adapter: The vnstock adapter instance
+        query: Search query string
+
+    Returns:
+        List of matching international symbols
+    """
+    if not query or not query.strip():
+        raise ValueError("Query parameter is required")
+
+    return await vnstock_adapter.search_international_symbols(query.strip())
+
+
+def filter_symbols_by_exchange(
+    symbols: List[ExchangeSymbol],
+    exchange: VietnameseExchange
+) -> List[ExchangeSymbol]:
+    """Filter symbols by exchange.
+
+    Args:
+        symbols: List of symbols to filter
+        exchange: Exchange to filter by
+
+    Returns:
+        Filtered list of symbols
+    """
+    return [symbol for symbol in symbols if symbol.exchange == exchange]
+
+
+def filter_symbols_by_industry(
+    symbols: List[IndustrySymbol],
+    industry_name: str
+) -> List[IndustrySymbol]:
+    """Filter symbols by industry name.
+
+    Args:
+        symbols: List of symbols to filter
+        industry_name: Industry name to filter by (case-insensitive)
+
+    Returns:
+        Filtered list of symbols
+    """
+    if not industry_name:
+        return symbols
+
+    industry_lower = industry_name.lower()
+    return [
+        symbol for symbol in symbols
+        if industry_lower in symbol.icb_name3.lower()
+    ]
+
+
+def get_unique_exchanges(symbols: List[ExchangeSymbol]) -> List[VietnameseExchange]:
+    """Get unique exchanges from symbol list.
+
+    Args:
+        symbols: List of symbols with exchange information
+
+    Returns:
+        List of unique exchanges
+    """
+    return list(set(symbol.exchange for symbol in symbols))
+
+
+def get_unique_industries(symbols: List[IndustrySymbol]) -> List[str]:
+    """Get unique industries from symbol list.
+
+    Args:
+        symbols: List of symbols with industry information
+
+    Returns:
+        List of unique industry names
+    """
+    return list(set(symbol.icb_name3 for symbol in symbols))
+
+
+# Cached versions for frequently accessed data
+@lru_cache(maxsize=128)
+def get_cached_vn30_symbols(
+    cache_key: str,
+    fetch_fn: Callable[[], List[str]]
+) -> List[str]:
+    """Get cached VN30 symbols.
+
+    Args:
+        cache_key: Cache key for this request
+        fetch_fn: Function to fetch fresh data
+
+    Returns:
+        List of VN30 symbols (cached or fresh)
+    """
+    return fetch_fn()
+
+
+@lru_cache(maxsize=64)
+def get_cached_industries(
+    cache_key: str,
+    fetch_fn: Callable[[], List[ICBIndustry]]
+) -> List[ICBIndustry]:
+    """Get cached industry classifications.
+
+    Args:
+        cache_key: Cache key for this request
+        fetch_fn: Function to fetch fresh data
+
+    Returns:
+        List of industry classifications (cached or fresh)
+    """
+    return fetch_fn()
 ```
 
 ### 5. Create API Endpoints
 
-Add to `app/interfaces/api/v1/`:
+Create `app/interfaces/api/v1/listing_endpoints.py` using functional approach:
 
 ```python
 """API endpoints for listing data."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
-from app.core.application.listing_service import ListingService
-from app.core.domain.models import MarketGroup
-from app.interfaces.api.auth_dependencies import get_current_user
+
+from app.core.application.listing_services import (
+    get_all_symbols,
+    get_symbols_by_exchange,
+    get_symbols_by_group,
+    get_vn30_symbols,
+    get_symbols_by_industry,
+    get_icb_industries,
+    search_international_symbols,
+    filter_symbols_by_exchange,
+    filter_symbols_by_industry,
+)
+from app.core.domain.enums import VietnameseMarketGroup, VietnameseExchange
+from app.core.domain.listing_models import (
+    StockSymbol,
+    ExchangeSymbol,
+    IndustrySymbol,
+    ICBIndustry,
+    InternationalSymbol,
+)
+from app.interfaces.api.dependencies import get_vnstock_adapter, get_current_user
 
 router = APIRouter(prefix="/listing", tags=["listing"])
 
+
 @router.get("/symbols", response_model=List[StockSymbol])
-async def get_all_symbols(
-    listing_service: ListingService = Depends(),
+async def get_all_symbols_endpoint(
+    vnstock_adapter = Depends(get_vnstock_adapter),
     current_user = Depends(get_current_user)
 ):
     """Get all stock symbols."""
-    return await listing_service.get_all_symbols()
+    return await get_all_symbols(vnstock_adapter)
+
 
 @router.get("/symbols/exchange", response_model=List[ExchangeSymbol])
-async def get_symbols_by_exchange(
-    listing_service: ListingService = Depends(),
+async def get_symbols_by_exchange_endpoint(
+    exchange: Optional[VietnameseExchange] = Query(None, description="Filter by exchange"),
+    vnstock_adapter = Depends(get_vnstock_adapter),
     current_user = Depends(get_current_user)
 ):
-    """Get symbols by exchange."""
-    return await listing_service.get_symbols_by_exchange()
+    """Get symbols by exchange, optionally filtered by specific exchange."""
+    symbols = await get_symbols_by_exchange(vnstock_adapter)
+
+    if exchange:
+        return filter_symbols_by_exchange(symbols, exchange)
+
+    return symbols
+
 
 @router.get("/symbols/vn30", response_model=List[str])
-async def get_vn30_symbols(
-    listing_service: ListingService = Depends(),
+async def get_vn30_symbols_endpoint(
+    vnstock_adapter = Depends(get_vnstock_adapter),
     current_user = Depends(get_current_user)
 ):
     """Get VN30 constituent symbols."""
-    return await listing_service.get_vn30_symbols()
+    return await get_vn30_symbols(vnstock_adapter)
+
 
 @router.get("/symbols/group/{group_name}", response_model=List[str])
-async def get_symbols_by_group(
-    group_name: MarketGroup,
-    listing_service: ListingService = Depends(),
+async def get_symbols_by_group_endpoint(
+    group_name: VietnameseMarketGroup,
+    vnstock_adapter = Depends(get_vnstock_adapter),
     current_user = Depends(get_current_user)
 ):
     """Get symbols by market group."""
-    return await listing_service.get_symbols_by_group(group_name)
+    return await get_symbols_by_group(vnstock_adapter, group_name)
+
 
 @router.get("/symbols/industry", response_model=List[IndustrySymbol])
-async def get_symbols_by_industry(
-    listing_service: ListingService = Depends(),
+async def get_symbols_by_industry_endpoint(
+    industry_name: Optional[str] = Query(None, description="Filter by industry name"),
+    vnstock_adapter = Depends(get_vnstock_adapter),
     current_user = Depends(get_current_user)
 ):
-    """Get symbols by industry classification."""
-    return await listing_service.get_symbols_by_industry()
+    """Get symbols by industry classification, optionally filtered by industry."""
+    symbols = await get_symbols_by_industry(vnstock_adapter)
+
+    if industry_name:
+        return filter_symbols_by_industry(symbols, industry_name)
+
+    return symbols
+
 
 @router.get("/industries", response_model=List[ICBIndustry])
-async def get_icb_industries(
-    listing_service: ListingService = Depends(),
+async def get_icb_industries_endpoint(
+    vnstock_adapter = Depends(get_vnstock_adapter),
     current_user = Depends(get_current_user)
 ):
     """Get ICB industry classifications."""
-    return await listing_service.get_icb_industries()
+    return await get_icb_industries(vnstock_adapter)
+
 
 @router.get("/international/search", response_model=List[InternationalSymbol])
-async def search_international_symbols(
-    query: str,
-    listing_service: ListingService = Depends(),
+async def search_international_symbols_endpoint(
+    query: str = Query(..., min_length=1, description="Search query"),
+    vnstock_adapter = Depends(get_vnstock_adapter),
     current_user = Depends(get_current_user)
 ):
     """Search international symbols."""
-    if not query:
-        raise HTTPException(status_code=400, detail="Query parameter is required")
-    return await listing_service.search_international_symbols(query)
+    return await search_international_symbols(vnstock_adapter, query)
+
+
+@router.get("/exchanges", response_model=List[VietnameseExchange])
+async def get_exchanges_endpoint(
+    vnstock_adapter = Depends(get_vnstock_adapter),
+    current_user = Depends(get_current_user)
+):
+    """Get all available exchanges."""
+    symbols = await get_symbols_by_exchange(vnstock_adapter)
+    from app.core.application.listing_services import get_unique_exchanges
+    return get_unique_exchanges(symbols)
+
+
+@router.get("/market-groups", response_model=List[VietnameseMarketGroup])
+async def get_market_groups_endpoint(
+    current_user = Depends(get_current_user)
+):
+    """Get all available market groups."""
+    return list(VietnameseMarketGroup)
 ```
 
-## Data Structure Analysis
+Update `app/interfaces/api/v1/__init__.py` to include listing endpoints:
 
-### Symbol Data Types
+```python
+from .listing_endpoints import router as listing_router
 
-1. **Basic Symbol Info** (`all_symbols()`)
-   - 1,598 entries
-   - Columns: `ticker`, `organ_name`
-   - Simple list of all available symbols
+__all__ = ["listing_router"]
+```
 
-2. **Exchange Symbol Info** (`symbols_by_exchange()`)
-   - 2,478 entries
-   - Detailed information including exchange, company names in multiple languages
-   - Covers HOSE, HNX, UPCOM exchanges
+And include in main FastAPI app:
 
-3. **Group Symbols** (`symbols_by_group()`)
-   - VN30: 30 symbols
-   - VN100: 100 symbols
-   - Various market cap and sector groups
+```python
+# In app/main.py or app/interfaces/api/main.py
+from app.interfaces.api.v1 import listing_router
 
-4. **Industry Classification** (`symbols_by_industries()`)
-   - 1,592 entries with ICB classification
-   - 4-level industry hierarchy
-   - Both Vietnamese and English names
+app.include_router(listing_router, prefix="/api/v1")
+```
 
-5. **ICB Industries** (`industries_icb()`)
-   - 156 industry categories
-   - Hierarchical structure (levels 1-4)
+## Implementation Considerations
 
-## Error Handling Considerations
+### Error Handling
 
-1. **Rate Limiting**: vnstock has built-in rate limiting, but additional throttling may be needed
-2. **Data Source Availability**: Different sources may have different data availability
-3. **Network Timeouts**: Implement proper timeout handling for external API calls
-4. **Data Validation**: Validate returned data against expected schemas
-5. **Caching**: Implement caching for frequently accessed listing data
+The implementation leverages the existing error handling patterns in the VnstockAdapter:
 
-## Performance Considerations
+1. **Built-in Retry Logic**: Uses existing `_execute_with_retry` method
+2. **Rate Limiting**: Leverages existing `_rate_limit` functionality
+3. **Data Validation**: Strong typing with Pydantic models ensures data integrity
+4. **Exchange Validation**: Handles invalid exchange values gracefully
+5. **Query Validation**: Validates input parameters before API calls
 
-1. **Caching Strategy**: 
-   - Cache listing data for 24 hours (changes infrequently)
-   - Cache industry classifications for 7 days
-   - Cache group symbols for 1 hour
+### Performance Optimizations
 
-2. **Batch Operations**: 
-   - Process multiple symbols in batches
-   - Use async/await for concurrent operations
+1. **Functional Caching**: Uses `@lru_cache` for frequently accessed data
+2. **Memory Efficiency**: Processes data in streams rather than loading all at once
+3. **Type Safety**: Strong typing reduces runtime errors and improves performance
+4. **Concurrent Operations**: Uses async/await for non-blocking I/O operations
 
-3. **Memory Management**:
-   - Stream large datasets instead of loading all at once
-   - Implement pagination for large result sets
+### Integration with Existing Architecture
 
-## Testing Strategy
+1. **Hexagonal Architecture**: Follows established port/adapter pattern
+2. **Dependency Injection**: Uses FastAPI's dependency injection system
+3. **Functional Programming**: Pure functions with clear input/output contracts
+4. **Domain-Driven Design**: Separates domain logic from infrastructure concerns
 
-1. **Unit Tests**: Test individual adapter methods
-2. **Integration Tests**: Test service layer with mock adapters
-3. **E2E Tests**: Test complete API endpoints
-4. **Data Validation Tests**: Verify data structure and content
-
-## Dependencies
+## Dependencies Management
 
 Add to `pyproject.toml`:
 
@@ -600,29 +863,138 @@ vnstock = "^3.0.0"
 pandas = "^2.0.0"
 ```
 
-## Implementation Checklist
+Ensure these are added to the existing dependency structure rather than creating a new section.
 
-- [ ] Add new domain models for listing data
-- [ ] Extend VnstockAdapter abstract class with listing methods
-- [ ] Create VnstockListingAdapter concrete implementation
-- [ ] Create ListingService for business logic
-- [ ] Add API endpoints for listing data
-- [ ] Implement caching strategy
+## Testing Strategy
+
+### Unit Tests
+
+```python
+# tests/unit/test_listing_services.py
+import pytest
+from unittest.mock import AsyncMock, MagicMock
+from app.core.application.listing_services import get_all_symbols, filter_symbols_by_exchange
+from app.core.domain.listing_models import StockSymbol, ExchangeSymbol
+from app.core.domain.enums import VietnameseExchange
+
+@pytest.mark.asyncio
+async def test_get_all_symbols():
+    # Arrange
+    mock_adapter = AsyncMock()
+    mock_adapter.get_all_symbols.return_value = [
+        StockSymbol(ticker="VNM", organ_name="Vietnam Airlines")
+    ]
+
+    # Act
+    result = await get_all_symbols(mock_adapter)
+
+    # Assert
+    assert len(result) == 1
+    assert result[0].ticker == "VNM"
+
+def test_filter_symbols_by_exchange():
+    # Arrange
+    symbols = [
+        ExchangeSymbol(symbol="VNM", exchange=VietnameseExchange.HOSE),
+        ExchangeSymbol(symbol="FPT", exchange=VietnameseExchange.HNX)
+    ]
+
+    # Act
+    result = filter_symbols_by_exchange(symbols, VietnameseExchange.HOSE)
+
+    # Assert
+    assert len(result) == 1
+    assert result[0].symbol == "VNM"
+```
+
+### Integration Tests
+
+```python
+# tests/integration/test_listing_adapter.py
+import pytest
+from app.infrastructure.data_sources.vnstock_adapter import VnstockAdapterConfig
+from app.core.domain.enums import VnstockDataSource
+
+@pytest.mark.asyncio
+async def test_adapter_listing_methods():
+    # Arrange
+    config = VnstockAdapterConfig(data_source=VnstockDataSource.VCI)
+    adapter = VnstockConcreteAdapter(config)
+
+    # Act & Assert
+    symbols = await adapter.get_all_symbols()
+    assert len(symbols) > 0
+
+    exchanges = await adapter.get_symbols_by_exchange()
+    assert len(exchanges) > 0
+```
+
+## Enhanced Implementation Checklist
+
+### Phase 1: Domain Models and Enums
+- [ ] Extend VietnameseMarketGroup enum with additional groups
+- [ ] Create listing_models.py with all required models
+- [ ] Update domain package imports
+- [ ] Add field validators and constraints
+
+### Phase 2: Adapter Extension
+- [ ] Add abstract methods to VnstockAdapter
+- [ ] Implement concrete adapter methods
+- [ ] Add error handling and validation
+- [ ] Integrate with existing retry and rate limiting
+
+### Phase 3: Service Layer
+- [ ] Create functional service functions
+- [ ] Add filtering and utility functions
+- [ ] Implement caching strategies
 - [ ] Add comprehensive error handling
-- [ ] Create unit and integration tests
+
+### Phase 4: API Endpoints
+- [ ] Create listing endpoints
+- [ ] Add query parameters and validation
+- [ ] Implement dependency injection
+- [ ] Add proper error responses
+
+### Phase 5: Testing and Documentation
+- [ ] Create comprehensive unit tests
+- [ ] Add integration tests
+- [ ] Write E2E tests for API endpoints
 - [ ] Update API documentation
-- [ ] Add rate limiting and monitoring
+- [ ] Add performance monitoring
 
-## Next Steps
+### Phase 6: Deployment and Monitoring
+- [ ] Deploy to staging environment
+- [ ] Monitor performance metrics
+- [ ] Set up alerting for errors
+- [ ] Optimize based on usage patterns
 
-1. Review and approve this implementation plan
-2. Start with domain models and basic adapter structure
-3. Implement core listing functions one by one
-4. Add comprehensive testing
-5. Deploy and monitor performance
+## Security Considerations
+
+1. **Authentication**: All endpoints require valid user authentication
+2. **Rate Limiting**: Implement additional API rate limiting
+3. **Input Validation**: Validate all input parameters using Pydantic
+4. **Data Sanitization**: Clean all user-provided input
+5. **Access Control**: Ensure users only have access to authorized data
+
+## Monitoring and Observability
+
+1. **Logging**: Use existing structlog configuration for operation logging
+2. **Metrics**: Track API usage, response times, and error rates
+3. **Health Checks**: Add health check endpoints for adapter connectivity
+4. **Performance Monitoring**: Monitor memory usage and response times
+5. **Cache Monitoring**: Track cache hit/miss ratios
+
+## Migration Strategy
+
+1. **Backward Compatibility**: Ensure existing functionality continues to work
+2. **Gradual Rollout**: Deploy to staging first, then production
+3. **Feature Flags**: Use feature flags for gradual enablement
+4. **Data Migration**: Migrate any existing data if needed
+5. **Fallback Mechanisms**: Provide fallbacks for failed operations
 
 ## References
 
 - [Vnstock Documentation - Listing Information](https://vnstocks.com/docs/vnstock/thong-tin-niem-yet)
 - [Vnstock GitHub Repository](https://github.com/thinh-vu/vnstock)
 - [Context7 Vnstock Library Documentation](https://context7.io)
+- [Project CLAUDE.md](/Users/tunganh252/Desktop/Study/AI101/quantyFin-ai-agent/CLAUDE.md)

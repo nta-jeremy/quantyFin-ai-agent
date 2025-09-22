@@ -22,7 +22,12 @@ from app.interfaces.api.middleware import (
     create_request_logging_middleware,
     create_security_headers_middleware,
 )
-from app.interfaces.api.v1 import agent_router, health_router, hello_router
+from app.interfaces.api.v1 import (
+    agent_router,
+    health_router,
+    hello_router,
+    listing_router,
+)
 from config.settings import get_settings
 
 # Configure structured logging
@@ -102,6 +107,7 @@ def create_app() -> FastAPI:
     app.include_router(hello_router, prefix="/api/v1", tags=["general"])
     app.include_router(auth_router, prefix="/api/v1", tags=["authentication"])
     app.include_router(agent_router, prefix="/api/v1", tags=["agents"])
+    app.include_router(listing_router, prefix="/api/v1", tags=["listing"])
 
     # Global exception handler
     @app.exception_handler(HTTPException)

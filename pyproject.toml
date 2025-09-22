@@ -138,6 +138,11 @@ filterwarnings = [
     "ignore::UserWarning",
     "ignore::DeprecationWarning",
 ]
+markers = [
+    "contract: Contract tests for API endpoints",
+    "integration: Integration tests for user workflows",
+    "unit: Unit tests for individual components",
+]
 
 [tool.coverage.run]
 source = ["app"]
