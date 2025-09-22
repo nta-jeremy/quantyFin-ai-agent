@@ -6,7 +6,7 @@ This module provides centralized configuration management using Pydantic setting
 
 import os
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,7 +15,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DatabaseSettings(BaseModel):
     """Database configuration settings."""
 
-    url: str = Field(default="postgresql://quantyfin:quantyfin123@localhost:5432/quantyfin")
+    url: str = Field(
+        default="postgresql://quantyfin:quantyfin123@localhost:5432/quantyfin"
+    )
     pool_size: int = Field(default=20, ge=1)
     max_overflow: int = Field(default=10, ge=0)
     pool_timeout: int = Field(default=30, ge=1)
@@ -31,6 +33,28 @@ class RedisSettings(BaseModel):
     retry_on_timeout: bool = Field(default=True)
     socket_timeout: int = Field(default=5, ge=1)
     socket_connect_timeout: int = Field(default=5, ge=1)
+
+    # Caching settings for historical data
+    real_time_ttl: int = Field(
+        default=30, ge=1, description="Real-time data TTL in seconds"
+    )
+    intraday_ttl: int = Field(
+        default=300, ge=1, description="Intraday data TTL in seconds"
+    )
+    daily_ttl: int = Field(
+        default=3600, ge=1, description="Daily data TTL in seconds"
+    )
+    historical_ttl: int = Field(
+        default=86400, ge=1, description="Historical data TTL in seconds"
+    )
+
+    # Rate limiting settings
+    rate_limit_window: int = Field(
+        default=3600, ge=1, description="Rate limiting window in seconds"
+    )
+    rate_limit_requests: int = Field(
+        default=100, ge=1, description="Max requests per window"
+    )
 
 
 class KeycloakSettings(BaseModel):
@@ -72,6 +96,19 @@ class ExternalAPISettings(BaseModel):
     timeout: int = Field(default=30, ge=1)
     retry_attempts: int = Field(default=3, ge=1)
 
+    # Data source configuration
+    vci_base_url: str = Field(default="https://apipubaws.tcbs.com.vn")
+    tcbs_base_url: str = Field(default="https://apipubaws.tcbs.com.vn")
+    msn_base_url: str = Field(default="https://finance.services.msdk.com")
+
+    # Data source fallback settings
+    enable_fallback: bool = Field(
+        default=True, description="Enable fallback between data sources"
+    )
+    fallback_timeout: int = Field(
+        default=10, ge=1, description="Fallback timeout in seconds"
+    )
+
 
 class LoggingSettings(BaseModel):
     """Logging configuration settings."""
@@ -98,7 +135,9 @@ class AppSettings(BaseModel):
 
     name: str = Field(default="QuantyFinAI Agent")
     version: str = Field(default="0.1.0")
-    description: str = Field(default="AI-powered financial analysis and stock prediction system")
+    description: str = Field(
+        default="AI-powered financial analysis and stock prediction system"
+    )
     debug: bool = Field(default=True)
     environment: str = Field(default="development")
     api_v1_prefix: str = Field(default="/api/v1")
@@ -127,7 +166,9 @@ class Settings(BaseSettings):
     keycloak: KeycloakSettings = Field(default_factory=KeycloakSettings)
     llm: LLMProviderSettings = Field(default_factory=LLMProviderSettings)
     openai: OpenAISettings = Field(default_factory=OpenAISettings)
-    external_apis: ExternalAPISettings = Field(default_factory=ExternalAPISettings)
+    external_apis: ExternalAPISettings = Field(
+        default_factory=ExternalAPISettings
+    )
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
 

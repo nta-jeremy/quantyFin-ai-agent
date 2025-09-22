@@ -6,19 +6,19 @@ system including user registration, login, token management, and role-based acce
 """
 
 import json
-import pytest
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
-from fastapi.testclient import TestClient
+import pytest
 from fastapi import status
+from fastapi.testclient import TestClient
 
-from app.main import app
 from app.core.application.auth_service import AuthService
 from app.infrastructure.auth.keycloak_adapter import KeycloakAuthManager
 from app.infrastructure.cache.redis_adapter import RedisCacheManager
+from app.main import app
 
 
 class TestAuthentication:
@@ -44,9 +44,9 @@ class TestAuthentication:
                 "username": "testuser",
                 "email": "test@example.com",
                 "given_name": "Test",
-                "family_name": "User"
+                "family_name": "User",
             },
-            "roles": ["user"]
+            "roles": ["user"],
         }
 
         # Mock token validation
@@ -56,7 +56,7 @@ class TestAuthentication:
             "email": "test@example.com",
             "roles": ["user"],
             "active": True,
-            "exp": int((datetime.now() + timedelta(hours=1)).timestamp())
+            "exp": int((datetime.now() + timedelta(hours=1)).timestamp()),
         }
 
         # Mock user registration
@@ -71,9 +71,9 @@ class TestAuthentication:
                 "username": "newuser",
                 "email": "newuser@example.com",
                 "given_name": "New",
-                "family_name": "User"
+                "family_name": "User",
             },
-            "roles": ["user"]
+            "roles": ["user"],
         }
 
         # Mock token refresh
@@ -82,14 +82,17 @@ class TestAuthentication:
             "refresh_token": "new_refresh_token",
             "expires_in": 3600,
             "refresh_expires_in": 604800,
-            "token_type": "Bearer"
+            "token_type": "Bearer",
         }
 
         # Mock logout
         mock.logout_user.return_value = True
 
         # Mock user operations
-        mock.update_user_profile.return_value = {"user_id": "12345", "updated": True}
+        mock.update_user_profile.return_value = {
+            "user_id": "12345",
+            "updated": True,
+        }
         mock.delete_user_account.return_value = True
         mock.initiate_password_reset.return_value = True
         mock.complete_password_reset.return_value = True
@@ -109,7 +112,9 @@ class TestAuthentication:
         mock.rate_limiter.check_rate_limit.return_value = {
             "is_limited": False,
             "remaining": 95,
-            "reset_time": int((datetime.now() + timedelta(hours=1)).timestamp())
+            "reset_time": int(
+                (datetime.now() + timedelta(hours=1)).timestamp()
+            ),
         }
 
         # Mock cache operations
@@ -123,7 +128,7 @@ class TestAuthentication:
     @pytest.fixture
     def mock_auth_service(self, mock_auth_manager, mock_cache_manager):
         """Mock authentication service."""
-        with patch('app.main.auth_service') as mock_service:
+        with patch("app.main.auth_service") as mock_service:
             service = AuthService(mock_auth_manager, mock_cache_manager)
             mock_service.return_value = service
             yield service
@@ -131,8 +136,10 @@ class TestAuthentication:
     @pytest.fixture
     def client(self, mock_auth_service, mock_auth_manager, mock_cache_manager):
         """Test client with mocked authentication."""
-        with patch('app.main.auth_manager', mock_auth_manager), \
-             patch('app.main.cache_manager', mock_cache_manager):
+        with (
+            patch("app.main.auth_manager", mock_auth_manager),
+            patch("app.main.cache_manager", mock_cache_manager),
+        ):
             with TestClient(app) as test_client:
                 yield test_client
 
@@ -164,7 +171,7 @@ class TestAuthentication:
             "email": "newuser@example.com",
             "password": "SecurePassword123!",
             "first_name": "New",
-            "last_name": "User"
+            "last_name": "User",
         }
 
         response = client.post("/api/v1/auth/register", json=registration_data)
@@ -183,20 +190,14 @@ class TestAuthentication:
     def test_user_registration_invalid_data(self, client):
         """Test user registration with invalid data."""
         # Missing required fields
-        invalid_data = {
-            "username": "test",
-            "email": "invalid-email"
-        }
+        invalid_data = {"username": "test", "email": "invalid-email"}
 
         response = client.post("/api/v1/auth/register", json=invalid_data)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_user_login_success(self, client):
         """Test successful user login."""
-        login_data = {
-            "username": "testuser",
-            "password": "SecurePassword123!"
-        }
+        login_data = {"username": "testuser", "password": "SecurePassword123!"}
 
         response = client.post("/api/v1/auth/login", json=login_data)
         assert response.status_code == status.HTTP_200_OK
@@ -208,21 +209,18 @@ class TestAuthentication:
 
     def test_user_login_invalid_credentials(self, client, mock_auth_manager):
         """Test user login with invalid credentials."""
-        mock_auth_manager.authenticate_user.side_effect = Exception("Invalid credentials")
+        mock_auth_manager.authenticate_user.side_effect = Exception(
+            "Invalid credentials"
+        )
 
-        login_data = {
-            "username": "testuser",
-            "password": "wrongpassword"
-        }
+        login_data = {"username": "testuser", "password": "wrongpassword"}
 
         response = client.post("/api/v1/auth/login", json=login_data)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_token_refresh_success(self, client):
         """Test successful token refresh."""
-        refresh_data = {
-            "refresh_token": "mock_refresh_token"
-        }
+        refresh_data = {"refresh_token": "mock_refresh_token"}
 
         response = client.post("/api/v1/auth/refresh", json=refresh_data)
         assert response.status_code == status.HTTP_200_OK
@@ -234,25 +232,25 @@ class TestAuthentication:
 
     def test_token_refresh_invalid_token(self, client, mock_auth_manager):
         """Test token refresh with invalid refresh token."""
-        mock_auth_manager.refresh_token.side_effect = Exception("Invalid refresh token")
+        mock_auth_manager.refresh_token.side_effect = Exception(
+            "Invalid refresh token"
+        )
 
-        refresh_data = {
-            "refresh_token": "invalid_token"
-        }
+        refresh_data = {"refresh_token": "invalid_token"}
 
         response = client.post("/api/v1/auth/refresh", json=refresh_data)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_user_logout_success(self, client):
         """Test successful user logout."""
-        logout_data = {
-            "refresh_token": "mock_refresh_token"
-        }
+        logout_data = {"refresh_token": "mock_refresh_token"}
 
         # Add authorization header
         headers = {"Authorization": "Bearer mock_access_token"}
 
-        response = client.post("/api/v1/auth/logout", json=logout_data, headers=headers)
+        response = client.post(
+            "/api/v1/auth/logout", json=logout_data, headers=headers
+        )
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_get_current_user_info(self, client):
@@ -278,14 +276,13 @@ class TestAuthentication:
 
     def test_update_user_profile(self, client):
         """Test updating user profile."""
-        update_data = {
-            "first_name": "Updated",
-            "last_name": "User"
-        }
+        update_data = {"first_name": "Updated", "last_name": "User"}
 
         headers = {"Authorization": "Bearer mock_access_token"}
 
-        response = client.put("/api/v1/auth/me", json=update_data, headers=headers)
+        response = client.put(
+            "/api/v1/auth/me", json=update_data, headers=headers
+        )
         assert response.status_code == status.HTTP_200_OK
 
         data = response.json()
@@ -294,11 +291,11 @@ class TestAuthentication:
 
     def test_forgot_password(self, client):
         """Test forgot password functionality."""
-        forgot_data = {
-            "email": "test@example.com"
-        }
+        forgot_data = {"email": "test@example.com"}
 
-        response = client.post("/api/v1/auth/forgot-password", json=forgot_data)
+        response = client.post(
+            "/api/v1/auth/forgot-password", json=forgot_data
+        )
         assert response.status_code == status.HTTP_200_OK
 
         data = response.json()
@@ -309,7 +306,7 @@ class TestAuthentication:
         """Test password reset functionality."""
         reset_data = {
             "token": "reset_token",
-            "new_password": "NewSecurePassword123!"
+            "new_password": "NewSecurePassword123!",
         }
 
         response = client.post("/api/v1/auth/reset-password", json=reset_data)
@@ -352,16 +349,15 @@ class TestAuthentication:
 
     def test_rate_limiting(self, client, mock_cache_manager):
         """Test rate limiting functionality."""
-        login_data = {
-            "username": "testuser",
-            "password": "SecurePassword123!"
-        }
+        login_data = {"username": "testuser", "password": "SecurePassword123!"}
 
         # Mock rate limit exceeded
         mock_cache_manager.rate_limiter.check_rate_limit.return_value = {
             "is_limited": True,
             "remaining": 0,
-            "reset_time": int((datetime.now() + timedelta(hours=1)).timestamp())
+            "reset_time": int(
+                (datetime.now() + timedelta(hours=1)).timestamp()
+            ),
         }
 
         response = client.post("/api/v1/auth/login", json=login_data)
@@ -378,7 +374,9 @@ class TestAuthentication:
         assert "access-control-allow-headers" in response.headers
 
     @pytest.mark.asyncio
-    async def test_auth_service_initialization(self, mock_auth_manager, mock_cache_manager):
+    async def test_auth_service_initialization(
+        self, mock_auth_manager, mock_cache_manager
+    ):
         """Test authentication service initialization."""
         auth_service = AuthService(mock_auth_manager, mock_cache_manager)
 
@@ -388,7 +386,9 @@ class TestAuthentication:
         mock_cache_manager.initialize.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_auth_service_health_check(self, mock_auth_manager, mock_cache_manager):
+    async def test_auth_service_health_check(
+        self, mock_auth_manager, mock_cache_manager
+    ):
         """Test authentication service health check."""
         auth_service = AuthService(mock_auth_manager, mock_cache_manager)
 
@@ -400,7 +400,9 @@ class TestAuthentication:
         assert health_result["healthy"] is True
 
     @pytest.mark.asyncio
-    async def test_permission_checking(self, mock_auth_manager, mock_cache_manager):
+    async def test_permission_checking(
+        self, mock_auth_manager, mock_cache_manager
+    ):
         """Test permission checking functionality."""
         auth_service = AuthService(mock_auth_manager, mock_cache_manager)
 
@@ -408,17 +410,23 @@ class TestAuthentication:
         mock_auth_manager.adapter.get_user_roles.return_value = ["user"]
 
         # Test read permission
-        has_read_permission = await auth_service.check_permission("mock_token", "read")
+        has_read_permission = await auth_service.check_permission(
+            "mock_token", "read"
+        )
         assert has_read_permission is True
 
         # Test admin permission (should fail for regular user)
-        has_admin_permission = await auth_service.check_permission("mock_token", "manage_users")
+        has_admin_permission = await auth_service.check_permission(
+            "mock_token", "manage_users"
+        )
         assert has_admin_permission is False
 
     def test_middleware_error_handling(self, client, mock_auth_manager):
         """Test middleware error handling."""
         # Mock authentication failure
-        mock_auth_manager.validate_token.side_effect = Exception("Token validation failed")
+        mock_auth_manager.validate_token.side_effect = Exception(
+            "Token validation failed"
+        )
 
         headers = {"Authorization": "Bearer invalid_token"}
 

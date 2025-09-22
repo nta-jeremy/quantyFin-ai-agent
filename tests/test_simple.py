@@ -3,12 +3,14 @@ Simple test to check if the listing endpoints are working.
 """
 
 import asyncio
-import httpx
 import logging
+
+import httpx
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 async def test_listing_endpoints():
     """Test listing endpoints without authentication for now."""
@@ -31,7 +33,9 @@ async def test_listing_endpoints():
         # Test getting market groups (no auth required)
         try:
             response = await client.get("/listing/market-groups")
-            logger.info(f"Market groups endpoint status: {response.status_code}")
+            logger.info(
+                f"Market groups endpoint status: {response.status_code}"
+            )
             if response.status_code == 200:
                 groups = response.json()
                 logger.info(f"Available market groups: {groups}")
@@ -39,6 +43,7 @@ async def test_listing_endpoints():
                 logger.error(f"Market groups endpoint failed: {response.text}")
         except Exception as e:
             logger.error(f"Error testing market groups: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(test_listing_endpoints())

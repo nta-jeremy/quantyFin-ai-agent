@@ -3,13 +3,17 @@ Integration tests for industry classification user story.
 Tests the complete workflow of retrieving and analyzing industry classifications.
 """
 
-import pytest
+from typing import Any, Dict, List, Set
+
 import httpx
-from typing import List, Dict, Any, Set
+import pytest
 
 from tests.integration.utils import (
-    get_auth_headers, BASE_URL, assert_valid_industry_symbol,
-    assert_valid_icb_industry, get_test_config
+    BASE_URL,
+    assert_valid_icb_industry,
+    assert_valid_industry_symbol,
+    get_auth_headers,
+    get_test_config,
 )
 
 
@@ -20,14 +24,20 @@ async def test_industry_classification_workflow():
     headers = get_auth_headers()
     config = get_test_config()
 
-    async with httpx.AsyncClient(base_url=BASE_URL, timeout=config["timeout"]) as client:
+    async with httpx.AsyncClient(
+        base_url=BASE_URL, timeout=config["timeout"]
+    ) as client:
         # Step 1: Get industries data
-        industries_response = await client.get("/listing/industries", headers=headers)
+        industries_response = await client.get(
+            "/listing/industries", headers=headers
+        )
         assert industries_response.status_code == 200
         industries_data = industries_response.json()
 
         # Step 2: Get industry symbols
-        symbols_response = await client.get("/listing/symbols/industry", headers=headers)
+        symbols_response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
         assert symbols_response.status_code == 200
         symbols_data = symbols_response.json()
 
@@ -74,8 +84,13 @@ async def test_industry_hierarchy_validation():
 
     # Level 1 should have fewest industries (broad categories)
     # Level 3 should have most industries (specific industries)
-    level_counts = {level: len(industries) for level, industries in industries_by_level.items()}
-    assert level_counts[1] < level_counts[3], "Level 1 should have fewer industries than Level 3"
+    level_counts = {
+        level: len(industries)
+        for level, industries in industries_by_level.items()
+    }
+    assert (
+        level_counts[1] < level_counts[3]
+    ), "Level 1 should have fewer industries than Level 3"
 
     # Validate parent-child relationships
     level_3_industries = industries_by_level[3]
@@ -99,8 +114,12 @@ async def test_industry_symbol_mapping():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        industries_response = await client.get("/listing/industries", headers=headers)
-        symbols_response = await client.get("/listing/symbols/industry", headers=headers)
+        industries_response = await client.get(
+            "/listing/industries", headers=headers
+        )
+        symbols_response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
 
     assert industries_response.status_code == 200
     assert symbols_response.status_code == 200
@@ -119,7 +138,9 @@ async def test_industry_symbol_mapping():
             if symbol["icb_code3"] in industry_map:
                 symbols_with_valid_industries += 1
 
-    assert symbols_with_valid_industries > 0, "No symbols with valid industry mappings found"
+    assert (
+        symbols_with_valid_industries > 0
+    ), "No symbols with valid industry mappings found"
 
 
 @pytest.mark.integration
@@ -140,7 +161,7 @@ async def test_industry_filtering():
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
                 f"/listing/symbols/industry?industry_name={filter_test['industry_name']}",
-                headers=headers
+                headers=headers,
             )
 
         assert response.status_code == 200
@@ -148,8 +169,9 @@ async def test_industry_filtering():
 
         # Should have some results or empty (both valid)
         if len(data) > 0:
-            assert len(data) >= filter_test["expected_count_min"], \
-                f"Too few results for {filter_test['industry_name']}: {len(data)}"
+            assert (
+                len(data) >= filter_test["expected_count_min"]
+            ), f"Too few results for {filter_test['industry_name']}: {len(data)}"
 
             # Results should be related to the filter
             matching_symbols = 0
@@ -157,13 +179,17 @@ async def test_industry_filtering():
                 industry_fields = [
                     symbol.get("icb_name2", "").lower(),
                     symbol.get("icb_name3", "").lower(),
-                    symbol.get("icb_name4", "").lower()
+                    symbol.get("icb_name4", "").lower(),
                 ]
-                if any(filter_test["industry_name"] in field for field in industry_fields):
+                if any(
+                    filter_test["industry_name"] in field
+                    for field in industry_fields
+                ):
                     matching_symbols += 1
 
-            assert matching_symbols > 0, \
-                f"No matching symbols for filter {filter_test['industry_name']}"
+            assert (
+                matching_symbols > 0
+            ), f"No matching symbols for filter {filter_test['industry_name']}"
 
 
 @pytest.mark.integration
@@ -173,8 +199,12 @@ async def test_industry_data_consistency():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        industries_response = await client.get("/listing/industries", headers=headers)
-        symbols_response = await client.get("/listing/symbols/industry", headers=headers)
+        industries_response = await client.get(
+            "/listing/industries", headers=headers
+        )
+        symbols_response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
 
     assert industries_response.status_code == 200
     assert symbols_response.status_code == 200
@@ -185,8 +215,12 @@ async def test_industry_data_consistency():
     # Test multiple requests for consistency
     for _ in range(2):
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
-            industries_check = await client.get("/listing/industries", headers=headers)
-            symbols_check = await client.get("/listing/symbols/industry", headers=headers)
+            industries_check = await client.get(
+                "/listing/industries", headers=headers
+            )
+            symbols_check = await client.get(
+                "/listing/symbols/industry", headers=headers
+            )
 
         assert industries_check.status_code == 200
         assert symbols_check.status_code == 200
@@ -206,7 +240,7 @@ async def test_industry_error_handling():
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.get(
             "/listing/symbols/industry?industry_name=invalid_industry_12345",
-            headers=headers
+            headers=headers,
         )
 
     assert response.status_code == 200  # Should return empty array, not error
@@ -229,8 +263,12 @@ async def test_industry_analysis_capabilities():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        industries_response = await client.get("/listing/industries", headers=headers)
-        symbols_response = await client.get("/listing/symbols/industry", headers=headers)
+        industries_response = await client.get(
+            "/listing/industries", headers=headers
+        )
+        symbols_response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
 
     assert industries_response.status_code == 200
     assert symbols_response.status_code == 200
@@ -247,12 +285,14 @@ async def test_industry_analysis_capabilities():
     assert len(analysis["industry_distribution"]) > 0
 
     # Should have symbols distributed across multiple industries
-    assert len(analysis["industry_distribution"]) >= 5, \
-        f"Too few industries with symbols: {len(analysis['industry_distribution'])}"
+    assert (
+        len(analysis["industry_distribution"]) >= 5
+    ), f"Too few industries with symbols: {len(analysis['industry_distribution'])}"
 
     # Should have coverage at different hierarchy levels
-    assert len(analysis["hierarchy_coverage"]) >= 3, \
-        f"Poor hierarchy coverage: {analysis['hierarchy_coverage']}"
+    assert (
+        len(analysis["hierarchy_coverage"]) >= 3
+    ), f"Poor hierarchy coverage: {analysis['hierarchy_coverage']}"
 
 
 @pytest.mark.integration
@@ -271,22 +311,28 @@ async def test_industry_performance():
 
     assert response.status_code == 200
     industries_response_time = end_time - start_time
-    assert industries_response_time < 0.5, \
-        f"Industries response time {industries_response_time:.3f}s too slow"
+    assert (
+        industries_response_time < 0.5
+    ), f"Industries response time {industries_response_time:.3f}s too slow"
 
     # Test industry symbols endpoint performance
     start_time = time.time()
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/industry", headers=headers)
+        response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
     end_time = time.time()
 
     assert response.status_code == 200
     symbols_response_time = end_time - start_time
-    assert symbols_response_time < 1.0, \
-        f"Industry symbols response time {symbols_response_time:.3f}s too slow"
+    assert (
+        symbols_response_time < 1.0
+    ), f"Industry symbols response time {symbols_response_time:.3f}s too slow"
 
 
-def analyze_industry_hierarchy(industries: List[Dict[str, Any]]) -> Dict[str, Any]:
+def analyze_industry_hierarchy(
+    industries: List[Dict[str, Any]],
+) -> Dict[str, Any]:
     """Analyze industry hierarchy structure."""
     by_level = {}
     level_counts = {}
@@ -337,8 +383,7 @@ def analyze_symbol_industries(symbols: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def perform_industry_analysis(
-    industries: List[Dict[str, Any]],
-    symbols: List[Dict[str, Any]]
+    industries: List[Dict[str, Any]], symbols: List[Dict[str, Any]]
 ) -> Dict[str, Any]:
     """Perform comprehensive industry analysis."""
     # Count symbols by industry (level 3)
@@ -347,7 +392,9 @@ def perform_industry_analysis(
     for symbol in symbols:
         if "icb_name3" in symbol and symbol["icb_name3"]:
             industry = symbol["icb_name3"]
-            industry_distribution[industry] = industry_distribution.get(industry, 0) + 1
+            industry_distribution[industry] = (
+                industry_distribution.get(industry, 0) + 1
+            )
 
     # Analyze hierarchy coverage
     hierarchy_coverage = {}
@@ -362,8 +409,6 @@ def perform_industry_analysis(
         "industry_distribution": industry_distribution,
         "hierarchy_coverage": hierarchy_coverage,
         "top_industries": sorted(
-            industry_distribution.items(),
-            key=lambda x: x[1],
-            reverse=True
+            industry_distribution.items(), key=lambda x: x[1], reverse=True
         )[:10],
     }

@@ -3,12 +3,16 @@ Integration tests for exchange filtering user story.
 Tests the complete workflow of filtering symbols by exchange.
 """
 
-import pytest
+from typing import Any, Dict, List
+
 import httpx
-from typing import List, Dict, Any
+import pytest
 
 from tests.integration.utils import (
-    get_auth_headers, BASE_URL, assert_valid_exchange_symbol, get_test_config
+    BASE_URL,
+    assert_valid_exchange_symbol,
+    get_auth_headers,
+    get_test_config,
 )
 
 
@@ -19,9 +23,13 @@ async def test_exchange_filtering_workflow():
     headers = get_auth_headers()
     config = get_test_config()
 
-    async with httpx.AsyncClient(base_url=BASE_URL, timeout=config["timeout"]) as client:
+    async with httpx.AsyncClient(
+        base_url=BASE_URL, timeout=config["timeout"]
+    ) as client:
         # Step 1: Get all symbols by exchange
-        response = await client.get("/listing/symbols/exchange", headers=headers)
+        response = await client.get(
+            "/listing/symbols/exchange", headers=headers
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -40,7 +48,8 @@ async def test_exchange_filtering_workflow():
         exchanges = ["HOSE", "HNX", "UPCOM"]
         for exchange in exchanges:
             response = await client.get(
-                f"/listing/symbols/exchange?exchange={exchange}", headers=headers
+                f"/listing/symbols/exchange?exchange={exchange}",
+                headers=headers,
             )
             assert response.status_code == 200
 
@@ -52,7 +61,9 @@ async def test_exchange_filtering_workflow():
                 assert symbol["exchange"] == exchange
 
         # Step 5: Test caching behavior
-        response2 = await client.get("/listing/symbols/exchange", headers=headers)
+        response2 = await client.get(
+            "/listing/symbols/exchange", headers=headers
+        )
         assert response2.status_code == 200
         data2 = response2.json()
 
@@ -72,7 +83,8 @@ async def test_exchange_specific_analysis():
     for exchange in exchanges:
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
-                f"/listing/symbols/exchange?exchange={exchange}", headers=headers
+                f"/listing/symbols/exchange?exchange={exchange}",
+                headers=headers,
             )
 
         assert response.status_code == 200
@@ -85,17 +97,29 @@ async def test_exchange_specific_analysis():
         # Validate exchange-specific requirements
         if exchange == "HOSE":
             # HOSE should have the most symbols
-            assert len(data) > 300, f"HOSE should have >300 symbols, got {len(data)}"
+            assert (
+                len(data) > 300
+            ), f"HOSE should have >300 symbols, got {len(data)}"
         elif exchange == "HNX":
             # HNX should have moderate number of symbols
-            assert len(data) > 100, f"HNX should have >100 symbols, got {len(data)}"
+            assert (
+                len(data) > 100
+            ), f"HNX should have >100 symbols, got {len(data)}"
         elif exchange == "UPCOM":
             # UPCOM should have some symbols
-            assert len(data) > 50, f"UPCOM should have >50 symbols, got {len(data)}"
+            assert (
+                len(data) > 50
+            ), f"UPCOM should have >50 symbols, got {len(data)}"
 
     # Validate relative sizes (HOSE > HNX > UPCOM typically)
-    assert exchange_stats["HOSE"]["total_count"] > exchange_stats["HNX"]["total_count"]
-    assert exchange_stats["HNX"]["total_count"] > exchange_stats["UPCOM"]["total_count"]
+    assert (
+        exchange_stats["HOSE"]["total_count"]
+        > exchange_stats["HNX"]["total_count"]
+    )
+    assert (
+        exchange_stats["HNX"]["total_count"]
+        > exchange_stats["UPCOM"]["total_count"]
+    )
 
 
 @pytest.mark.integration
@@ -106,7 +130,9 @@ async def test_exchange_data_consistency():
 
     # Get all exchanges data
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        all_response = await client.get("/listing/symbols/exchange", headers=headers)
+        all_response = await client.get(
+            "/listing/symbols/exchange", headers=headers
+        )
 
     assert all_response.status_code == 200
     all_data = all_response.json()
@@ -118,15 +144,17 @@ async def test_exchange_data_consistency():
     for exchange in exchanges:
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
-                f"/listing/symbols/exchange?exchange={exchange}", headers=headers
+                f"/listing/symbols/exchange?exchange={exchange}",
+                headers=headers,
             )
             assert response.status_code == 200
             individual_data[exchange] = response.json()
 
     # Verify that union of individual requests equals all data
     total_individual = sum(len(data) for data in individual_data.values())
-    assert total_individual == len(all_data), \
-        f"Total symbols mismatch: all={len(all_data)}, sum_individual={total_individual}"
+    assert total_individual == len(
+        all_data
+    ), f"Total symbols mismatch: all={len(all_data)}, sum_individual={total_individual}"
 
     # Verify no overlaps between exchanges
     all_tickers = set()
@@ -135,7 +163,9 @@ async def test_exchange_data_consistency():
         overlap = all_tickers.intersection(exchange_tickers)
 
         if overlap:
-            pytest.fail(f"Overlap between exchanges: {overlap} found in {exchange}")
+            pytest.fail(
+                f"Overlap between exchanges: {overlap} found in {exchange}"
+            )
 
         all_tickers.update(exchange_tickers)
 
@@ -172,7 +202,9 @@ async def test_exchange_symbol_properties():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/exchange", headers=headers)
+        response = await client.get(
+            "/listing/symbols/exchange", headers=headers
+        )
 
     assert response.status_code == 200
     data = response.json()
@@ -201,12 +233,15 @@ async def test_exchange_symbol_properties():
     # Should find common symbol types
     expected_types = {"STOCK", "ETF", "CW", "BOND"}
     found_types = symbol_types.intersection(expected_types)
-    assert len(found_types) > 0, f"No common symbol types found. Found: {symbol_types}"
+    assert (
+        len(found_types) > 0
+    ), f"No common symbol types found. Found: {symbol_types}"
 
     # Should find all expected exchanges
     expected_exchanges = {"HOSE", "HNX", "UPCOM"}
-    assert expected_exchanges.issubset(exchanges_found), \
-        f"Missing exchanges. Found: {exchanges_found}"
+    assert expected_exchanges.issubset(
+        exchanges_found
+    ), f"Missing exchanges. Found: {exchanges_found}"
 
 
 @pytest.mark.integration
@@ -220,7 +255,9 @@ async def test_exchange_performance():
     # Test response time for all exchanges
     start_time = time.time()
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/exchange", headers=headers)
+        response = await client.get(
+            "/listing/symbols/exchange", headers=headers
+        )
     end_time = time.time()
 
     assert response.status_code == 200
@@ -233,17 +270,21 @@ async def test_exchange_performance():
         start_time = time.time()
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
-                f"/listing/symbols/exchange?exchange={exchange}", headers=headers
+                f"/listing/symbols/exchange?exchange={exchange}",
+                headers=headers,
             )
         end_time = time.time()
 
         assert response.status_code == 200
         filtered_response_time = end_time - start_time
-        assert filtered_response_time < 0.5, \
-            f"Filtered response time for {exchange} {filtered_response_time:.2f}s too slow"
+        assert (
+            filtered_response_time < 0.5
+        ), f"Filtered response time for {exchange} {filtered_response_time:.2f}s too slow"
 
 
-def analyze_exchange_data(symbols_list: List[List[Dict[str, Any]]]) -> Dict[str, Any]:
+def analyze_exchange_data(
+    symbols_list: List[List[Dict[str, Any]]],
+) -> Dict[str, Any]:
     """Analyze exchange data and return statistics."""
     all_symbols = []
     for symbols in symbols_list:
@@ -254,7 +295,7 @@ def analyze_exchange_data(symbols_list: List[List[Dict[str, Any]]]) -> Dict[str,
             "total_count": 0,
             "by_exchange": {},
             "by_type": {},
-            "symbol_id_range": {"min": 0, "max": 0}
+            "symbol_id_range": {"min": 0, "max": 0},
         }
 
     # Group by exchange
@@ -279,6 +320,6 @@ def analyze_exchange_data(symbols_list: List[List[Dict[str, Any]]]) -> Dict[str,
         "by_type": by_type,
         "symbol_id_range": {
             "min": min(symbol_ids) if symbol_ids else 0,
-            "max": max(symbol_ids) if symbol_ids else 0
-        }
+            "max": max(symbol_ids) if symbol_ids else 0,
+        },
     }

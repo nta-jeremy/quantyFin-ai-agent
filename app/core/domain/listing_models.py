@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from .enums import VietnameseExchange, VnstockDataSource
 
@@ -27,14 +27,16 @@ class ICBIndustry(BaseModel):
     icb_code: str = Field(..., min_length=1, description="ICB code identifier")
     level: int = Field(..., ge=1, le=4, description="Hierarchy level (1-4)")
 
-    @validator("icb_code")
+    @field_validator("icb_code")
+    @classmethod
     def validate_icb_code(cls, v: str) -> str:
         """Validate ICB code format."""
         if not v.isdigit() or len(v) > 10:
             raise ValueError("ICB code must be numeric and maximum 10 digits")
         return v
 
-    @validator("icb_name", "en_icb_name")
+    @field_validator("icb_name", "en_icb_name")
+    @classmethod
     def validate_industry_names(cls, v: str) -> str:
         """Validate industry names."""
         if len(v.strip()) == 0:
@@ -54,7 +56,8 @@ class StockSymbol(BaseModel):
         ..., min_length=1, description="Company name in Vietnamese"
     )
 
-    @validator("ticker")
+    @field_validator("ticker")
+    @classmethod
     def validate_ticker(cls, v: str) -> str:
         """Validate ticker format."""
         ticker_upper = v.upper().strip()
@@ -64,7 +67,8 @@ class StockSymbol(BaseModel):
             raise ValueError("Ticker must be 2-4 uppercase letters")
         return ticker_upper
 
-    @validator("organ_name")
+    @field_validator("organ_name")
+    @classmethod
     def validate_organ_name(cls, v: str) -> str:
         """Validate company name."""
         if len(v.strip()) == 0:
@@ -94,7 +98,8 @@ class ExchangeSymbol(BaseModel):
         None, max_length=200, description="Vietnamese company name"
     )
 
-    @validator("symbol")
+    @field_validator("symbol")
+    @classmethod
     def validate_symbol(cls, v: str) -> str:
         """Validate symbol format."""
         symbol_upper = v.upper().strip()
@@ -151,7 +156,8 @@ class IndustrySymbol(BaseModel):
         None, max_length=10, description="ICB code level 4"
     )
 
-    @validator("symbol")
+    @field_validator("symbol")
+    @classmethod
     def validate_symbol(cls, v: str) -> str:
         """Validate symbol format."""
         symbol_upper = v.upper().strip()
@@ -161,14 +167,16 @@ class IndustrySymbol(BaseModel):
             raise ValueError("Symbol must be 2-4 uppercase letters")
         return symbol_upper
 
-    @validator("organ_name", "icb_name3")
+    @field_validator("organ_name", "icb_name3")
+    @classmethod
     def validate_required_names(cls, v: str) -> str:
         """Validate required name fields."""
         if len(v.strip()) == 0:
             raise ValueError("Field cannot be empty or just whitespace")
         return v.strip()
 
-    @validator("icb_code1", "icb_code2", "icb_code3", "icb_code4")
+    @field_validator("icb_code1", "icb_code2", "icb_code3", "icb_code4")
+    @classmethod
     def validate_icb_codes(cls, v: Optional[str]) -> Optional[str]:
         """Validate ICB codes format."""
         if v is not None:
@@ -200,7 +208,8 @@ class InternationalSymbol(BaseModel):
     local_name: str = Field(..., min_length=1, description="Localized name")
     locale: str = Field(..., min_length=1, description="Locale identifier")
 
-    @validator("locale")
+    @field_validator("locale")
+    @classmethod
     def validate_locale(cls, v: str) -> str:
         """Validate locale format."""
         locale_parts = v.split("-")
@@ -214,7 +223,8 @@ class InternationalSymbol(BaseModel):
             )
         return v.lower()
 
-    @validator("exchange_code_mic")
+    @field_validator("exchange_code_mic")
+    @classmethod
     def validate_mic_code(cls, v: str) -> str:
         """Validate Market Identifier Code format."""
         if not v.isalpha() or len(v) != 4:
@@ -239,7 +249,8 @@ class ListingData(BaseModel):
         3600, ge=1, description="Cache time-to-live"
     )
 
-    @validator("data_source")
+    @field_validator("data_source")
+    @classmethod
     def validate_data_source(cls, v: str) -> str:
         """Validate data source."""
         valid_sources = [source.value for source in VnstockDataSource]

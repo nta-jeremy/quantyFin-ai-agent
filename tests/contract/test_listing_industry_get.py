@@ -3,11 +3,12 @@ Contract tests for industry symbols endpoint.
 Tests the GET /listing/symbols/industry endpoint according to OpenAPI specification.
 """
 
-import pytest
-import httpx
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from tests.integration.utils import get_auth_headers, BASE_URL
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers
 
 
 @pytest.mark.contract
@@ -29,7 +30,9 @@ async def test_get_symbols_by_industry_all_success():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/industry", headers=headers)
+        response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -57,7 +60,8 @@ async def test_get_symbols_by_industry_filtered_success():
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.get(
-            "/listing/symbols/industry?industry_name=technology", headers=headers
+            "/listing/symbols/industry?industry_name=technology",
+            headers=headers,
         )
 
     assert response.status_code == 200
@@ -71,7 +75,12 @@ async def test_get_symbols_by_industry_filtered_success():
         industry_name = symbol["icb_name3"].lower()
         assert any(
             tech_term in industry_name
-            for tech_term in ["công nghệ", "technology", "phần mềm", "software"]
+            for tech_term in [
+                "công nghệ",
+                "technology",
+                "phần mềm",
+                "software",
+            ]
         )
 
 
@@ -82,7 +91,9 @@ async def test_get_symbols_by_industry_response_format():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/industry", headers=headers)
+        response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -92,9 +103,7 @@ async def test_get_symbols_by_industry_response_format():
     # Validate each item in the array
     for symbol in data:
         assert isinstance(symbol, dict)
-        required_fields = [
-            "symbol", "organ_name", "icb_name3"
-        ]
+        required_fields = ["symbol", "organ_name", "icb_name3"]
         for field in required_fields:
             assert field in symbol, f"Missing required field: {field}"
 
@@ -114,8 +123,13 @@ async def test_get_symbols_by_industry_response_format():
 
         # Validate optional fields if present
         optional_fields = [
-            "en_organ_name", "en_icb_name3", "icb_name2", "en_icb_name2",
-            "icb_name4", "en_icb_name4", "com_type_code"
+            "en_organ_name",
+            "en_icb_name3",
+            "icb_name2",
+            "en_icb_name2",
+            "icb_name4",
+            "en_icb_name4",
+            "com_type_code",
         ]
         for field in optional_fields:
             if field in symbol:
@@ -129,7 +143,9 @@ async def test_get_symbols_by_industry_icb_codes():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/industry", headers=headers)
+        response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -154,7 +170,9 @@ async def test_get_symbols_by_industry_hierarchy():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/industry", headers=headers)
+        response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -162,7 +180,8 @@ async def test_get_symbols_by_industry_hierarchy():
 
     # Check for symbols with complete hierarchy
     symbols_with_hierarchy = [
-        s for s in data
+        s
+        for s in data
         if all(field in s for field in ["icb_name2", "icb_name3", "icb_name4"])
     ]
 
@@ -186,7 +205,9 @@ async def test_get_symbols_by_industry_english_names():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/industry", headers=headers)
+        response = await client.get(
+            "/listing/symbols/industry", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -194,7 +215,8 @@ async def test_get_symbols_by_industry_english_names():
 
     # Check for symbols with both Vietnamese and English names
     symbols_with_translations = [
-        s for s in data
+        s
+        for s in data
         if all(field in s for field in ["organ_name", "en_organ_name"])
     ]
 
@@ -217,14 +239,18 @@ async def test_get_symbols_by_industry_filter_validation():
 
     # Test with various valid industry filters
     test_industries = [
-        "technology", "banks", "phần mềm", "ngân hàng", "công nghệ"
+        "technology",
+        "banks",
+        "phần mềm",
+        "ngân hàng",
+        "công nghệ",
     ]
 
     for industry in test_industries:
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
                 f"/listing/symbols/industry?industry_name={industry}",
-                headers=headers
+                headers=headers,
             )
 
         assert response.status_code == 200
@@ -236,9 +262,10 @@ async def test_get_symbols_by_industry_filter_validation():
         if data:
             # At least some symbols should match the filter
             matching_symbols = [
-                s for s in data
-                if industry.lower() in s.get("icb_name3", "").lower() or
-                   industry.lower() in s.get("icb_name2", "").lower() or
-                   industry.lower() in s.get("icb_name4", "").lower()
+                s
+                for s in data
+                if industry.lower() in s.get("icb_name3", "").lower()
+                or industry.lower() in s.get("icb_name2", "").lower()
+                or industry.lower() in s.get("icb_name4", "").lower()
             ]
             assert len(matching_symbols) > 0

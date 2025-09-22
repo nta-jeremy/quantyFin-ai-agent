@@ -1,589 +1,565 @@
-"""TCBS adapter for Vietnamese market data."""
+"""
+TCBS (Techcom Securities) data source adapter.
+
+This module provides the infrastructure layer implementation for TCBS data source
+following hexagonal architecture principles.
+"""
 
 import asyncio
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-from uuid import uuid4
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
+import aiohttp
 import pandas as pd
-from vnstock.explorer.tcbs import Company, Finance, Quote, Screener, Trading
 
-from app.core.domain.company_models import VietnameseCompany
-from app.core.domain.enums import VietnameseExchange, VnstockDataSource
-from app.core.domain.financial_models import (
-    VietnameseFinancialMetrics,
-    VietnameseFinancialReport,
+from app.core.domain.data_source_models import (
+    DataSource,
+    DataSourceConfig,
+    DataSourceHealth,
+    DataSourceMetrics,
+    DataSourceStatus,
 )
-from app.core.domain.stock_models import VietnameseStock
-from app.core.domain.vietnamese_market_data import (
-    VietnameseMarketData,
-    VietnameseNews,
+from app.core.domain.historical_models import (
+    AssetType,
+    DataSourceUnavailableError,
+    DataValidationError,
+    HistoricalDataError,
+    HistoricalDataRequest,
+    HistoricalDataResponse,
+    InvalidParameterError,
+    NetworkError,
+    OHLCVTData,
+    RateLimitExceededError,
+    SymbolNotFoundError,
+    TimeInterval,
+    TimeoutError,
 )
 
-from .vnstock_adapter import VnstockAdapter, VnstockAdapterConfig
 
+class TCBSAdapter:
+    """TCBS data source adapter implementation."""
 
-class TCBSAdapter(VnstockAdapter):
-    """TCBS data source adapter."""
+    def __init__(self, config: DataSourceConfig):
+        """Initialize TCBS adapter with configuration."""
+        self.config = config
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.metrics = DataSourceMetrics(data_source=DataSource.TCBS)
+        self.last_request_time = 0
+        self.request_count = 0
+        self._rate_limit_window = 60  # 1 minute window
+        self.logger = logging.getLogger(__name__)
 
-    def __init__(self, config: VnstockAdapterConfig):
-        """Initialize TCBS adapter.
+    async def initialize(self) -> None:
+        """Initialize HTTP session."""
+        self.logger.info("TCBS: Initializing adapter")
+        timeout = aiohttp.ClientTimeout(total=self.config.timeout_seconds)
+        connector = aiohttp.TCPConnector(limit=10, limit_per_host=5)
+        self.session = aiohttp.ClientSession(
+            timeout=timeout,
+            connector=connector,
+            headers={
+                "User-Agent": "QuantyFin-AI-Agent/1.0",
+                "Accept": "application/json",
+            },
+        )
 
-        Args:
-            config: Configuration for the adapter
-        """
-        super().__init__(config)
-        self._quote_client: Optional[Quote] = None
-        self._company_client: Optional[Company] = None
-        self._finance_client: Optional[Finance] = None
-        self._trading_client: Optional[Trading] = None
-        self._screener_client: Optional[Screener] = None
+    async def close(self) -> None:
+        """Close HTTP session."""
+        self.logger.info("TCBS: Closing adapter")
+        if self.session:
+            await self.session.close()
+            self.logger.debug("TCBS: HTTP session closed")
 
-    async def _get_quote_client(self) -> Quote:
-        """Get or create Quote client."""
-        if self._quote_client is None:
-            self._quote_client = Quote()
-        return self._quote_client
+    async def check_health(self) -> DataSourceHealth:
+        """Check TCBS data source health."""
+        start_time = datetime.now(timezone.utc)
+        success = False
+        error_message = None
 
-    async def _get_company_client(self, symbol: str) -> Company:
-        """Get or create Company client for symbol."""
-        return Company(symbol)
+        try:
+            # Test with a simple endpoint or known symbol
+            test_url = f"{self.config.base_url}/api/v1/stock/historical"
+            params = {"symbol": "VNM", "interval": "1D", "limit": 1}
 
-    async def _get_finance_client(self, symbol: str) -> Finance:
-        """Get or create Finance client for symbol."""
-        return Finance(symbol)
+            async with self.session.get(
+                test_url, params=params, timeout=10
+            ) as response:
+                if response.status == 200:
+                    success = True
+                elif response.status == 429:
+                    error_message = "Rate limit exceeded"
+                elif response.status >= 500:
+                    error_message = f"Server error: {response.status}"
+                else:
+                    error_message = f"HTTP error: {response.status}"
 
-    async def _get_trading_client(self) -> Trading:
-        """Get or create Trading client."""
-        if self._trading_client is None:
-            self._trading_client = Trading()
-        return self._trading_client
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            error_message = f"Connection error: {str(e)}"
 
-    async def _get_screener_client(self) -> Screener:
-        """Get or create Screener client."""
-        if self._screener_client is None:
-            self._screener_client = Screener()
-        return self._screener_client
+        except Exception as e:
+            error_message = f"Unexpected error: {str(e)}"
+
+        response_time_ms = (
+            datetime.now(timezone.utc) - start_time
+        ).total_seconds() * 1000
+
+        status = (
+            DataSourceStatus.AVAILABLE
+            if success
+            else DataSourceStatus.UNAVAILABLE
+        )
+
+        return DataSourceHealth(
+            data_source=DataSource.TCBS,
+            status=status,
+            response_time_ms=response_time_ms,
+            last_checked=datetime.now(timezone.utc),
+            error_message=error_message,
+            success_rate=self.metrics.successful_requests
+            / max(self.metrics.total_requests, 1),
+        )
+
+    async def _respect_rate_limit(self) -> None:
+        """Respect rate limiting for TCBS API."""
+        current_time = asyncio.get_event_loop().time()
+        time_since_last_request = current_time - self.last_request_time
+
+        # Check if we need to wait based on rate limit
+        if self.request_count >= self.config.rate_limit_per_minute:
+            if time_since_last_request < self._rate_limit_window:
+                wait_time = self._rate_limit_window - time_since_last_request
+                await asyncio.sleep(wait_time)
+                self.request_count = 0  # Reset counter after waiting
+
+        # Minimum delay between requests
+        if time_since_last_request < 0.5:  # 500ms minimum
+            await asyncio.sleep(0.5 - time_since_last_request)
+
+        self.last_request_time = asyncio.get_event_loop().time()
+        self.request_count += 1
 
     async def get_historical_data(
-        self,
-        symbol: str,
-        start_date: datetime,
-        end_date: datetime,
-        interval: str = "1D",
-    ) -> List[VietnameseStock]:
-        """Get historical stock data from TCBS.
-
-        Args:
-            symbol: Stock symbol
-            start_date: Start date for data retrieval
-            end_date: End date for data retrieval
-            interval: Data interval (1D, 1H, etc.)
-
-        Returns:
-            List of Vietnamese stock data
-        """
-        symbol = self._validate_symbol(symbol)
-        self._validate_date_range(start_date, end_date)
-
-        self._log_operation(
-            "get_historical_data",
-            symbol=symbol,
-            start_date=start_date.isoformat(),
-            end_date=end_date.isoformat(),
-            interval=interval,
+        self, request: HistoricalDataRequest
+    ) -> HistoricalDataResponse:
+        """Get historical data from TCBS."""
+        self.logger.info(
+            f"TCBS: Starting historical data request for {request.symbol} ({request.asset_type})"
+        )
+        self.logger.debug(
+            f"TCBS: Request details - interval: {request.interval.value}, "
+            f"date range: {request.start_date.strftime('%Y-%m-%d')} to {request.end_date.strftime('%Y-%m-%d')}"
         )
 
-        async def _fetch_data():
-            await self._rate_limit()
-            quote_client = await self._get_quote_client()
-
-            # Convert datetime to string format expected by vnstock
-            start_str = start_date.strftime("%Y-%m-%d")
-            end_str = end_date.strftime("%Y-%m-%d")
-
-            df = quote_client.history(
-                symbol=symbol,
-                start=start_str,
-                end=end_str,
-                interval=interval,
+        if not self.session:
+            self.logger.error("TCBS: Session not initialized")
+            raise DataSourceUnavailableError(
+                "Session not initialized", DataSource.TCBS
             )
 
-            return self._convert_dataframe_to_stocks(df, symbol)
+        await self._respect_rate_limit()
+        self.logger.debug("TCBS: Rate limit check passed")
 
-        return await self._execute_with_retry(_fetch_data)
+        start_time = datetime.now(timezone.utc)
+        url = f"{self.config.base_url}/api/v1/stock/historical"
+        self.logger.debug(f"TCBS: Making request to {url}")
 
-    async def get_company_info(
-        self, symbol: str
-    ) -> Optional[VietnameseCompany]:
-        """Get company information from TCBS.
+        # Build request parameters
+        params = {
+            "symbol": request.symbol,
+            "interval": request.interval.value,
+            "start_date": request.start_date.strftime("%Y-%m-%d"),
+            "end_date": request.end_date.strftime("%Y-%m-%d"),
+        }
 
-        Args:
-            symbol: Stock symbol
+        # Add optional parameters
+        if request.data_source and request.data_source.lower() == "tcbs":
+            params["source"] = "tcbs"
 
-        Returns:
-            Company information or None if not found
-        """
-        symbol = self._validate_symbol(symbol)
+        data_points = []
 
-        self._log_operation("get_company_info", symbol=symbol)
+        try:
+            async with self.session.get(url, params=params) as response:
+                response_time_ms = (
+                    datetime.now(timezone.utc) - start_time
+                ).total_seconds() * 1000
 
-        async def _fetch_company():
-            await self._rate_limit()
-            company_client = await self._get_company_client(symbol)
+                if response.status == 200:
+                    data = await response.json()
+                    data_points = self._parse_historical_data(data, request)
+                    success = True
+                elif response.status == 404:
+                    raise SymbolNotFoundError(
+                        f"Symbol {request.symbol} not found in TCBS",
+                        request.symbol,
+                        request.asset_type,
+                    )
+                elif response.status == 429:
+                    raise RateLimitExceededError(
+                        "Rate limit exceeded for TCBS",
+                        request.symbol,
+                        request.asset_type,
+                    )
+                elif response.status >= 500:
+                    raise DataSourceUnavailableError(
+                        f"TCBS server error: {response.status}",
+                        request.symbol,
+                        request.asset_type,
+                    )
+                else:
+                    raise InvalidParameterError(
+                        f"Invalid request parameters: {response.status}",
+                        request.symbol,
+                        request.asset_type,
+                    )
 
-            # Get company overview
-            overview_df = company_client.overview()
-            if overview_df is None or overview_df.empty:
-                return None
+        except aiohttp.ClientError as e:
+            raise NetworkError(
+                f"Network error connecting to TCBS: {str(e)}",
+                request.symbol,
+                request.asset_type,
+            )
 
-            # Convert to VietnameseCompany
-            return self._convert_overview_to_company(overview_df, symbol)
+        except asyncio.TimeoutError:
+            raise TimeoutError(
+                "Request to TCBS timed out", request.symbol, request.asset_type
+            )
 
-        return await self._execute_with_retry(_fetch_company)
+        except ValueError as e:
+            raise DataValidationError(
+                f"Failed to parse TCBS response: {str(e)}",
+                request.symbol,
+                request.asset_type,
+            )
 
-    async def get_financial_reports(
-        self,
-        symbol: str,
-        period: str = "year",
-        language: str = "vi",
-    ) -> List[VietnameseFinancialReport]:
-        """Get financial reports from TCBS.
+        except Exception as e:
+            raise HistoricalDataError(
+                f"Unexpected error with TCBS: {str(e)}",
+                request.symbol,
+                request.asset_type,
+            )
 
-        Args:
-            symbol: Stock symbol
-            period: Report period (year, quarter)
-            language: Report language (vi, en)
+        finally:
+            # Record metrics
+            self.metrics.record_request(
+                data_source=DataSource.TCBS,
+                success=success,
+                response_time_ms=response_time_ms,
+                data_points=len(data_points),
+            )
 
-        Returns:
-            List of financial reports
-        """
-        symbol = self._validate_symbol(symbol)
-
-        self._log_operation(
-            "get_financial_reports",
-            symbol=symbol,
-            period=period,
-            language=language,
+        return HistoricalDataResponse(
+            symbol=request.symbol,
+            asset_type=request.asset_type,
+            data_source="TCBS",
+            interval=request.interval,
+            data=data_points,
+            total_records=len(data_points),
         )
-
-        async def _fetch_reports():
-            await self._rate_limit()
-            finance_client = await self._get_finance_client(symbol)
-
-            reports = []
-
-            # Get balance sheet
-            balance_sheet = finance_client.balance_sheet(
-                period=period,
-                lang=language,
-                dropna=True,
-            )
-            if balance_sheet is not None and not balance_sheet.empty:
-                reports.append(
-                    self._convert_balance_sheet_to_report(
-                        balance_sheet, symbol, period, language
-                    )
-                )
-
-            # Get income statement
-            income_statement = finance_client.income_statement(
-                period=period,
-                lang=language,
-                dropna=True,
-            )
-            if income_statement is not None and not income_statement.empty:
-                reports.append(
-                    self._convert_income_statement_to_report(
-                        income_statement, symbol, period, language
-                    )
-                )
-
-            # Get cash flow
-            cash_flow = finance_client.cash_flow(
-                period=period,
-                dropna=True,
-            )
-            if cash_flow is not None and not cash_flow.empty:
-                reports.append(
-                    self._convert_cash_flow_to_report(
-                        cash_flow, symbol, period, language
-                    )
-                )
-
-            return reports
-
-        return await self._execute_with_retry(_fetch_reports)
-
-    async def get_financial_metrics(
-        self,
-        symbol: str,
-        period: str = "year",
-        language: str = "vi",
-    ) -> Optional[VietnameseFinancialMetrics]:
-        """Get financial metrics from TCBS.
-
-        Args:
-            symbol: Stock symbol
-            period: Report period (year, quarter)
-            language: Report language (vi, en)
-
-        Returns:
-            Financial metrics or None if not found
-        """
-        symbol = self._validate_symbol(symbol)
-
-        self._log_operation(
-            "get_financial_metrics",
-            symbol=symbol,
-            period=period,
-            language=language,
-        )
-
-        async def _fetch_metrics():
-            await self._rate_limit()
-            finance_client = await self._get_finance_client(symbol)
-
-            # Get financial ratios
-            ratios_df = finance_client.ratio(
-                period=period,
-                lang=language,
-                flatten_columns=True,
-                drop_levels=[0],
-                dropna=True,
-            )
-
-            if ratios_df is None or ratios_df.empty:
-                return None
-
-            return self._convert_ratios_to_metrics(ratios_df, symbol)
-
-        return await self._execute_with_retry(_fetch_metrics)
 
     async def get_real_time_quote(
-        self, symbol: str
-    ) -> Optional[VietnameseStock]:
-        """Get real-time stock quote from TCBS.
-
-        Args:
-            symbol: Stock symbol
-
-        Returns:
-            Real-time stock data or None if not available
-        """
-        symbol = self._validate_symbol(symbol)
-
-        self._log_operation("get_real_time_quote", symbol=symbol)
-
-        async def _fetch_quote():
-            await self._rate_limit()
-            trading_client = await self._get_trading_client()
-
-            # Get price board data
-            price_board = trading_client.price_board([symbol])
-
-            if price_board is None or price_board.empty:
-                return None
-
-            return self._convert_price_board_to_stock(price_board, symbol)
-
-        return await self._execute_with_retry(_fetch_quote)
-
-    async def get_market_data(
-        self,
-        exchange: VietnameseExchange,
-        date: Optional[datetime] = None,
-    ) -> Optional[VietnameseMarketData]:
-        """Get market-wide data from TCBS.
-
-        Args:
-            exchange: Vietnamese exchange
-            date: Date for market data (defaults to latest)
-
-        Returns:
-            Market data or None if not available
-        """
-        self._log_operation(
-            "get_market_data",
-            exchange=exchange.value,
-            date=date.isoformat() if date else None,
-        )
-
-        async def _fetch_market_data():
-            await self._rate_limit()
-            # TCBS might have market data endpoints
-            # This would need to be implemented based on available TCBS endpoints
-            return None
-
-        return await self._execute_with_retry(_fetch_market_data)
-
-    async def get_company_news(
-        self,
-        symbol: str,
-        limit: int = 10,
-    ) -> List[VietnameseNews]:
-        """Get company news from TCBS.
-
-        Args:
-            symbol: Stock symbol
-            limit: Maximum number of news items
-
-        Returns:
-            List of news items
-        """
-        symbol = self._validate_symbol(symbol)
-
-        self._log_operation("get_company_news", symbol=symbol, limit=limit)
-
-        async def _fetch_news():
-            await self._rate_limit()
-            company_client = await self._get_company_client(symbol)
-
-            news_df = company_client.news()
-
-            if news_df is None or news_df.empty:
-                return []
-
-            return self._convert_news_to_vietnamese_news(
-                news_df.head(limit), symbol
+        self, symbol: str, asset_type: AssetType
+    ) -> OHLCVTData:
+        """Get real-time quote from TCBS."""
+        if not self.session:
+            raise DataSourceUnavailableError(
+                "Session not initialized", DataSource.TCBS
             )
 
-        return await self._execute_with_retry(_fetch_news)
+        await self._respect_rate_limit()
 
-    async def search_symbols(
+        start_time = datetime.now(timezone.utc)
+        url = f"{self.config.base_url}/api/v1/stock/quote"
+        params = {"symbol": symbol}
+
+        try:
+            async with self.session.get(url, params=params) as response:
+                response_time_ms = (
+                    datetime.now(timezone.utc) - start_time
+                ).total_seconds() * 1000
+
+                if response.status == 200:
+                    data = await response.json()
+                    quote_data = self._parse_real_time_quote(data)
+                    success = True
+                elif response.status == 404:
+                    raise SymbolNotFoundError(
+                        f"Symbol {symbol} not found in TCBS",
+                        symbol,
+                        asset_type,
+                    )
+                elif response.status == 429:
+                    raise RateLimitExceededError(
+                        "Rate limit exceeded for TCBS", symbol, asset_type
+                    )
+                else:
+                    raise DataSourceUnavailableError(
+                        f"TCBS error: {response.status}", symbol, asset_type
+                    )
+
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            raise NetworkError(
+                f"Network error getting real-time quote from TCBS: {str(e)}",
+                symbol,
+                asset_type,
+            )
+
+        except ValueError as e:
+            raise DataValidationError(
+                f"Failed to parse TCBS quote response: {str(e)}",
+                symbol,
+                asset_type,
+            )
+
+        except Exception as e:
+            raise HistoricalDataError(
+                f"Unexpected error with TCBS real-time quote: {str(e)}",
+                symbol,
+                asset_type,
+            )
+
+        finally:
+            self.metrics.record_request(
+                data_source=DataSource.TCBS,
+                success=success,
+                response_time_ms=response_time_ms,
+                data_points=1,
+            )
+
+        return quote_data
+
+    async def get_intraday_data(
         self,
-        query: str,
-        exchange: Optional[VietnameseExchange] = None,
-    ) -> List[str]:
-        """Search for stock symbols using TCBS screener.
-
-        Args:
-            query: Search query
-            exchange: Optional exchange filter
-
-        Returns:
-            List of matching symbols
-        """
-        self._log_operation(
-            "search_symbols",
-            query=query,
-            exchange=exchange.value if exchange else None,
-        )
-
-        async def _search():
-            await self._rate_limit()
-            screener_client = await self._get_screener_client()
-
-            # Use screener to search for symbols
-            params = {}
-            if exchange:
-                exchange_mapping = {
-                    VietnameseExchange.HOSE: "HOSE",
-                    VietnameseExchange.HNX: "HNX",
-                    VietnameseExchange.UPCOM: "UPCOM",
-                }
-                params["exchangeName"] = exchange_mapping[exchange]
-
-            # Add search query if TCBS supports it
-            if query:
-                params["search"] = query
-
-            screener_df = screener_client.stock(params=params, limit=100)
-
-            if screener_df is None or screener_df.empty:
-                return []
-
-            return screener_df["symbol"].tolist()
-
-        return await self._execute_with_retry(_search)
-
-    def _convert_dataframe_to_stocks(
-        self,
-        df: pd.DataFrame,
         symbol: str,
-    ) -> List[VietnameseStock]:
-        """Convert pandas DataFrame to VietnameseStock objects."""
-        stocks = []
+        asset_type: AssetType,
+        interval: TimeInterval,
+        page_size: int = 100,
+    ) -> List[OHLCVTData]:
+        """Get intraday data from TCBS."""
+        if not self.session:
+            raise DataSourceUnavailableError(
+                "Session not initialized", DataSource.TCBS
+            )
 
-        for _, row in df.iterrows():
-            try:
-                stock = VietnameseStock(
-                    company_id=uuid4(),
-                    vnstock_symbol=symbol,
-                    exchange=self._determine_exchange(symbol),
-                    date=pd.to_datetime(row.get("time", row.name)),
-                    open_price=float(row.get("open", 0)),
-                    close_price=float(row.get("close", 0)),
-                    high_price=float(row.get("high", 0)),
-                    low_price=float(row.get("low", 0)),
-                    volume=int(row.get("volume", 0)),
-                    market_cap=row.get("market_cap"),
-                    free_float=row.get("free_float"),
-                )
-                stocks.append(stock)
-            except Exception as e:
-                self.logger.warning(
-                    "Failed to convert row to VietnameseStock",
-                    symbol=symbol,
-                    row_index=row.name,
-                    error=str(e),
-                )
+        await self._respect_rate_limit()
 
-        return stocks
+        start_time = datetime.now(timezone.utc)
+        url = f"{self.config.base_url}/api/v1/stock/intraday"
 
-    def _convert_overview_to_company(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> VietnameseCompany:
-        """Convert overview DataFrame to VietnameseCompany."""
-        row = df.iloc[0] if not df.empty else {}
+        params = {
+            "symbol": symbol,
+            "interval": interval.value,
+            "limit": page_size,
+        }
 
-        return VietnameseCompany(
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            name=row.get("company_name", ""),
-            ticker_symbol=symbol,
-            industry=row.get("industry"),
-            country="Vietnam",
-            market_cap=row.get("market_cap"),
-            free_float=row.get("free_float"),
-            listing_date=(
-                pd.to_datetime(row.get("listing_date"))
-                if row.get("listing_date")
-                else None
-            ),
-        )
+        data_points = []
 
-    def _determine_exchange(self, symbol: str) -> VietnameseExchange:
-        """Determine exchange based on symbol."""
-        if symbol.endswith(".HNX"):
-            return VietnameseExchange.HNX
-        elif symbol.endswith(".UPCOM"):
-            return VietnameseExchange.UPCOM
-        else:
-            return VietnameseExchange.HOSE
+        try:
+            async with self.session.get(url, params=params) as response:
+                response_time_ms = (
+                    datetime.now(timezone.utc) - start_time
+                ).total_seconds() * 1000
 
-    def _convert_balance_sheet_to_report(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        period: str,
-        language: str,
-    ) -> VietnameseFinancialReport:
-        """Convert balance sheet to financial report."""
-        return VietnameseFinancialReport(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            report_type="balance_sheet",
-            period_start=datetime.now(),
-            period_end=datetime.now(),
-            filing_date=datetime.now(),
-            document_url="",
-            report_language=language,
-        )
+                if response.status == 200:
+                    data = await response.json()
+                    data_points = self._parse_intraday_data(data)
+                    success = True
+                elif response.status == 404:
+                    raise SymbolNotFoundError(
+                        f"Symbol {symbol} not found in TCBS",
+                        symbol,
+                        asset_type,
+                    )
+                elif response.status == 429:
+                    raise RateLimitExceededError(
+                        "Rate limit exceeded for TCBS", symbol, asset_type
+                    )
+                else:
+                    raise DataSourceUnavailableError(
+                        f"TCBS error: {response.status}", symbol, asset_type
+                    )
 
-    def _convert_income_statement_to_report(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        period: str,
-        language: str,
-    ) -> VietnameseFinancialReport:
-        """Convert income statement to financial report."""
-        return VietnameseFinancialReport(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            report_type="income_statement",
-            period_start=datetime.now(),
-            period_end=datetime.now(),
-            filing_date=datetime.now(),
-            document_url="",
-            report_language=language,
-        )
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            raise NetworkError(
+                f"Network error getting intraday data from TCBS: {str(e)}",
+                symbol,
+                asset_type,
+            )
 
-    def _convert_cash_flow_to_report(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        period: str,
-        language: str,
-    ) -> VietnameseFinancialReport:
-        """Convert cash flow to financial report."""
-        return VietnameseFinancialReport(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            report_type="cash_flow",
-            period_start=datetime.now(),
-            period_end=datetime.now(),
-            filing_date=datetime.now(),
-            document_url="",
-            report_language=language,
-        )
+        except ValueError as e:
+            raise DataValidationError(
+                f"Failed to parse TCBS intraday response: {str(e)}",
+                symbol,
+                asset_type,
+            )
 
-    def _convert_ratios_to_metrics(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> VietnameseFinancialMetrics:
-        """Convert ratios DataFrame to financial metrics."""
-        return VietnameseFinancialMetrics(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            period_end=datetime.now(),
-        )
+        except Exception as e:
+            raise HistoricalDataError(
+                f"Unexpected error with TCBS intraday data: {str(e)}",
+                symbol,
+                asset_type,
+            )
 
-    def _convert_price_board_to_stock(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> VietnameseStock:
-        """Convert price board data to stock."""
-        row = df.iloc[0] if not df.empty else {}
+        finally:
+            self.metrics.record_request(
+                data_source=DataSource.TCBS,
+                success=success,
+                response_time_ms=response_time_ms,
+                data_points=len(data_points),
+            )
 
-        return VietnameseStock(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            date=datetime.now(),
-            open_price=float(row.get("open", 0)),
-            close_price=float(row.get("close", 0)),
-            high_price=float(row.get("high", 0)),
-            low_price=float(row.get("low", 0)),
-            volume=int(row.get("volume", 0)),
-        )
+        return data_points
 
-    def _convert_news_to_vietnamese_news(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> List[VietnameseNews]:
-        """Convert news DataFrame to VietnameseNews objects."""
-        news_list = []
+    def _parse_historical_data(
+        self, data: Dict[str, Any], request: HistoricalDataRequest
+    ) -> List[OHLCVTData]:
+        """Parse historical data response from TCBS."""
+        data_points = []
 
-        for _, row in df.iterrows():
-            try:
-                news = VietnameseNews(
-                    vnstock_symbol=symbol,
-                    title=row.get("title", ""),
-                    content=row.get("content", ""),
-                    source=row.get("source", "TCBS"),
-                    url=row.get("url"),
-                    published_at=pd.to_datetime(
-                        row.get("published_at", datetime.now())
-                    ),
-                    language="vi",
-                )
-                news_list.append(news)
-            except Exception as e:
-                self.logger.warning(
-                    "Failed to convert news row",
-                    symbol=symbol,
-                    error=str(e),
-                )
+        try:
+            # Handle different response formats
+            if "data" in data:
+                records = data["data"]
+            elif "historical" in data:
+                records = data["historical"]
+            else:
+                records = data
 
-        return news_list
+            if not isinstance(records, list):
+                raise ValueError("Expected list of data records")
+
+            for record in records:
+                try:
+                    # Parse timestamp (TCBS might use different formats)
+                    if "time" in record:
+                        time_str = record["time"]
+                    elif "date" in record:
+                        time_str = record["date"]
+                    elif "timestamp" in record:
+                        time_str = record["timestamp"]
+                    else:
+                        continue  # Skip records without time
+
+                    # Parse datetime
+                    if isinstance(time_str, str):
+                        # Try different date formats
+                        for fmt in [
+                            "%Y-%m-%d",
+                            "%Y-%m-%dT%H:%M:%S",
+                            "%Y-%m-%d %H:%M:%S",
+                        ]:
+                            try:
+                                time_dt = datetime.strptime(time_str, fmt)
+                                break
+                            except ValueError:
+                                continue
+                        else:
+                            # Default to current date if parsing fails
+                            time_dt = datetime.now(timezone.utc)
+                    elif isinstance(time_str, (int, float)):
+                        # Unix timestamp
+                        time_dt = datetime.fromtimestamp(
+                            time_str, timezone.utc
+                        )
+                    else:
+                        continue
+
+                    # Parse OHLCV data
+                    open_price = float(
+                        record.get("open", record.get("Open", 0))
+                    )
+                    high_price = float(
+                        record.get("high", record.get("High", 0))
+                    )
+                    low_price = float(record.get("low", record.get("Low", 0)))
+                    close_price = float(
+                        record.get("close", record.get("Close", 0))
+                    )
+                    volume = int(record.get("volume", record.get("Volume", 0)))
+
+                    # Validate OHLC relationships
+                    if not (
+                        low_price <= high_price
+                        and low_price <= close_price <= high_price
+                    ):
+                        continue
+
+                    data_point = OHLCVTData(
+                        time=time_dt,
+                        open=open_price,
+                        high=high_price,
+                        low=low_price,
+                        close=close_price,
+                        volume=volume,
+                    )
+                    data_points.append(data_point)
+
+                except (ValueError, KeyError, TypeError) as e:
+                    # Skip malformed records
+                    continue
+
+        except (ValueError, KeyError, TypeError) as e:
+            raise DataValidationError(
+                f"Failed to parse TCBS historical data: {str(e)}"
+            )
+
+        # Sort by time
+        data_points.sort(key=lambda x: x.time)
+
+        return data_points
+
+    def _parse_real_time_quote(self, data: Dict[str, Any]) -> OHLCVTData:
+        """Parse real-time quote response from TCBS."""
+        try:
+            # Get current time as quote time
+            quote_time = datetime.now(timezone.utc)
+
+            # Extract quote data
+            open_price = float(data.get("open", data.get("Open", 0)))
+            high_price = float(data.get("high", data.get("High", 0)))
+            low_price = float(data.get("low", data.get("Low", 0)))
+            close_price = float(
+                data.get("close", data.get("Close", data.get("price", 0)))
+            )
+            volume = int(data.get("volume", data.get("Volume", 0)))
+
+            return OHLCVTData(
+                time=quote_time,
+                open=open_price,
+                high=high_price,
+                low=low_price,
+                close=close_price,
+                volume=volume,
+            )
+
+        except (ValueError, KeyError, TypeError) as e:
+            raise DataValidationError(
+                f"Failed to parse TCBS real-time quote: {str(e)}"
+            )
+
+    def _parse_intraday_data(self, data: Dict[str, Any]) -> List[OHLCVTData]:
+        """Parse intraday data response from TCBS."""
+        # Similar to historical data parsing but for intraday format
+        return self._parse_historical_data(data, None)
+
+    async def get_metrics(self) -> DataSourceMetrics:
+        """Get current TCBS metrics."""
+        return self.metrics
+
+    def is_supported_asset_type(self, asset_type: AssetType) -> bool:
+        """Check if asset type is supported by TCBS."""
+        return asset_type in [AssetType.STOCK, AssetType.INDEX, AssetType.ETF]
+
+    def is_supported_interval(self, interval: TimeInterval) -> bool:
+        """Check if time interval is supported by TCBS."""
+        # TCBS typically supports most intervals
+        return interval in [
+            TimeInterval.MINUTE_1,
+            TimeInterval.MINUTE_5,
+            TimeInterval.MINUTE_15,
+            TimeInterval.MINUTE_30,
+            TimeInterval.HOUR_1,
+            TimeInterval.DAY_1,
+            TimeInterval.WEEK_1,
+            TimeInterval.MONTH_1,
+        ]

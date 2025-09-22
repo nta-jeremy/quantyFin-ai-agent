@@ -1,21 +1,22 @@
 """Unit tests for agent types and state management."""
 
-import pytest
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
+import pytest
+
+from app.agents.agent_state import StateManager, WorkflowState
 from app.agents.agent_types import (
     AgentRole,
-    QueryType,
-    GuardValidationResult,
-    VectorEmbedding,
-    SearchResult,
-    AnalysisResult,
-    PredictionResult,
     AgentStatus,
-    SecurityLevel
+    AnalysisResult,
+    GuardValidationResult,
+    PredictionResult,
+    QueryType,
+    SearchResult,
+    SecurityLevel,
+    VectorEmbedding,
 )
-from app.agents.agent_state import WorkflowState, StateManager
 
 
 class TestAgentTypes:
@@ -47,7 +48,7 @@ class TestAgentTypes:
             confidence=0.95,
             reason="Query passes validation",
             risk_level="low",
-            suggestions=None
+            suggestions=None,
         )
 
         assert result.is_valid is True
@@ -61,7 +62,7 @@ class TestAgentTypes:
         embedding = VectorEmbedding(
             text="Sample text",
             embedding=[0.1, 0.2, 0.3, 0.4],
-            metadata={"source": "test", "timestamp": datetime.now()}
+            metadata={"source": "test", "timestamp": datetime.now()},
         )
 
         assert embedding.text == "Sample text"
@@ -76,7 +77,7 @@ class TestAgentTypes:
             url="https://example.com",
             source="web",
             relevance_score=0.85,
-            metadata={"published_date": "2024-01-01"}
+            metadata={"published_date": "2024-01-01"},
         )
 
         assert result.title == "Test Result"
@@ -93,7 +94,7 @@ class TestAgentTypes:
             metrics={"pe_ratio": 25.5, "revenue_growth": 0.15},
             sentiment="positive",
             confidence=0.90,
-            metadata={"timeframe": "1y"}
+            metadata={"timeframe": "1y"},
         )
 
         assert result.analysis_type == "financial"
@@ -112,7 +113,7 @@ class TestAgentTypes:
             features=["price", "volume", "market_cap"],
             performance_metrics={"mse": 0.01, "mae": 0.08},
             confidence=0.88,
-            metadata={"prediction_date": datetime.now()}
+            metadata={"prediction_date": datetime.now()},
         )
 
         assert result.prediction_type == "stock_price"
@@ -131,7 +132,7 @@ class TestWorkflowState:
             workflow_id="test-workflow-123",
             original_query="What is the stock price of AAPL?",
             current_query="What is the stock price of AAPL?",
-            query_type=QueryType.STOCK_ANALYSIS
+            query_type=QueryType.STOCK_ANALYSIS,
         )
 
         assert state.workflow_id == "test-workflow-123"
@@ -147,7 +148,7 @@ class TestWorkflowState:
         manager = StateManager()
         state = manager.create_state(
             query="What is the stock price of AAPL?",
-            query_type=QueryType.STOCK_ANALYSIS
+            query_type=QueryType.STOCK_ANALYSIS,
         )
 
         assert state.workflow_id is not None
@@ -160,21 +161,18 @@ class TestWorkflowState:
         """Test StateManager state updates."""
         manager = StateManager()
         state = manager.create_state(
-            query="Test query",
-            query_type=QueryType.GENERAL_KNOWLEDGE
+            query="Test query", query_type=QueryType.GENERAL_KNOWLEDGE
         )
 
         validation_result = GuardValidationResult(
             is_valid=True,
             confidence=0.95,
             reason="Valid query",
-            risk_level="low"
+            risk_level="low",
         )
 
         updated_state = manager.update_state(
-            state,
-            validation_result=validation_result,
-            is_guard_validated=True
+            state, validation_result=validation_result, is_guard_validated=True
         )
 
         assert updated_state.is_guard_validated is True

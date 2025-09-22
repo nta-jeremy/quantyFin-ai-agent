@@ -4,8 +4,12 @@ Test script to check available columns in VCI industry symbols data.
 """
 
 import asyncio
-from app.infrastructure.data_sources.vnstock_adapter import VnstockAdapterConfig, VnstockDataSource
+
 from app.infrastructure.data_sources.vci_adapter import VCIAdapter
+from app.infrastructure.data_sources.vnstock_adapter import (
+    VnstockAdapterConfig,
+    VnstockDataSource,
+)
 
 
 async def test_industry_columns():
@@ -38,6 +42,7 @@ async def test_industry_columns():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         await adapter.close()

@@ -3,12 +3,16 @@ Integration tests for international symbol search user story.
 Tests the complete workflow of searching international market symbols.
 """
 
-import pytest
+from typing import Any, Dict, List
+
 import httpx
-from typing import List, Dict, Any
+import pytest
 
 from tests.integration.utils import (
-    get_auth_headers, BASE_URL, assert_valid_international_symbol, get_test_config
+    BASE_URL,
+    assert_valid_international_symbol,
+    get_auth_headers,
+    get_test_config,
 )
 
 
@@ -19,7 +23,9 @@ async def test_international_search_workflow():
     headers = get_auth_headers()
     config = get_test_config()
 
-    async with httpx.AsyncClient(base_url=BASE_URL, timeout=config["timeout"]) as client:
+    async with httpx.AsyncClient(
+        base_url=BASE_URL, timeout=config["timeout"]
+    ) as client:
         # Step 1: Search for USD pairs
         usd_response = await client.get(
             "/listing/international/search?query=USD", headers=headers
@@ -50,7 +56,9 @@ async def test_international_search_workflow():
 
         # Step 5: Test result relevance
         assert usd_analysis["relevant_symbols"] > 0, "No relevant USD symbols"
-        assert crypto_analysis["relevant_symbols"] > 0, "No relevant BTC symbols"
+        assert (
+            crypto_analysis["relevant_symbols"] > 0
+        ), "No relevant BTC symbols"
 
 
 @pytest.mark.integration
@@ -72,14 +80,16 @@ async def test_international_search_various_queries():
     for test_case in test_queries:
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
-                f"/listing/international/search?query={test_case['query']}", headers=headers
+                f"/listing/international/search?query={test_case['query']}",
+                headers=headers,
             )
 
         assert response.status_code == 200
         data = response.json()
 
-        assert len(data) >= test_case["min_results"], \
-            f"Too few results for {test_case['query']}: {len(data)}"
+        assert (
+            len(data) >= test_case["min_results"]
+        ), f"Too few results for {test_case['query']}: {len(data)}"
 
         # Validate all results
         for symbol in data:
@@ -87,8 +97,9 @@ async def test_international_search_various_queries():
 
         # Check result relevance
         relevant_count = count_relevant_results(data, test_case["query"])
-        assert relevant_count > 0, \
-            f"No relevant results for {test_case['query']}"
+        assert (
+            relevant_count > 0
+        ), f"No relevant results for {test_case['query']}"
 
 
 @pytest.mark.integration
@@ -98,8 +109,14 @@ async def test_international_search_case_insensitive():
     headers = get_auth_headers()
 
     test_cases = [
-        "usd", "USD", "Usd", "USD",  # Various cases for USD
-        "btc", "BTC", "Btc", "BTC",  # Various cases for BTC
+        "usd",
+        "USD",
+        "Usd",
+        "USD",  # Various cases for USD
+        "btc",
+        "BTC",
+        "Btc",
+        "BTC",  # Various cases for BTC
     ]
 
     results = {}
@@ -142,8 +159,9 @@ async def test_international_search_no_results():
         assert response.status_code == 200
         data = response.json()
 
-        assert len(data) == 0, \
-            f"Unexpected results for invalid query '{query}': {len(data)} results"
+        assert (
+            len(data) == 0
+        ), f"Unexpected results for invalid query '{query}': {len(data)} results"
 
 
 @pytest.mark.integration
@@ -168,7 +186,8 @@ async def test_international_search_result_quality():
     for test in quality_tests:
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
-                f"/listing/international/search?query={test['query']}", headers=headers
+                f"/listing/international/search?query={test['query']}",
+                headers=headers,
             )
 
         assert response.status_code == 200
@@ -180,8 +199,9 @@ async def test_international_search_result_quality():
             matching_symbols = [
                 s for s in found_symbols if expected_symbol in s
             ]
-            assert len(matching_symbols) > 0, \
-                f"Expected symbol '{expected_symbol}' not found for query '{test['query']}'"
+            assert (
+                len(matching_symbols) > 0
+            ), f"Expected symbol '{expected_symbol}' not found for query '{test['query']}'"
 
         # Additional quality checks if specified
         if "expected_exchanges" in test:
@@ -212,7 +232,8 @@ async def test_international_search_data_types():
     for search in type_searches:
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
-                f"/listing/international/search?query={search['query']}", headers=headers
+                f"/listing/international/search?query={search['query']}",
+                headers=headers,
             )
 
         assert response.status_code == 200
@@ -225,12 +246,16 @@ async def test_international_search_data_types():
                 desc_lower = symbol["description"].lower()
 
                 for expected_type in search["expected_types"]:
-                    if expected_type in desc_lower or expected_type in symbol_lower:
+                    if (
+                        expected_type in desc_lower
+                        or expected_type in symbol_lower
+                    ):
                         found_types.add(expected_type)
 
     # Should find multiple instrument types
-    assert len(found_types) >= 2, \
-        f"Too few instrument types found: {found_types}"
+    assert (
+        len(found_types) >= 2
+    ), f"Too few instrument types found: {found_types}"
 
 
 @pytest.mark.integration
@@ -246,14 +271,18 @@ async def test_international_search_error_handling():
     # Test with invalid authentication
     invalid_headers = {"Authorization": "Bearer invalid_token"}
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/international/search?query=USD", headers=invalid_headers)
+        response = await client.get(
+            "/listing/international/search?query=USD", headers=invalid_headers
+        )
 
     assert response.status_code == 401
 
     # Test empty query
     headers = get_auth_headers()
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/international/search?query=", headers=headers)
+        response = await client.get(
+            "/listing/international/search?query=", headers=headers
+        )
 
     # Empty query should return 200 with empty results or 400
     assert response.status_code in [200, 400]
@@ -286,8 +315,9 @@ async def test_international_search_performance():
         response_time = end_time - start_time
 
         # Response should be fast
-        assert response_time < 1.0, \
-            f"Search response time for '{query}' {response_time:.3f}s too slow"
+        assert (
+            response_time < 1.0
+        ), f"Search response time for '{query}' {response_time:.3f}s too slow"
 
         # Data processing should be fast
         data = response.json()
@@ -295,8 +325,9 @@ async def test_international_search_performance():
         _ = analyze_search_results(data, query)
         processing_time = time.time() - start_time
 
-        assert processing_time < 0.05, \
-            f"Data processing time for '{query}' {processing_time:.3f}s too slow"
+        assert (
+            processing_time < 0.05
+        ), f"Data processing time for '{query}' {processing_time:.3f}s too slow"
 
 
 @pytest.mark.integration
@@ -313,7 +344,8 @@ async def test_international_search_consistency():
         for _ in range(3):
             async with httpx.AsyncClient(base_url=BASE_URL) as client:
                 response = await client.get(
-                    f"/listing/international/search?query={query}", headers=headers
+                    f"/listing/international/search?query={query}",
+                    headers=headers,
                 )
                 responses.append(response)
 
@@ -332,13 +364,18 @@ async def test_international_search_consistency():
 
             # Should have substantial overlap
             overlap = first_symbols.intersection(current_symbols)
-            overlap_ratio = len(overlap) / max(len(first_symbols), len(current_symbols))
+            overlap_ratio = len(overlap) / max(
+                len(first_symbols), len(current_symbols)
+            )
 
-            assert overlap_ratio > 0.8, \
-                f"Low consistency for query '{query}': overlap ratio {overlap_ratio:.2f}"
+            assert (
+                overlap_ratio > 0.8
+            ), f"Low consistency for query '{query}': overlap ratio {overlap_ratio:.2f}"
 
 
-def analyze_search_results(results: List[Dict[str, Any]], query: str) -> Dict[str, Any]:
+def analyze_search_results(
+    results: List[Dict[str, Any]], query: str
+) -> Dict[str, Any]:
     """Analyze search results for quality and relevance."""
     if not results:
         return {
@@ -359,9 +396,11 @@ def analyze_search_results(results: List[Dict[str, Any]], query: str) -> Dict[st
         name_upper = symbol["friendly_name"].upper()
         desc_upper = symbol["description"].upper()
 
-        if (query_upper in symbol_upper or
-            query_upper in name_upper or
-            query_upper in desc_upper):
+        if (
+            query_upper in symbol_upper
+            or query_upper in name_upper
+            or query_upper in desc_upper
+        ):
             relevant_symbols += 1
 
         # Collect metadata
@@ -393,9 +432,11 @@ def count_relevant_results(results: List[Dict[str, Any]], query: str) -> int:
     relevant_count = 0
 
     for symbol in results:
-        if (query_upper in symbol["symbol"].upper() or
-            query_upper in symbol["friendly_name"].upper() or
-            query_upper in symbol["description"].upper()):
+        if (
+            query_upper in symbol["symbol"].upper()
+            or query_upper in symbol["friendly_name"].upper()
+            or query_upper in symbol["description"].upper()
+        ):
             relevant_count += 1
 
     return relevant_count

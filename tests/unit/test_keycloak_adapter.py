@@ -6,18 +6,18 @@ testing individual methods and edge cases.
 """
 
 import json
-import pytest
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any
-from unittest.mock import AsyncMock, MagicMock, patch, Mock
+from typing import Any, Dict
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import httpx
+import pytest
 from jose import JWTError
 
 from app.infrastructure.auth.keycloak_adapter import (
     KeycloakAdapter,
-    KeycloakAuthManager,
     KeycloakAuthenticationError,
+    KeycloakAuthManager,
     KeycloakAuthorizationError,
 )
 
@@ -31,13 +31,11 @@ class TestKeycloakAdapter:
         mock = AsyncMock(spec=httpx.AsyncClient)
         mock.get.return_value = Mock(
             raise_for_status=Mock(),
-            json=Mock(return_value={
-                "keys": [{
-                    "kty": "RSA",
-                    "n": "mock_n",
-                    "e": "mock_e"
-                }]
-            })
+            json=Mock(
+                return_value={
+                    "keys": [{"kty": "RSA", "n": "mock_n", "e": "mock_e"}]
+                }
+            ),
         )
         return mock
 
@@ -49,7 +47,7 @@ class TestKeycloakAdapter:
             "realm": "test-realm",
             "client_id": "test-client",
             "client_secret": "test-secret",
-            "algorithm": "RS256"
+            "algorithm": "RS256",
         }
 
     @pytest.fixture
@@ -76,7 +74,9 @@ class TestKeycloakAdapter:
     async def test_get_public_key_fetches_new(self, keycloak_adapter):
         """Test getting public key fetches new key when not cached."""
         # Set expired cache
-        keycloak_adapter.public_key_cache_time = datetime.now(timezone.utc) - timedelta(hours=2)
+        keycloak_adapter.public_key_cache_time = datetime.now(
+            timezone.utc
+        ) - timedelta(hours=2)
 
         result = await keycloak_adapter.get_public_key()
 
@@ -89,10 +89,15 @@ class TestKeycloakAdapter:
         mock_token = "valid_token"
         mock_claims = {
             "sub": "user123",
-            "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
+            "exp": int(
+                (datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()
+            ),
         }
 
-        with patch('app.infrastructure.auth.keycloak_adapter.jwt.decode', return_value=mock_claims):
+        with patch(
+            "app.infrastructure.auth.keycloak_adapter.jwt.decode",
+            return_value=mock_claims,
+        ):
             result = await keycloak_adapter.validate_token(mock_token)
 
             assert result == mock_claims
@@ -103,11 +108,18 @@ class TestKeycloakAdapter:
         mock_token = "expired_token"
         mock_claims = {
             "sub": "user123",
-            "exp": int((datetime.now(timezone.utc) - timedelta(hours=1)).timestamp())
+            "exp": int(
+                (datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()
+            ),
         }
 
-        with patch('app.infrastructure.auth.keycloak_adapter.jwt.decode', return_value=mock_claims):
-            with pytest.raises(KeycloakAuthenticationError, match="Token has expired"):
+        with patch(
+            "app.infrastructure.auth.keycloak_adapter.jwt.decode",
+            return_value=mock_claims,
+        ):
+            with pytest.raises(
+                KeycloakAuthenticationError, match="Token has expired"
+            ):
                 await keycloak_adapter.validate_token(mock_token)
 
     @pytest.mark.asyncio
@@ -119,8 +131,14 @@ class TestKeycloakAdapter:
             # Missing 'exp' claim
         }
 
-        with patch('app.infrastructure.auth.keycloak_adapter.jwt.decode', return_value=mock_claims):
-            with pytest.raises(KeycloakAuthenticationError, match="Token missing expiration claim"):
+        with patch(
+            "app.infrastructure.auth.keycloak_adapter.jwt.decode",
+            return_value=mock_claims,
+        ):
+            with pytest.raises(
+                KeycloakAuthenticationError,
+                match="Token missing expiration claim",
+            ):
                 await keycloak_adapter.validate_token(mock_token)
 
     @pytest.mark.asyncio
@@ -131,7 +149,7 @@ class TestKeycloakAdapter:
         mock_response = {
             "access_token": "new_token",
             "refresh_token": "refresh_token",
-            "expires_in": 3600
+            "expires_in": 3600,
         }
 
         mock_response_obj = Mock()
@@ -151,10 +169,14 @@ class TestKeycloakAdapter:
         password = "wrongpass"
 
         mock_response_obj = Mock()
-        mock_response_obj.raise_for_status.side_effect = httpx.HTTPError("Invalid credentials")
+        mock_response_obj.raise_for_status.side_effect = httpx.HTTPError(
+            "Invalid credentials"
+        )
         keycloak_adapter.http_client.post.return_value = mock_response_obj
 
-        with pytest.raises(KeycloakAuthenticationError, match="Authentication failed"):
+        with pytest.raises(
+            KeycloakAuthenticationError, match="Authentication failed"
+        ):
             await keycloak_adapter.get_access_token(username, password)
 
     @pytest.mark.asyncio
@@ -163,7 +185,7 @@ class TestKeycloakAdapter:
         refresh_token = "valid_refresh_token"
         mock_response = {
             "access_token": "new_access_token",
-            "refresh_token": "new_refresh_token"
+            "refresh_token": "new_refresh_token",
         }
 
         mock_response_obj = Mock()
@@ -182,7 +204,7 @@ class TestKeycloakAdapter:
         mock_user_info = {
             "sub": "user123",
             "username": "testuser",
-            "email": "test@example.com"
+            "email": "test@example.com",
         }
 
         mock_response_obj = Mock()
@@ -200,10 +222,12 @@ class TestKeycloakAdapter:
         token = "valid_token"
         mock_claims = {
             "realm_access": {"roles": ["user", "offline_access"]},
-            "resource_access": {"test-client": {"roles": ["client-role"]}}
+            "resource_access": {"test-client": {"roles": ["client-role"]}},
         }
 
-        with patch.object(keycloak_adapter, 'validate_token', return_value=mock_claims):
+        with patch.object(
+            keycloak_adapter, "validate_token", return_value=mock_claims
+        ):
             result = await keycloak_adapter.get_user_roles(token)
 
             expected_roles = ["user", "offline_access", "client-role"]
@@ -215,7 +239,11 @@ class TestKeycloakAdapter:
         token = "valid_token"
         required_role = "user"
 
-        with patch.object(keycloak_adapter, 'get_user_roles', return_value=["user", "offline_access"]):
+        with patch.object(
+            keycloak_adapter,
+            "get_user_roles",
+            return_value=["user", "offline_access"],
+        ):
             result = await keycloak_adapter.check_role(token, required_role)
 
             assert result is True
@@ -226,7 +254,11 @@ class TestKeycloakAdapter:
         token = "valid_token"
         required_role = "admin"
 
-        with patch.object(keycloak_adapter, 'get_user_roles', return_value=["user", "offline_access"]):
+        with patch.object(
+            keycloak_adapter,
+            "get_user_roles",
+            return_value=["user", "offline_access"],
+        ):
             result = await keycloak_adapter.check_role(token, required_role)
 
             assert result is False
@@ -234,7 +266,9 @@ class TestKeycloakAdapter:
     @pytest.mark.asyncio
     async def test_health_check_success(self, keycloak_adapter):
         """Test successful health check."""
-        with patch.object(keycloak_adapter, 'get_public_key', return_value="valid_key"):
+        with patch.object(
+            keycloak_adapter, "get_public_key", return_value="valid_key"
+        ):
             result = await keycloak_adapter.health_check()
 
             assert result is True
@@ -242,7 +276,11 @@ class TestKeycloakAdapter:
     @pytest.mark.asyncio
     async def test_health_check_failure(self, keycloak_adapter):
         """Test health check failure."""
-        with patch.object(keycloak_adapter, 'get_public_key', side_effect=KeycloakError("Connection failed")):
+        with patch.object(
+            keycloak_adapter,
+            "get_public_key",
+            side_effect=KeycloakError("Connection failed"),
+        ):
             result = await keycloak_adapter.health_check()
 
             assert result is False
@@ -256,13 +294,15 @@ class TestKeycloakAdapter:
         mock_response_obj.json = Mock(return_value=mock_response)
         keycloak_adapter.http_client.post.return_value = mock_response_obj
 
-        with patch.object(keycloak_adapter, '_get_admin_token', return_value="admin_token"):
+        with patch.object(
+            keycloak_adapter, "_get_admin_token", return_value="admin_token"
+        ):
             result = await keycloak_adapter.create_user(
                 username="newuser",
                 email="newuser@example.com",
                 password="securepass",
                 first_name="New",
-                last_name="User"
+                last_name="User",
             )
 
             assert result == mock_response
@@ -274,7 +314,9 @@ class TestKeycloakAdapter:
         mock_response_obj.raise_for_status = Mock()
         keycloak_adapter.http_client.delete.return_value = mock_response_obj
 
-        with patch.object(keycloak_adapter, '_get_admin_token', return_value="admin_token"):
+        with patch.object(
+            keycloak_adapter, "_get_admin_token", return_value="admin_token"
+        ):
             result = await keycloak_adapter.delete_user("user123")
 
             assert result is True
@@ -288,8 +330,16 @@ class TestKeycloakAdapter:
 
         keycloak_adapter.http_client.post.return_value = mock_response_obj
 
-        with patch.object(keycloak_adapter, '_get_role_by_name', return_value=mock_role), \
-             patch.object(keycloak_adapter, '_get_admin_token', return_value="admin_token"):
+        with (
+            patch.object(
+                keycloak_adapter, "_get_role_by_name", return_value=mock_role
+            ),
+            patch.object(
+                keycloak_adapter,
+                "_get_admin_token",
+                return_value="admin_token",
+            ),
+        ):
             result = await keycloak_adapter.assign_role("user123", "user")
 
             assert result is True
@@ -297,16 +347,24 @@ class TestKeycloakAdapter:
     @pytest.mark.asyncio
     async def test_assign_role_not_found(self, keycloak_adapter):
         """Test role assignment when role doesn't exist."""
-        with patch.object(keycloak_adapter, '_get_role_by_name', return_value=None):
-            with pytest.raises(KeycloakAuthenticationError, match="Role not found"):
-                await keycloak_adapter.assign_role("user123", "nonexistent_role")
+        with patch.object(
+            keycloak_adapter, "_get_role_by_name", return_value=None
+        ):
+            with pytest.raises(
+                KeycloakAuthenticationError, match="Role not found"
+            ):
+                await keycloak_adapter.assign_role(
+                    "user123", "nonexistent_role"
+                )
 
     @pytest.mark.asyncio
     async def test_extract_keycloak_error(self, keycloak_adapter):
         """Test Keycloak error extraction."""
         # Test error with error_description
         mock_response = Mock()
-        mock_response.json.return_value = {"error_description": "Test error message"}
+        mock_response.json.return_value = {
+            "error_description": "Test error message"
+        }
         error = httpx.HTTPError("HTTP error", response=mock_response)
 
         result = await keycloak_adapter._extract_keycloak_error(error)
@@ -315,15 +373,15 @@ class TestKeycloakAdapter:
 
     def test_convert_jwk_to_pem(self, keycloak_adapter):
         """Test JWK to PEM conversion."""
-        jwk = {
-            "kty": "RSA",
-            "n": "mock_n",
-            "e": "mock_e"
-        }
+        jwk = {"kty": "RSA", "n": "mock_n", "e": "mock_e"}
 
-        with patch('app.infrastructure.auth.keycloak_adapter.default_backend'), \
-             patch('app.infrastructure.auth.keycloak_adapter.rsa'), \
-             patch('app.infrastructure.auth.keycloak_adapter.serialization') as mock_serialization:
+        with (
+            patch("app.infrastructure.auth.keycloak_adapter.default_backend"),
+            patch("app.infrastructure.auth.keycloak_adapter.rsa"),
+            patch(
+                "app.infrastructure.auth.keycloak_adapter.serialization"
+            ) as mock_serialization,
+        ):
 
             mock_key = Mock()
             mock_public_bytes = Mock(return_value=b"mock_pem")
@@ -339,11 +397,7 @@ class TestKeycloakAdapter:
 
     def test_convert_jwk_to_pem_unsupported_type(self, keycloak_adapter):
         """Test JWK to PEM conversion with unsupported key type."""
-        jwk = {
-            "kty": "EC",  # Not RSA
-            "n": "mock_n",
-            "e": "mock_e"
-        }
+        jwk = {"kty": "EC", "n": "mock_n", "e": "mock_e"}  # Not RSA
 
         with pytest.raises(KeycloakError, match="Only RSA keys are supported"):
             keycloak_adapter._convert_jwk_to_pem(jwk)
@@ -360,7 +414,10 @@ class TestKeycloakAuthManager:
         mock.close.return_value = None
         mock.health_check.return_value = True
         mock.authenticate_user.return_value = {"access_token": "token"}
-        mock.validate_token.return_value = {"sub": "user123", "roles": ["user"]}
+        mock.validate_token.return_value = {
+            "sub": "user123",
+            "roles": ["user"],
+        }
         mock.logout.return_value = True
         mock.refresh_access_token.return_value = {"access_token": "new_token"}
         return mock
@@ -387,7 +444,9 @@ class TestKeycloakAuthManager:
         result = await auth_manager.authenticate_user("testuser", "testpass")
 
         assert result == {"access_token": "token"}
-        mock_adapter.authenticate_user.assert_called_once_with("testuser", "testpass")
+        mock_adapter.authenticate_user.assert_called_once_with(
+            "testuser", "testpass"
+        )
 
     @pytest.mark.asyncio
     async def test_validate_token(self, auth_manager, mock_adapter):
@@ -440,7 +499,7 @@ class TestKeycloakAuthManager:
             user_id="user123",
             email="newemail@example.com",
             first_name="New",
-            last_name="User"
+            last_name="User",
         )
 
     @pytest.mark.asyncio
@@ -452,4 +511,6 @@ class TestKeycloakAuthManager:
         result = await auth_manager.initiate_password_reset("test@example.com")
 
         assert result is True
-        mock_adapter.send_password_reset_email.assert_called_once_with("test@example.com")
+        mock_adapter.send_password_reset_email.assert_called_once_with(
+            "test@example.com"
+        )
