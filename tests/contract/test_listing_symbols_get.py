@@ -3,11 +3,12 @@ Contract tests for listing symbols endpoint.
 Tests the GET /listing/symbols endpoint according to OpenAPI specification.
 """
 
-import pytest
-import httpx
-from typing import Dict, Any
+from typing import Any, Dict
 
-from tests.integration.utils import get_auth_headers, BASE_URL
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers
 
 
 @pytest.mark.contract
@@ -64,7 +65,9 @@ async def test_get_all_symbols_rate_limiting():
     # At least one response should be rate limited
     rate_limited = any(r.status_code == 429 for r in responses)
     if rate_limited:
-        rate_limit_response = next(r for r in responses if r.status_code == 429)
+        rate_limit_response = next(
+            r for r in responses if r.status_code == 429
+        )
         assert "X-RateLimit-Limit" in rate_limit_response.headers
         assert "X-RateLimit-Remaining" in rate_limit_response.headers
         assert "X-RateLimit-Reset" in rate_limit_response.headers

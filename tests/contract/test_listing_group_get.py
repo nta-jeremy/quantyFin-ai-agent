@@ -3,11 +3,12 @@ Contract tests for market group symbols endpoint.
 Tests the GET /listing/symbols/group/{group_name} endpoint according to OpenAPI specification.
 """
 
-import pytest
-import httpx
 from typing import List
 
-from tests.integration.utils import get_auth_headers, BASE_URL
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers
 
 
 @pytest.mark.contract
@@ -29,7 +30,9 @@ async def test_get_symbols_by_group_vn100_success():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/group/VN100", headers=headers)
+        response = await client.get(
+            "/listing/symbols/group/VN100", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -53,7 +56,9 @@ async def test_get_symbols_by_group_hnx30_success():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/group/HNX30", headers=headers)
+        response = await client.get(
+            "/listing/symbols/group/HNX30", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -77,7 +82,9 @@ async def test_get_symbols_by_group_invalid_group():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/group/INVALID", headers=headers)
+        response = await client.get(
+            "/listing/symbols/group/INVALID", headers=headers
+        )
 
     assert response.status_code == 404
 
@@ -118,7 +125,9 @@ async def test_get_symbols_by_group_response_format():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/group/VN100", headers=headers)
+        response = await client.get(
+            "/listing/symbols/group/VN100", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -132,7 +141,9 @@ async def test_get_symbols_by_group_response_format():
 
         # Vietnamese stock ticker format validation
         assert ticker.isupper(), f"Ticker {ticker} should be uppercase"
-        assert 2 <= len(ticker) <= 4, f"Ticker {ticker} should be 2-4 characters"
+        assert (
+            2 <= len(ticker) <= 4
+        ), f"Ticker {ticker} should be 2-4 characters"
         assert ticker.isalpha(), f"Ticker {ticker} should contain only letters"
 
 
@@ -143,7 +154,9 @@ async def test_get_symbols_by_group_unique_values():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/group/VN100", headers=headers)
+        response = await client.get(
+            "/listing/symbols/group/VN100", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -161,7 +174,9 @@ async def test_get_symbols_by_group_vs_vn30_consistency():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        vn30_response = await client.get("/listing/symbols/vn30", headers=headers)
+        vn30_response = await client.get(
+            "/listing/symbols/vn30", headers=headers
+        )
         vn30_group_response = await client.get(
             "/listing/symbols/group/VN30", headers=headers
         )

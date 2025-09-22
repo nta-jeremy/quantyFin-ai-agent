@@ -3,11 +3,12 @@ Contract tests for ICB industries endpoint.
 Tests the GET /listing/industries endpoint according to OpenAPI specification.
 """
 
-import pytest
-import httpx
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from tests.integration.utils import get_auth_headers, BASE_URL
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers
 
 
 @pytest.mark.contract
@@ -106,15 +107,23 @@ async def test_get_industries_icb_code_format():
         # ICB codes are typically numeric strings with specific lengths
         assert isinstance(icb_code, str)
         assert icb_code.isdigit(), f"ICB code {icb_code} should be numeric"
-        assert 4 <= len(icb_code) <= 8, f"ICB code {icb_code} has invalid length"
+        assert (
+            4 <= len(icb_code) <= 8
+        ), f"ICB code {icb_code} has invalid length"
 
         # ICB codes should be properly formatted (industry classification standard)
         if industry["level"] == 1:
-            assert len(icb_code) == 4, f"Level 1 ICB code {icb_code} should be 4 digits"
+            assert (
+                len(icb_code) == 4
+            ), f"Level 1 ICB code {icb_code} should be 4 digits"
         elif industry["level"] == 2:
-            assert len(icb_code) == 6, f"Level 2 ICB code {icb_code} should be 6 digits"
+            assert (
+                len(icb_code) == 6
+            ), f"Level 2 ICB code {icb_code} should be 6 digits"
         elif industry["level"] == 3:
-            assert len(icb_code) == 8, f"Level 3 ICB code {icb_code} should be 8 digits"
+            assert (
+                len(icb_code) == 8
+            ), f"Level 3 ICB code {icb_code} should be 8 digits"
 
 
 @pytest.mark.contract
@@ -165,8 +174,9 @@ async def test_get_industries_english_names():
         assert len(industry["en_icb_name"].strip()) > 0
 
         # The English name should not be identical to Vietnamese name
-        assert industry["icb_name"] != industry["en_icb_name"], \
-            f"English name identical to Vietnamese name for {industry['icb_name']}"
+        assert (
+            industry["icb_name"] != industry["en_icb_name"]
+        ), f"English name identical to Vietnamese name for {industry['icb_name']}"
 
 
 @pytest.mark.contract
@@ -204,8 +214,12 @@ async def test_get_industries_known_industries():
 
     # Check for some common ICB industries
     known_industries = [
-        "ngân hàng", "phần mềm", "công nghệ", "bất động sản",
-        "thực phẩm & đồ uống", "dược phẩm"
+        "ngân hàng",
+        "phần mềm",
+        "công nghệ",
+        "bất động sản",
+        "thực phẩm & đồ uống",
+        "dược phẩm",
     ]
 
     # At least some known industries should be present
@@ -216,7 +230,9 @@ async def test_get_industries_known_industries():
                 found_industries.append(known_industry)
                 break
 
-    assert len(found_industries) > 0, f"No known industries found. Available: {industry_names[:10]}"
+    assert (
+        len(found_industries) > 0
+    ), f"No known industries found. Available: {industry_names[:10]}"
 
 
 @pytest.mark.contract
@@ -242,12 +258,14 @@ async def test_get_industries_parent_child_relationships():
 
         # Level 3 code should start with a valid level 2 code
         parent_code_candidates = [
-            code for code in level_2_industries.keys()
+            code
+            for code in level_2_industries.keys()
             if level_3_code.startswith(code)
         ]
 
-        assert len(parent_code_candidates) > 0, \
-            f"No parent found for Level 3 industry {level_3_code}"
+        assert (
+            len(parent_code_candidates) > 0
+        ), f"No parent found for Level 3 industry {level_3_code}"
 
 
 @pytest.mark.contract
@@ -269,6 +287,7 @@ async def test_get_industries_caching():
         cache_control = response1.headers["Cache-Control"]
         assert "max-age" in cache_control
         # Industries should have longer cache time than real-time data
-        assert "max-age=3600" in cache_control or int(
-            cache_control.split("max-age=")[1].split(";")[0]
-        ) >= 3600
+        assert (
+            "max-age=3600" in cache_control
+            or int(cache_control.split("max-age=")[1].split(";")[0]) >= 3600
+        )

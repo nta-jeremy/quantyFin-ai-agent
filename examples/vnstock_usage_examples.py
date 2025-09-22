@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 import pandas as pd
-from vnstock import Vnstock, Listing, Company, Finance, Quote, Trading
+from vnstock import Company, Finance, Listing, Quote, Trading, Vnstock
 
 from app.core.domain.models import (
     VietnameseCompany,
@@ -22,8 +22,11 @@ from app.core.domain.models import (
     VietnameseStock,
     VnstockDataSource,
 )
-from app.infrastructure.data_sources.vnstock_adapter import VnstockAdapterConfig, VnstockAdapter
 from app.infrastructure.data_sources.vci_adapter import VCIAdapter
+from app.infrastructure.data_sources.vnstock_adapter import (
+    VnstockAdapter,
+    VnstockAdapterConfig,
+)
 
 
 async def example_vnstock_usage():
@@ -38,23 +41,23 @@ async def example_vnstock_usage():
     print(f"Total symbols: {len(all_symbols)}")
 
     # 2. Get company information
-    company = Company('VCI')  # Vietcap
+    company = Company("VCI")  # Vietcap
     company_overview = company.overview()
     print(f"Company name: {company_overview.get('company_name', 'N/A')}")
 
     # 3. Get financial data
-    finance = Finance('VCI')
+    finance = Finance("VCI")
 
     # Get balance sheet
-    balance_sheet = finance.balance_sheet(period='year', lang='vi')
+    balance_sheet = finance.balance_sheet(period="year", lang="vi")
     print(f"Balance sheet columns: {list(balance_sheet.columns)}")
 
     # Get income statement
-    income_statement = finance.income_statement(period='year', lang='vi')
+    income_statement = finance.income_statement(period="year", lang="vi")
     print(f"Income statement shape: {income_statement.shape}")
 
     # Get financial ratios
-    ratios = finance.ratio(period='year', lang='vi')
+    ratios = finance.ratio(period="year", lang="vi")
     print(f"Financial ratios available: {list(ratios.index)}")
 
     # 4. Get price data
@@ -65,20 +68,22 @@ async def example_vnstock_usage():
     start_date = end_date - timedelta(days=30)
 
     historical_data = quote.history(
-        symbol='VCI',
-        start=start_date.strftime('%Y-%m-%d'),
-        end=end_date.strftime('%Y-%m-%d'),
-        interval='1D'
+        symbol="VCI",
+        start=start_date.strftime("%Y-%m-%d"),
+        end=end_date.strftime("%Y-%m-%d"),
+        interval="1D",
     )
     print(f"Historical data shape: {historical_data.shape}")
 
     # Real-time quote
-    price_board = quote.price_board(symbol_list=['VCI', 'FPT', 'MWG'])
-    print(f"Price board data: {price_board[['ticker', 'match', 'change']].head()}")
+    price_board = quote.price_board(symbol_list=["VCI", "FPT", "MWG"])
+    print(
+        f"Price board data: {price_board[['ticker', 'match', 'change']].head()}"
+    )
 
     # 5. Get trading data
     trading = Trading()
-    trading_data = trading.trading_history(symbol='VCI', days=10)
+    trading_data = trading.trading_history(symbol="VCI", days=10)
     print(f"Trading data shape: {trading_data.shape}")
 
 
@@ -92,14 +97,14 @@ async def example_adapter_usage():
         timeout_seconds=30,
         retry_attempts=3,
         enable_caching=True,
-        cache_ttl_seconds=300
+        cache_ttl_seconds=300,
     )
 
     # Create adapter instance
     adapter = VCIAdapter(config)
 
     # Example usage
-    symbol = 'VCI'
+    symbol = "VCI"
     end_date = datetime.now()
     start_date = end_date - timedelta(days=30)
 
@@ -109,7 +114,7 @@ async def example_adapter_usage():
             symbol=symbol,
             start_date=start_date,
             end_date=end_date,
-            interval='1D'
+            interval="1D",
         )
         print(f"Retrieved {len(historical_data)} historical records")
 
@@ -142,7 +147,7 @@ async def example_multiple_sources():
         VnstockDataSource.MSN,
     ]
 
-    symbol = 'FPT'
+    symbol = "FPT"
     end_date = datetime.now()
     start_date = end_date - timedelta(days=7)
 
@@ -151,7 +156,7 @@ async def example_multiple_sources():
             config = VnstockAdapterConfig(
                 data_source=source,
                 rate_limit_per_minute=30,
-                timeout_seconds=15
+                timeout_seconds=15,
             )
 
             adapter = VCIAdapter(config)
@@ -176,10 +181,10 @@ def example_pandas_analysis():
     start_date = end_date - timedelta(days=90)
 
     data = quote.history(
-        symbol='VCI',
-        start=start_date.strftime('%Y-%m-%d'),
-        end=end_date.strftime('%Y-%m-%d'),
-        interval='1D'
+        symbol="VCI",
+        start=start_date.strftime("%Y-%m-%d"),
+        end=end_date.strftime("%Y-%m-%d"),
+        interval="1D",
     )
 
     if not data.empty:
@@ -196,14 +201,14 @@ def example_pandas_analysis():
         print(f"Volume mean: {data['volume'].mean():.0f}")
 
         # Calculate daily returns
-        data['daily_return'] = data['close'].pct_change()
+        data["daily_return"] = data["close"].pct_change()
         print(f"\nDaily Return Statistics:")
         print(f"Mean daily return: {data['daily_return'].mean():.4f}")
         print(f"Std daily return: {data['daily_return'].std():.4f}")
 
         # Calculate moving averages
-        data['ma_7'] = data['close'].rolling(window=7).mean()
-        data['ma_21'] = data['close'].rolling(window=21).mean()
+        data["ma_7"] = data["close"].rolling(window=7).mean()
+        data["ma_21"] = data["close"].rolling(window=21).mean()
 
         print(f"\nMoving Averages (latest):")
         print(f"7-day MA: {data['ma_7'].iloc[-1]:.2f}")
@@ -219,19 +224,19 @@ async def main():
     print("1. Direct vnstocks library usage:")
     await example_vnstock_usage()
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
     # Adapter pattern usage
     print("2. Adapter pattern usage:")
     await example_adapter_usage()
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
     # Multiple sources comparison
     print("3. Multiple data sources:")
     await example_multiple_sources()
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
     # Data analysis example
     print("4. Pandas data analysis:")

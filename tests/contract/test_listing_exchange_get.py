@@ -3,11 +3,12 @@ Contract tests for listing symbols by exchange endpoint.
 Tests the GET /listing/symbols/exchange endpoint according to OpenAPI specification.
 """
 
-import pytest
-import httpx
-from typing import Dict, Any
+from typing import Any, Dict
 
-from tests.integration.utils import get_auth_headers, BASE_URL
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers
 
 
 @pytest.mark.contract
@@ -29,7 +30,9 @@ async def test_get_symbols_by_exchange_all_success():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/exchange", headers=headers)
+        response = await client.get(
+            "/listing/symbols/exchange", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -101,7 +104,8 @@ async def test_get_symbols_by_exchange_valid_exchanges():
     for exchange in valid_exchanges:
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
             response = await client.get(
-                f"/listing/symbols/exchange?exchange={exchange}", headers=headers
+                f"/listing/symbols/exchange?exchange={exchange}",
+                headers=headers,
             )
 
         assert response.status_code == 200
@@ -121,7 +125,9 @@ async def test_get_symbols_by_exchange_response_format():
     headers = get_auth_headers()
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/exchange", headers=headers)
+        response = await client.get(
+            "/listing/symbols/exchange", headers=headers
+        )
 
     assert response.status_code == 200
 
@@ -132,7 +138,11 @@ async def test_get_symbols_by_exchange_response_format():
     for symbol in data:
         assert isinstance(symbol, dict)
         required_fields = [
-            "symbol", "symbol_id", "type", "exchange", "organ_name"
+            "symbol",
+            "symbol_id",
+            "type",
+            "exchange",
+            "organ_name",
         ]
         for field in required_fields:
             assert field in symbol, f"Missing required field: {field}"

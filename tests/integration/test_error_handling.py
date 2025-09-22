@@ -3,13 +3,12 @@ Integration tests for error handling scenarios.
 Tests various error conditions and graceful degradation.
 """
 
-import pytest
-import httpx
-from typing import Dict, Any
+from typing import Any, Dict
 
-from tests.integration.utils import (
-    get_auth_headers, BASE_URL, get_test_config
-)
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers, get_test_config
 
 
 @pytest.mark.integration
@@ -19,7 +18,9 @@ async def test_authentication_error_scenarios():
     config = get_test_config()
 
     # Test 1: No authentication header
-    async with httpx.AsyncClient(base_url=BASE_URL, timeout=config["timeout"]) as client:
+    async with httpx.AsyncClient(
+        base_url=BASE_URL, timeout=config["timeout"]
+    ) as client:
         response = await client.get("/listing/symbols")
 
     assert response.status_code == 401
@@ -30,21 +31,27 @@ async def test_authentication_error_scenarios():
     # Test 2: Invalid token format
     invalid_headers = {"Authorization": "InvalidFormat"}
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols", headers=invalid_headers)
+        response = await client.get(
+            "/listing/symbols", headers=invalid_headers
+        )
 
     assert response.status_code == 401
 
     # Test 3: Expired token (simulate with invalid token)
     expired_headers = {"Authorization": "Bearer expired_token_12345"}
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols", headers=expired_headers)
+        response = await client.get(
+            "/listing/symbols", headers=expired_headers
+        )
 
     assert response.status_code == 401
 
     # Test 4: Malformed JWT
     malformed_headers = {"Authorization": "Bearer malformed.jwt.token"}
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols", headers=malformed_headers)
+        response = await client.get(
+            "/listing/symbols", headers=malformed_headers
+        )
 
     assert response.status_code == 401
 
@@ -58,7 +65,8 @@ async def test_validation_error_scenarios():
     # Test 1: Invalid exchange parameter
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.get(
-            "/listing/symbols/exchange?exchange=INVALID_EXCHANGE", headers=headers
+            "/listing/symbols/exchange?exchange=INVALID_EXCHANGE",
+            headers=headers,
         )
 
     assert response.status_code == 400
@@ -134,19 +142,25 @@ async def test_not_found_scenarios():
 
     # Test 1: Invalid endpoint
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/invalid_endpoint", headers=headers)
+        response = await client.get(
+            "/listing/invalid_endpoint", headers=headers
+        )
 
     assert response.status_code == 404
 
     # Test 2: Invalid market group
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/group/INVALID_GROUP", headers=headers)
+        response = await client.get(
+            "/listing/symbols/group/INVALID_GROUP", headers=headers
+        )
 
     assert response.status_code == 404
 
     # Test 3: Invalid URL structure
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols/exchange/INVALID/extra", headers=headers)
+        response = await client.get(
+            "/listing/symbols/exchange/INVALID/extra", headers=headers
+        )
 
     assert response.status_code == 404
 
@@ -200,7 +214,7 @@ async def test_server_error_simulation():
         response = await client.post(
             "/listing/symbols",
             headers={**headers, "Content-Type": "application/json"},
-            content="invalid json {"
+            content="invalid json {",
         )
 
     # Should return 400 (Bad Request) or 405 (Method Not Allowed)
@@ -210,11 +224,13 @@ async def test_server_error_simulation():
     invalid_headers = {
         **headers,
         "Content-Type": "invalid/content-type",
-        "X-Invalid-Header": "value"
+        "X-Invalid-Header": "value",
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/listing/symbols", headers=invalid_headers)
+        response = await client.get(
+            "/listing/symbols", headers=invalid_headers
+        )
 
     # Should handle invalid headers gracefully
     assert response.status_code in [200, 400]
@@ -261,11 +277,15 @@ async def test_error_response_format_consistency():
         # Authentication errors
         lambda client: client.get("/listing/symbols"),
         # Validation errors
-        lambda client: client.get("/listing/symbols/exchange?exchange=INVALID"),
+        lambda client: client.get(
+            "/listing/symbols/exchange?exchange=INVALID"
+        ),
         # Not found errors
         lambda client: client.get("/listing/symbols/group/INVALID_GROUP"),
         # Method not allowed
-        lambda client: client.post("/listing/symbols", headers=headers, json={}),
+        lambda client: client.post(
+            "/listing/symbols", headers=headers, json={}
+        ),
     ]
 
     for scenario in error_scenarios:
@@ -277,7 +297,9 @@ async def test_error_response_format_consistency():
                 error_data = response.json()
 
                 # Check standard error format
-                assert "error" in error_data, "Error response missing 'error' field"
+                assert (
+                    "error" in error_data
+                ), "Error response missing 'error' field"
 
                 # Check for optional fields
                 if "message" in error_data:
@@ -310,8 +332,12 @@ async def test_graceful_degradation():
             response = await client.get(endpoint, headers=headers)
 
         # Should succeed or degrade gracefully (not 500 error)
-        assert response.status_code not in [500, 502, 503, 504], \
-            f"Server error on {endpoint}: {response.status_code}"
+        assert response.status_code not in [
+            500,
+            502,
+            503,
+            504,
+        ], f"Server error on {endpoint}: {response.status_code}"
 
 
 @pytest.mark.integration
@@ -323,7 +349,10 @@ async def test_error_logging_and_monitoring():
     # This test validates that error responses include monitoring-friendly information
     error_scenarios = [
         ("Authentication", lambda c: c.get("/listing/symbols")),
-        ("Validation", lambda c: c.get("/listing/symbols/exchange?exchange=INVALID")),
+        (
+            "Validation",
+            lambda c: c.get("/listing/symbols/exchange?exchange=INVALID"),
+        ),
         ("Not Found", lambda c: c.get("/listing/symbols/group/INVALID_GROUP")),
     ]
 
@@ -341,7 +370,8 @@ async def test_error_logging_and_monitoring():
                 ]
 
                 found_headers = [
-                    header for header in monitoring_headers
+                    header
+                    for header in monitoring_headers
                     if header in response.headers
                 ]
 

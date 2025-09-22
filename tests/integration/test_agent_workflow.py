@@ -1,21 +1,21 @@
 """Integration tests for complete agent workflow."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-from app.agents.langgraph_workflow import LangGraphWorkflowOrchestrator
-from app.agents.agent_types import (
-    QueryType,
-    GuardValidationResult,
-    VectorEmbedding,
-    SearchResult,
-    AnalysisResult,
-    PredictionResult
-)
 from app.agents.agent_state import WorkflowState
+from app.agents.agent_types import (
+    AnalysisResult,
+    GuardValidationResult,
+    PredictionResult,
+    QueryType,
+    SearchResult,
+    VectorEmbedding,
+)
+from app.agents.langgraph_workflow import LangGraphWorkflowOrchestrator
 
 
 class TestAgentWorkflowIntegration:

@@ -136,14 +136,14 @@ asyncio_mode = "auto"
 filterwarnings = [
     "error",
     "ignore::UserWarning",
-    "ignore::DeprecationWarning",
 ]
 markers = [
-    "contract: Contract tests for API endpoints",
-    "integration: Integration tests for user workflows",
-    "unit: Unit tests for individual components",
+    "performance: Performance tests",
+    "load: Load tests",
+    "integration: Integration tests",
+    "unit: Unit tests",
+    "ignore::DeprecationWarning",
 ]
-
 [tool.coverage.run]
 source = ["app"]
 omit = [

@@ -1,14 +1,14 @@
 """Unit tests for Base Agent and agent utilities."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from langchain_openai import ChatOpenAI
 
-from app.agents.base_agent import BaseAgent, LLMBasedAgent
+from app.agents.agent_state import StateManager, WorkflowState
 from app.agents.agent_types import AgentRole, WorkflowConfig
-from app.agents.agent_state import WorkflowState, StateManager
+from app.agents.base_agent import BaseAgent, LLMBasedAgent
 
 
 class MockAgent(BaseAgent):
@@ -32,7 +32,7 @@ class TestBaseAgent:
         return MockAgent(
             role=AgentRole.GUARD,
             name="Test Agent",
-            description="Test agent for unit testing"
+            description="Test agent for unit testing",
         )
 
     @pytest.fixture
@@ -42,7 +42,7 @@ class TestBaseAgent:
             workflow_id="test-workflow-123",
             original_query="Test query",
             current_query="Test query",
-            query_type="test"
+            query_type="test",
         )
 
     def test_agent_initialization(self, mock_agent):
@@ -65,7 +65,9 @@ class TestBaseAgent:
     async def test_agent_execute_with_error(self, mock_agent, sample_state):
         """Test agent execution with error."""
         # Mock process to raise an exception
-        with patch.object(mock_agent, 'process', side_effect=Exception("Test error")):
+        with patch.object(
+            mock_agent, "process", side_effect=Exception("Test error")
+        ):
             with pytest.raises(Exception) as exc_info:
                 await mock_agent.execute(sample_state)
 
@@ -86,7 +88,9 @@ class TestBaseAgent:
         assert result.agent_states == {"previous": "completed"}
 
     @pytest.mark.asyncio
-    async def test_agent_workflow_id_preservation(self, mock_agent, sample_state):
+    async def test_agent_workflow_id_preservation(
+        self, mock_agent, sample_state
+    ):
         """Test that workflow ID is preserved."""
         result = await mock_agent.execute(sample_state)
 
@@ -111,7 +115,7 @@ class TestLLMBasedAgent:
             name="Test LLM Agent",
             description="Test LLM agent",
             llm_model=mock_llm,
-            system_prompt="You are a helpful assistant."
+            system_prompt="You are a helpful assistant.",
         )
 
     @pytest.fixture
@@ -121,7 +125,7 @@ class TestLLMBasedAgent:
             workflow_id="test-workflow-456",
             original_query="Analyze this data",
             current_query="Analyze this data",
-            query_type="analysis"
+            query_type="analysis",
         )
 
     def test_llm_agent_initialization(self, llm_agent, mock_llm):
@@ -133,13 +137,17 @@ class TestLLMBasedAgent:
         assert llm_agent.config is not None
 
     @pytest.mark.asyncio
-    async def test_llm_agent_process_with_system_prompt(self, llm_agent, mock_llm, sample_state):
+    async def test_llm_agent_process_with_system_prompt(
+        self, llm_agent, mock_llm, sample_state
+    ):
         """Test LLM agent processing with system prompt."""
         # Mock LLM response
         mock_llm.ainvoke.return_value = MagicMock(content="Analysis complete")
 
         # Mock the abstract process method
-        with patch.object(llm_agent, '_process_with_llm', return_value={"result": "test"}) as mock_process:
+        with patch.object(
+            llm_agent, "_process_with_llm", return_value={"result": "test"}
+        ) as mock_process:
             result = await llm_agent.process(sample_state)
 
             # Verify process was called
@@ -150,9 +158,7 @@ class TestLLMBasedAgent:
         """Test LLM agent configuration."""
         # Test with custom configuration
         custom_config = WorkflowConfig(
-            max_tokens=2000,
-            temperature=0.8,
-            timeout=60
+            max_tokens=2000, temperature=0.8, timeout=60
         )
 
         agent_with_config = LLMBasedAgent(
@@ -161,7 +167,7 @@ class TestLLMBasedAgent:
             description="Agent with custom config",
             llm_model=mock_llm,
             config=custom_config,
-            system_prompt="Custom prompt"
+            system_prompt="Custom prompt",
         )
 
         assert agent_with_config.config.max_tokens == 2000
@@ -169,24 +175,36 @@ class TestLLMBasedAgent:
         assert agent_with_config.config.timeout == 60
 
     @pytest.mark.asyncio
-    async def test_llm_agent_error_handling(self, llm_agent, mock_llm, sample_state):
+    async def test_llm_agent_error_handling(
+        self, llm_agent, mock_llm, sample_state
+    ):
         """Test LLM agent error handling."""
         # Mock LLM to raise an exception
         mock_llm.ainvoke.side_effect = Exception("LLM error")
 
-        with patch.object(llm_agent, '_process_with_llm', side_effect=Exception("Processing error")):
+        with patch.object(
+            llm_agent,
+            "_process_with_llm",
+            side_effect=Exception("Processing error"),
+        ):
             with pytest.raises(Exception) as exc_info:
                 await llm_agent.process(sample_state)
 
             assert "Processing error" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_llm_agent_state_update(self, llm_agent, mock_llm, sample_state):
+    async def test_llm_agent_state_update(
+        self, llm_agent, mock_llm, sample_state
+    ):
         """Test LLM agent state updates."""
         # Add initial state
         sample_state.agent_states = {"previous_agent": "completed"}
 
-        with patch.object(llm_agent, '_process_with_llm', return_value={"analysis": "completed"}) as mock_process:
+        with patch.object(
+            llm_agent,
+            "_process_with_llm",
+            return_value={"analysis": "completed"},
+        ) as mock_process:
             result = await llm_agent.process(sample_state)
 
             # Verify agent state is updated
@@ -196,13 +214,18 @@ class TestLLMBasedAgent:
             assert "previous_agent" in result.agent_states
 
     @pytest.mark.asyncio
-    async def test_llm_agent_message_handling(self, llm_agent, mock_llm, sample_state):
+    async def test_llm_agent_message_handling(
+        self, llm_agent, mock_llm, sample_state
+    ):
         """Test LLM agent message handling."""
         # Add messages to state
         from langchain_core.messages import HumanMessage
+
         sample_state.messages = [HumanMessage(content="Previous message")]
 
-        with patch.object(llm_agent, '_process_with_llm', return_value={"response": "test"}) as mock_process:
+        with patch.object(
+            llm_agent, "_process_with_llm", return_value={"response": "test"}
+        ) as mock_process:
             result = await llm_agent.process(sample_state)
 
             # Verify messages are preserved
@@ -210,16 +233,26 @@ class TestLLMBasedAgent:
             assert result.messages[0].content == "Previous message"
 
     @pytest.mark.asyncio
-    async def test_llm_agent_metadata_handling(self, llm_agent, mock_llm, sample_state):
+    async def test_llm_agent_metadata_handling(
+        self, llm_agent, mock_llm, sample_state
+    ):
         """Test LLM agent metadata handling."""
         # Add metadata to state
-        sample_state.metadata = {"user_id": "test_user", "session_id": "test_session"}
+        sample_state.metadata = {
+            "user_id": "test_user",
+            "session_id": "test_session",
+        }
 
-        with patch.object(llm_agent, '_process_with_llm', return_value={"response": "test"}) as mock_process:
+        with patch.object(
+            llm_agent, "_process_with_llm", return_value={"response": "test"}
+        ) as mock_process:
             result = await llm_agent.process(sample_state)
 
             # Verify metadata is preserved
-            assert result.metadata == {"user_id": "test_user", "session_id": "test_session"}
+            assert result.metadata == {
+                "user_id": "test_user",
+                "session_id": "test_session",
+            }
 
     @pytest.mark.asyncio
     async def test_llm_agent_concurrent_execution(self, llm_agent, mock_llm):
@@ -229,15 +262,22 @@ class TestLLMBasedAgent:
                 workflow_id=f"workflow-{i}",
                 original_query=f"Query {i}",
                 current_query=f"Query {i}",
-                query_type="test"
+                query_type="test",
             )
             for i in range(3)
         ]
 
-        with patch.object(llm_agent, '_process_with_llm', return_value={"response": f"test response"}) as mock_process:
+        with patch.object(
+            llm_agent,
+            "_process_with_llm",
+            return_value={"response": f"test response"},
+        ) as mock_process:
             # Execute concurrently
             import asyncio
-            results = await asyncio.gather(*[llm_agent.process(state) for state in states])
+
+            results = await asyncio.gather(
+                *[llm_agent.process(state) for state in states]
+            )
 
             # Verify all states were processed
             assert len(results) == 3
@@ -265,9 +305,7 @@ class TestLLMBasedAgent:
         assert config.timeout == 30
 
         custom_config = WorkflowConfig(
-            max_tokens=2000,
-            temperature=0.8,
-            timeout=60
+            max_tokens=2000, temperature=0.8, timeout=60
         )
         assert custom_config.max_tokens == 2000
         assert custom_config.temperature == 0.8

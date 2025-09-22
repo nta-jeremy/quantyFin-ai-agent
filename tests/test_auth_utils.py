@@ -24,7 +24,9 @@ async def get_current_test_user(
     # For testing, accept any token or use default test token
     if credentials:
         token = credentials.credentials
-        logger.debug(f"Using provided token for test authentication: {token[:10]}...")
+        logger.debug(
+            f"Using provided token for test authentication: {token[:10]}..."
+        )
     else:
         logger.debug("No token provided, using default test user")
 
@@ -53,8 +55,7 @@ async def get_current_active_test_user(
     """
     if not current_user.get("active", True):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
     return current_user
 
@@ -63,6 +64,7 @@ def require_test_role(required_role: str):
     """
     Test dependency to check if user has required role.
     """
+
     async def role_dependency(
         current_user: Dict[str, Any] = Depends(get_current_active_test_user),
     ) -> Dict[str, Any]:

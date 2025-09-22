@@ -3,11 +3,12 @@ Contract tests for VN30 constituents endpoint.
 Tests the GET /listing/symbols/vn30 endpoint according to OpenAPI specification.
 """
 
-import pytest
-import httpx
 from typing import List
 
-from tests.integration.utils import get_auth_headers, BASE_URL
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers
 
 
 @pytest.mark.contract
@@ -61,7 +62,18 @@ async def test_get_vn30_symbols_known_constituents():
     vn30_tickers = set(data)
 
     # Check for some common VN30 constituents
-    known_vn30 = ["VNM", "FPT", "MWG", "HPG", "VCB", "TCH", "ACB", "BID", "CTG", "HDB"]
+    known_vn30 = [
+        "VNM",
+        "FPT",
+        "MWG",
+        "HPG",
+        "VCB",
+        "TCH",
+        "ACB",
+        "BID",
+        "CTG",
+        "HDB",
+    ]
 
     # At least some known constituents should be present
     intersection = vn30_tickers.intersection(known_vn30)
@@ -108,7 +120,9 @@ async def test_get_vn30_symbols_response_format():
 
         # Vietnamese stock ticker format validation
         assert ticker.isupper(), f"Ticker {ticker} should be uppercase"
-        assert 2 <= len(ticker) <= 4, f"Ticker {ticker} should be 2-4 characters"
+        assert (
+            2 <= len(ticker) <= 4
+        ), f"Ticker {ticker} should be 2-4 characters"
         assert ticker.isalpha(), f"Ticker {ticker} should contain only letters"
 
 

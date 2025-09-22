@@ -3,11 +3,12 @@ Contract tests for international symbols search endpoint.
 Tests the GET /listing/international/search endpoint according to OpenAPI specification.
 """
 
-import pytest
-import httpx
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from tests.integration.utils import get_auth_headers, BASE_URL
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers
 
 
 @pytest.mark.contract
@@ -117,9 +118,16 @@ async def test_search_international_symbols_response_format():
     for symbol in data:
         assert isinstance(symbol, dict)
         required_fields = [
-            "symbol", "symbol_id", "exchange_name", "exchange_code_mic",
-            "short_name", "friendly_name", "eng_name", "description",
-            "local_name", "locale"
+            "symbol",
+            "symbol_id",
+            "exchange_name",
+            "exchange_code_mic",
+            "short_name",
+            "friendly_name",
+            "eng_name",
+            "description",
+            "local_name",
+            "locale",
         ]
         for field in required_fields:
             assert field in symbol, f"Missing required field: {field}"
@@ -162,7 +170,9 @@ async def test_search_international_symbols_mic_codes():
         # MIC codes are typically 4-character alphanumeric codes
         assert isinstance(mic_code, str)
         assert 3 <= len(mic_code) <= 6, f"Invalid MIC code length: {mic_code}"
-        assert mic_code.isalnum(), f"MIC code should be alphanumeric: {mic_code}"
+        assert (
+            mic_code.isalnum()
+        ), f"MIC code should be alphanumeric: {mic_code}"
         assert mic_code.isupper(), f"MIC code should be uppercase: {mic_code}"
 
 
@@ -189,11 +199,17 @@ async def test_search_international_symbols_locale_format():
         assert "-" in locale, f"Invalid locale format: {locale}"
 
         parts = locale.split("-")
-        assert len(parts) == 2, f"Locale should have language and region: {locale}"
+        assert (
+            len(parts) == 2
+        ), f"Locale should have language and region: {locale}"
 
         language, region = parts
-        assert len(language) == 2, f"Language code should be 2 characters: {language}"
-        assert len(region) == 2, f"Region code should be 2 characters: {region}"
+        assert (
+            len(language) == 2
+        ), f"Language code should be 2 characters: {language}"
+        assert (
+            len(region) == 2
+        ), f"Region code should be 2 characters: {region}"
         assert language.islower(), f"Language should be lowercase: {language}"
         assert region.isupper(), f"Region should be uppercase: {region}"
 
@@ -209,7 +225,7 @@ async def test_search_international_symbols_various_queries():
         "XAU",  # Gold
         "ETH",  # Ethereum
         "S&P500",  # Index
-        "DOW",   # Dow Jones
+        "DOW",  # Dow Jones
     ]
 
     headers = get_auth_headers()
@@ -229,12 +245,15 @@ async def test_search_international_symbols_various_queries():
         if len(data) > 0:
             # At least some results should contain the query
             matching_results = [
-                s for s in data
-                if query.upper() in s["symbol"].upper() or
-                   query.upper() in s["short_name"].upper() or
-                   query.upper() in s["friendly_name"].upper()
+                s
+                for s in data
+                if query.upper() in s["symbol"].upper()
+                or query.upper() in s["short_name"].upper()
+                or query.upper() in s["friendly_name"].upper()
             ]
-            assert len(matching_results) > 0, f"No results matching query: {query}"
+            assert (
+                len(matching_results) > 0
+            ), f"No results matching query: {query}"
 
 
 @pytest.mark.contract
@@ -246,7 +265,7 @@ async def test_search_international_symbols_no_results():
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.get(
             "/listing/international/search?query=INVALID_SYMBOL_THAT_SHOULD_NOT_EXIST_12345",
-            headers=headers
+            headers=headers,
         )
 
     assert response.status_code == 200
@@ -279,8 +298,8 @@ async def test_search_international_symbols_case_insensitive():
 
         # Results should contain USD-related symbols regardless of case
         usd_results = [
-            s for s in data
-            if "USD" in s["symbol"].upper() or
-               "USD" in s["short_name"].upper()
+            s
+            for s in data
+            if "USD" in s["symbol"].upper() or "USD" in s["short_name"].upper()
         ]
         assert len(usd_results) > 0, f"No USD results for query: {query}"

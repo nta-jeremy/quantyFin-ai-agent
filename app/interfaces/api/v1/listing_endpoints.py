@@ -221,7 +221,7 @@ async def get_symbols_by_group_endpoint(
     group_name: str = Path(
         ...,
         description="Market group name",
-        regex=(
+        pattern=(
             r"^(VN30|VN100|VNMidCap|VNSmallCap|VNAllShare|HNX30|HNXCon|HNXFin|"
             r"HNXLCap|HNXMSCap|HNXMan|ETF|FU_INDEX|CW)$"
         ),

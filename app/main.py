@@ -26,6 +26,8 @@ from app.interfaces.api.v1 import (
     agent_router,
     health_router,
     hello_router,
+    historical_router,
+    international_router,
     listing_router,
 )
 from config.settings import get_settings
@@ -108,6 +110,8 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/api/v1", tags=["authentication"])
     app.include_router(agent_router, prefix="/api/v1", tags=["agents"])
     app.include_router(listing_router, prefix="/api/v1", tags=["listing"])
+    app.include_router(historical_router, prefix="/api/v1")
+    app.include_router(international_router, prefix="/api/v1")
 
     # Global exception handler
     @app.exception_handler(HTTPException)

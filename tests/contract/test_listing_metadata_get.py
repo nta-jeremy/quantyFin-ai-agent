@@ -3,11 +3,12 @@ Contract tests for listing metadata endpoints.
 Tests the GET /listing/exchanges and /listing/market-groups endpoints according to OpenAPI specification.
 """
 
-import pytest
-import httpx
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from tests.integration.utils import get_auth_headers, BASE_URL
+import httpx
+import pytest
+
+from tests.integration.utils import BASE_URL, get_auth_headers
 
 
 @pytest.mark.contract
@@ -50,11 +51,15 @@ async def test_get_exchanges_success():
     assert len(data) > 0  # Should have at least some exchanges
 
     # Should contain expected Vietnamese exchanges
-    exchange_codes = [exchange.get("code", exchange.get("exchange")) for exchange in data]
+    exchange_codes = [
+        exchange.get("code", exchange.get("exchange")) for exchange in data
+    ]
     expected_exchanges = ["HOSE", "HNX", "UPCOM"]
 
     for expected_exchange in expected_exchanges:
-        assert expected_exchange in exchange_codes, f"Missing exchange: {expected_exchange}"
+        assert (
+            expected_exchange in exchange_codes
+        ), f"Missing exchange: {expected_exchange}"
 
     # Validate exchange structure
     for exchange in data:
@@ -64,8 +69,9 @@ async def test_get_exchanges_success():
         has_code_name = "code" in exchange and "name" in exchange
         has_exchange = "exchange" in exchange
 
-        assert has_code_name or has_exchange, \
-            f"Exchange missing required fields: {exchange}"
+        assert (
+            has_code_name or has_exchange
+        ), f"Exchange missing required fields: {exchange}"
 
         if has_code_name:
             assert isinstance(exchange["code"], str)
@@ -96,13 +102,26 @@ async def test_get_market_groups_success():
     # Should contain expected market groups
     group_codes = [group.get("code", group.get("group")) for group in data]
     expected_groups = [
-        "VN30", "VN100", "VNMIDCAP", "VNSMALLCAP", "ETF", "CW", "BOND",
-        "HNX30", "HNX_CON", "HNX_FIN", "HNX_L_CAP", "HNX_MS_CAP", "HNX_MAN"
+        "VN30",
+        "VN100",
+        "VNMIDCAP",
+        "VNSMALLCAP",
+        "ETF",
+        "CW",
+        "BOND",
+        "HNX30",
+        "HNX_CON",
+        "HNX_FIN",
+        "HNX_L_CAP",
+        "HNX_MS_CAP",
+        "HNX_MAN",
     ]
 
     # At least some expected groups should be present
     found_groups = [group for group in expected_groups if group in group_codes]
-    assert len(found_groups) > 0, f"No expected market groups found. Available: {group_codes}"
+    assert (
+        len(found_groups) > 0
+    ), f"No expected market groups found. Available: {group_codes}"
 
     # Validate market group structure
     for group in data:
@@ -112,8 +131,9 @@ async def test_get_market_groups_success():
         has_code_name = "code" in group and "name" in group
         has_group = "group" in group
 
-        assert has_code_name or has_group, \
-            f"Market group missing required fields: {group}"
+        assert (
+            has_code_name or has_group
+        ), f"Market group missing required fields: {group}"
 
         if has_code_name:
             assert isinstance(group["code"], str)
@@ -146,14 +166,12 @@ async def test_get_exchanges_response_format():
         fields = list(exchange.keys())
 
         # Should have either code/name format or exchange field
-        valid_field_sets = [
-            {"code", "name"},
-            {"exchange"}
-        ]
+        valid_field_sets = [{"code", "name"}, {"exchange"}]
 
         field_set = set(fields)
-        assert any(field_set.issubset(valid_set) for valid_set in valid_field_sets), \
-            f"Inconsistent fields in exchange: {fields}"
+        assert any(
+            field_set.issubset(valid_set) for valid_set in valid_field_sets
+        ), f"Inconsistent fields in exchange: {fields}"
 
 
 @pytest.mark.contract
@@ -176,14 +194,12 @@ async def test_get_market_groups_response_format():
         fields = list(group.keys())
 
         # Should have either code/name format or group field
-        valid_field_sets = [
-            {"code", "name"},
-            {"group"}
-        ]
+        valid_field_sets = [{"code", "name"}, {"group"}]
 
         field_set = set(fields)
-        assert any(field_set.issubset(valid_set) for valid_set in valid_field_sets), \
-            f"Inconsistent fields in market group: {fields}"
+        assert any(
+            field_set.issubset(valid_set) for valid_set in valid_field_sets
+        ), f"Inconsistent fields in market group: {fields}"
 
 
 @pytest.mark.contract
@@ -209,7 +225,9 @@ async def test_get_exchanges_unique_values():
 
     # All codes should be unique
     unique_codes = set(exchange_codes)
-    assert len(exchange_codes) == len(unique_codes), "Duplicate exchange codes found"
+    assert len(exchange_codes) == len(
+        unique_codes
+    ), "Duplicate exchange codes found"
 
 
 @pytest.mark.contract
@@ -235,7 +253,9 @@ async def test_get_market_groups_unique_values():
 
     # All codes should be unique
     unique_codes = set(group_codes)
-    assert len(group_codes) == len(unique_codes), "Duplicate market group codes found"
+    assert len(group_codes) == len(
+        unique_codes
+    ), "Duplicate market group codes found"
 
 
 @pytest.mark.contract
@@ -257,7 +277,9 @@ async def test_get_exchanges_caching():
         cache_control = response1.headers["Cache-Control"]
         assert "max-age" in cache_control
         # Exchanges should have long cache time
-        assert int(cache_control.split("max-age=")[1].split(";")[0]) >= 86400  # 24 hours
+        assert (
+            int(cache_control.split("max-age=")[1].split(";")[0]) >= 86400
+        )  # 24 hours
 
 
 @pytest.mark.contract
@@ -279,7 +301,9 @@ async def test_get_market_groups_caching():
         cache_control = response1.headers["Cache-Control"]
         assert "max-age" in cache_control
         # Market groups should have long cache time
-        assert int(cache_control.split("max-age=")[1].split(";")[0]) >= 86400  # 24 hours
+        assert (
+            int(cache_control.split("max-age=")[1].split(";")[0]) >= 86400
+        )  # 24 hours
 
 
 @pytest.mark.contract
@@ -301,7 +325,9 @@ async def test_get_exchanges_known_exchanges():
     upcom_found = False
 
     for exchange in data:
-        exchange_code = exchange.get("code", exchange.get("exchange", "")).upper()
+        exchange_code = exchange.get(
+            "code", exchange.get("exchange", "")
+        ).upper()
 
         if "HOSE" in exchange_code:
             hose_found = True

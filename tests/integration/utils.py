@@ -3,7 +3,7 @@ Utility functions for integration and contract tests.
 """
 
 import os
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Configuration for test environment
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:8000/api/v1")
@@ -14,7 +14,7 @@ def get_auth_headers() -> Dict[str, str]:
     """Get authentication headers for API requests."""
     return {
         "Authorization": f"Bearer {TEST_TOKEN}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
 
@@ -50,9 +50,21 @@ def validate_exchange_code(exchange: str) -> bool:
 def validate_market_group(group: str) -> bool:
     """Validate Vietnamese market group code."""
     valid_groups = {
-        "VN30", "VN100", "VNMIDCAP", "VNSMALLCAP", "ETF", "CW", "BOND",
-        "HNX30", "HNX_CON", "HNX_FIN", "HNX_L_CAP", "HNX_MS_CAP", "HNX_MAN",
-        "FU_INDEX", "VN_ALL_SHARE"
+        "VN30",
+        "VN100",
+        "VNMIDCAP",
+        "VNSMALLCAP",
+        "ETF",
+        "CW",
+        "BOND",
+        "HNX30",
+        "HNX_CON",
+        "HNX_FIN",
+        "HNX_L_CAP",
+        "HNX_MS_CAP",
+        "HNX_MAN",
+        "FU_INDEX",
+        "VN_ALL_SHARE",
     }
     return group in valid_groups
 
@@ -117,9 +129,16 @@ def assert_valid_icb_industry(data: Dict[str, Any]) -> None:
 def assert_valid_international_symbol(data: Dict[str, Any]) -> None:
     """Assert that international symbol data is valid."""
     required_fields = [
-        "symbol", "symbol_id", "exchange_name", "exchange_code_mic",
-        "short_name", "friendly_name", "eng_name", "description",
-        "local_name", "locale"
+        "symbol",
+        "symbol_id",
+        "exchange_name",
+        "exchange_code_mic",
+        "short_name",
+        "friendly_name",
+        "eng_name",
+        "description",
+        "local_name",
+        "locale",
     ]
     for field in required_fields:
         assert field in data, f"Missing field: {field}"

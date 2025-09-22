@@ -1,911 +1,755 @@
-"""VCI (Vietcap) adapter for Vietnamese market data."""
+"""
+VCI (Vietnam Capital Investments) data source adapter.
+
+This module provides the infrastructure layer implementation for VCI data source
+following hexagonal architecture principles.
+"""
 
 import asyncio
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-from uuid import uuid4
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
+import aiohttp
 import pandas as pd
-from vnstock.explorer.vci import Company, Finance, Listing, Quote, Trading
 
-from app.core.domain.company_models import VietnameseCompany
-from app.core.domain.enums import VietnameseExchange, VnstockDataSource
-from app.core.domain.financial_models import (
-    VietnameseFinancialMetrics,
-    VietnameseFinancialReport,
+from app.core.domain.data_source_models import (
+    DataSource,
+    DataSourceConfig,
+    DataSourceHealth,
+    DataSourceMetrics,
+    DataSourceStatus,
 )
-from app.core.domain.listing_models import (
-    ExchangeSymbol,
-    ICBIndustry,
-    IndustrySymbol,
-    InternationalSymbol,
-    ListingData,
-    StockSymbol,
+from app.core.domain.historical_models import (
+    AssetType,
+    DataSourceUnavailableError,
+    DataValidationError,
+    HistoricalDataError,
+    HistoricalDataRequest,
+    HistoricalDataResponse,
+    InvalidParameterError,
+    NetworkError,
+    OHLCVTData,
+    RateLimitExceededError,
+    SymbolNotFoundError,
+    TimeInterval,
+    TimeoutError,
 )
-from app.core.domain.stock_models import VietnameseStock
-from app.core.domain.vietnamese_market_data import (
-    VietnameseMarketData,
-    VietnameseNews,
-)
 
-from .vnstock_adapter import VnstockAdapter, VnstockAdapterConfig
+logger = logging.getLogger(__name__)
 
 
-class VCIAdapter(VnstockAdapter):
-    """VCI (Vietcap) data source adapter."""
+class VCIAdapter:
+    """VCI data source adapter implementation."""
 
-    def __init__(self, config: VnstockAdapterConfig):
-        """Initialize VCI adapter.
+    def __init__(self, config: DataSourceConfig):
+        """Initialize VCI adapter with configuration."""
+        self.config = config
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.metrics = DataSourceMetrics(data_source=DataSource.VCI)
+        self.last_request_time = 0
+        self.request_count = 0
+        self._rate_limit_window = 60  # 1 minute window
 
-        Args:
-            config: Configuration for the adapter
-        """
-        super().__init__(config)
-        self._quote_client: Optional[Quote] = None
-        self._company_client: Optional[Company] = None
-        self._finance_client: Optional[Finance] = None
-        self._trading_client: Optional[Trading] = None
-        self._listing_client: Optional[Listing] = None
+    async def initialize(self) -> None:
+        """Initialize HTTP session."""
+        logger.info("VCI: Initializing HTTP session")
+        timeout = aiohttp.ClientTimeout(total=self.config.timeout_seconds)
+        connector = aiohttp.TCPConnector(limit=10, limit_per_host=5)
+        self.session = aiohttp.ClientSession(
+            timeout=timeout,
+            connector=connector,
+            headers={
+                "User-Agent": "QuantyFin-AI-Agent/1.0",
+                "Accept": "application/json",
+            },
+        )
+        logger.info("VCI: HTTP session initialized successfully")
 
-    async def _get_quote_client(self) -> Quote:
-        """Get or create Quote client."""
-        if self._quote_client is None:
-            self._quote_client = Quote()
-        return self._quote_client
+    async def close(self) -> None:
+        """Close HTTP session."""
+        logger.info("VCI: Closing HTTP session")
+        if self.session:
+            await self.session.close()
+            logger.info("VCI: HTTP session closed successfully")
 
-    async def _get_company_client(self, symbol: str) -> Company:
-        """Get or create Company client for symbol."""
-        return Company(symbol)
+    async def check_health(self) -> DataSourceHealth:
+        """Check VCI data source health."""
+        logger.info("VCI: Starting health check")
+        start_time = datetime.now(timezone.utc)
+        success = False
+        error_message = None
 
-    async def _get_finance_client(self, symbol: str) -> Finance:
-        """Get or create Finance client for symbol."""
-        return Finance(symbol)
+        try:
+            # Test with a simple endpoint or known symbol
+            test_url = f"{self.config.base_url}/api/v1/stock/historical"
+            params = {"symbol": "VN30", "interval": "1D", "limit": 1}
+            logger.debug(
+                f"VCI: Health check URL: {test_url}, params: {params}"
+            )
 
-    async def _get_trading_client(self) -> Trading:
-        """Get or create Trading client."""
-        if self._trading_client is None:
-            self._trading_client = Trading()
-        return self._trading_client
+            async with self.session.get(
+                test_url, params=params, timeout=10
+            ) as response:
+                logger.debug(
+                    f"VCI: Health check response status: {response.status}"
+                )
+                if response.status == 200:
+                    success = True
+                    logger.info("VCI: Health check passed")
+                elif response.status == 429:
+                    error_message = "Rate limit exceeded"
+                    logger.warning(
+                        "VCI: Health check failed - rate limit exceeded"
+                    )
+                elif response.status >= 500:
+                    error_message = f"Server error: {response.status}"
+                    logger.error(
+                        f"VCI: Health check failed - server error: {response.status}"
+                    )
+                else:
+                    error_message = f"HTTP error: {response.status}"
+                    logger.warning(
+                        f"VCI: Health check failed - HTTP error: {response.status}"
+                    )
 
-    async def _get_listing_client(self) -> Listing:
-        """Get or create Listing client."""
-        if self._listing_client is None:
-            self._listing_client = Listing()
-        return self._listing_client
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            error_message = f"Connection error: {str(e)}"
+            logger.error(f"VCI: Health check connection error: {str(e)}")
+
+        except Exception as e:
+            error_message = f"Unexpected error: {str(e)}"
+            logger.error(
+                f"VCI: Health check unexpected error: {str(e)}", exc_info=True
+            )
+
+        response_time_ms = (
+            datetime.now(timezone.utc) - start_time
+        ).total_seconds() * 1000
+        status = (
+            DataSourceStatus.AVAILABLE
+            if success
+            else DataSourceStatus.UNAVAILABLE
+        )
+        success_rate = self.metrics.successful_requests / max(
+            self.metrics.total_requests, 1
+        )
+
+        logger.info(
+            f"VCI: Health check completed - Status: {status.value}, Response time: {response_time_ms:.2f}ms, Success rate: {success_rate:.2%}"
+        )
+
+        return DataSourceHealth(
+            data_source=DataSource.VCI,
+            status=status,
+            response_time_ms=response_time_ms,
+            last_checked=datetime.now(timezone.utc),
+            error_message=error_message,
+            success_rate=success_rate,
+        )
+
+    async def _respect_rate_limit(self) -> None:
+        """Respect rate limiting for VCI API."""
+        current_time = asyncio.get_event_loop().time()
+        time_since_last_request = current_time - self.last_request_time
+
+        # Check if we need to wait based on rate limit
+        if self.request_count >= self.config.rate_limit_per_minute:
+            if time_since_last_request < self._rate_limit_window:
+                wait_time = self._rate_limit_window - time_since_last_request
+                logger.debug(
+                    f"VCI: Rate limit reached, waiting {wait_time:.2f} seconds"
+                )
+                await asyncio.sleep(wait_time)
+                self.request_count = 0  # Reset counter after waiting
+                logger.debug(
+                    "VCI: Rate limit window reset, continuing requests"
+                )
+
+        # Minimum delay between requests
+        if time_since_last_request < 0.5:  # 500ms minimum
+            wait_time = 0.5 - time_since_last_request
+            logger.debug(
+                f"VCI: Minimum delay, waiting {wait_time:.2f} seconds"
+            )
+            await asyncio.sleep(wait_time)
+
+        self.last_request_time = asyncio.get_event_loop().time()
+        self.request_count += 1
+        logger.debug(
+            f"VCI: Rate limit check passed, request count: {self.request_count}"
+        )
 
     async def get_historical_data(
-        self,
-        symbol: str,
-        start_date: datetime,
-        end_date: datetime,
-        interval: str = "1D",
-    ) -> List[VietnameseStock]:
-        """Get historical stock data from VCI.
-
-        Args:
-            symbol: Stock symbol
-            start_date: Start date for data retrieval
-            end_date: End date for data retrieval
-            interval: Data interval (1D, 1H, etc.)
-
-        Returns:
-            List of Vietnamese stock data
-        """
-        symbol = self._validate_symbol(symbol)
-        self._validate_date_range(start_date, end_date)
-
-        self._log_operation(
-            "get_historical_data",
-            symbol=symbol,
-            start_date=start_date.isoformat(),
-            end_date=end_date.isoformat(),
-            interval=interval,
+        self, request: HistoricalDataRequest
+    ) -> HistoricalDataResponse:
+        """Get historical data from VCI."""
+        logger.info(
+            f"VCI: Starting historical data request for {request.symbol} ({request.asset_type})"
+        )
+        logger.debug(
+            f"VCI: Request details - interval: {request.interval.value}, "
+            f"date range: {request.start_date.strftime('%Y-%m-%d')} to {request.end_date.strftime('%Y-%m-%d')}"
         )
 
-        async def _fetch_data():
-            await self._rate_limit()
-            quote_client = await self._get_quote_client()
-
-            # Convert datetime to string format expected by vnstock
-            start_str = start_date.strftime("%Y-%m-%d")
-            end_str = end_date.strftime("%Y-%m-%d")
-
-            df = quote_client.history(
-                symbol=symbol,
-                start=start_str,
-                end=end_str,
-                interval=interval,
+        if not self.session:
+            logger.error("VCI: Session not initialized")
+            raise DataSourceUnavailableError(
+                "Session not initialized", request.symbol, request.asset_type
             )
 
-            return self._convert_dataframe_to_stocks(df, symbol)
+        await self._respect_rate_limit()
+        logger.debug("VCI: Rate limit check passed")
 
-        return await self._execute_with_retry(_fetch_data)
+        start_time = datetime.now(timezone.utc)
+        url = f"{self.config.base_url}/api/v1/stock/historical"
+        logger.debug(f"VCI: Making request to {url}")
 
-    async def get_company_info(
-        self, symbol: str
-    ) -> Optional[VietnameseCompany]:
-        """Get company information from VCI.
+        # Build request parameters
+        params = {
+            "symbol": request.symbol,
+            "interval": request.interval.value,
+            "start_date": request.start_date.strftime("%Y-%m-%d"),
+            "end_date": request.end_date.strftime("%Y-%m-%d"),
+        }
 
-        Args:
-            symbol: Stock symbol
+        # Add optional parameters
+        if request.data_source and request.data_source.lower() == "vci":
+            params["source"] = "vci"
 
-        Returns:
-            Company information or None if not found
-        """
-        symbol = self._validate_symbol(symbol)
+        data_points = []
 
-        self._log_operation("get_company_info", symbol=symbol)
+        try:
+            logger.debug(
+                f"VCI: Making HTTP request to {url} with params: {params}"
+            )
+            async with self.session.get(url, params=params) as response:
+                response_time_ms = (
+                    datetime.now(timezone.utc) - start_time
+                ).total_seconds() * 1000
+                logger.debug(
+                    f"VCI: Received response - Status: {response.status}, Response time: {response_time_ms:.2f}ms"
+                )
 
-        async def _fetch_company():
-            await self._rate_limit()
-            company_client = await self._get_company_client(symbol)
+                if response.status == 200:
+                    logger.debug("VCI: Parsing successful response data")
+                    data = await response.json()
+                    data_points = self._parse_historical_data(data, request)
+                    success = True
+                    logger.info(
+                        f"VCI: Successfully retrieved {len(data_points)} data points for {request.symbol}"
+                    )
+                elif response.status == 404:
+                    logger.warning(f"VCI: Symbol not found - {request.symbol}")
+                    raise SymbolNotFoundError(
+                        f"Symbol {request.symbol} not found in VCI",
+                        request.symbol,
+                        request.asset_type,
+                    )
+                elif response.status == 429:
+                    logger.warning(
+                        f"VCI: Rate limit exceeded for {request.symbol}"
+                    )
+                    raise RateLimitExceededError(
+                        "Rate limit exceeded for VCI",
+                        request.symbol,
+                        request.asset_type,
+                    )
+                elif response.status >= 500:
+                    logger.error(
+                        f"VCI: Server error - Status: {response.status} for {request.symbol}"
+                    )
+                    raise DataSourceUnavailableError(
+                        f"VCI server error: {response.status}",
+                        request.symbol,
+                        request.asset_type,
+                    )
+                else:
+                    logger.warning(
+                        f"VCI: Unexpected status code - {response.status} for {request.symbol}"
+                    )
+                    raise InvalidParameterError(
+                        f"Invalid request parameters: {response.status}",
+                        request.symbol,
+                        request.asset_type,
+                    )
 
-            # Get company overview
-            overview_df = company_client.overview()
-            if overview_df is None or overview_df.empty:
-                return None
+        except aiohttp.ClientError as e:
+            logger.error(f"VCI: Network error for {request.symbol}: {str(e)}")
+            raise NetworkError(
+                f"Network error connecting to VCI: {str(e)}",
+                request.symbol,
+                request.asset_type,
+            )
 
-            # Convert to VietnameseCompany
-            return self._convert_overview_to_company(overview_df, symbol)
+        except asyncio.TimeoutError:
+            logger.warning(f"VCI: Request timeout for {request.symbol}")
+            raise TimeoutError(
+                "Request to VCI timed out", request.symbol, request.asset_type
+            )
 
-        return await self._execute_with_retry(_fetch_company)
+        except ValueError as e:
+            logger.error(
+                f"VCI: Data parsing error for {request.symbol}: {str(e)}"
+            )
+            raise DataValidationError(
+                f"Failed to parse VCI response: {str(e)}",
+                request.symbol,
+                request.asset_type,
+            )
 
-    async def get_financial_reports(
-        self,
-        symbol: str,
-        period: str = "year",
-        language: str = "vi",
-    ) -> List[VietnameseFinancialReport]:
-        """Get financial reports from VCI.
+        except Exception as e:
+            logger.error(
+                f"VCI: Unexpected error for {request.symbol}: {str(e)}",
+                exc_info=True,
+            )
+            raise HistoricalDataError(
+                f"Unexpected error with VCI: {str(e)}",
+                request.symbol,
+                request.asset_type,
+            )
 
-        Args:
-            symbol: Stock symbol
-            period: Report period (year, quarter)
-            language: Report language (vi, en)
+        finally:
+            # Record metrics
+            logger.debug(
+                f"VCI: Recording metrics - Success: {success}, Response time: {response_time_ms:.2f}ms, Data points: {len(data_points)}"
+            )
+            self.metrics.record_request(
+                data_source=DataSource.VCI,
+                success=success,
+                response_time_ms=response_time_ms,
+                data_points=len(data_points),
+            )
 
-        Returns:
-            List of financial reports
-        """
-        symbol = self._validate_symbol(symbol)
-
-        self._log_operation(
-            "get_financial_reports",
-            symbol=symbol,
-            period=period,
-            language=language,
+        logger.info(
+            f"VCI: Completed historical data request for {request.symbol} - Success: {success}, Records: {len(data_points)}"
         )
-
-        async def _fetch_reports():
-            await self._rate_limit()
-            finance_client = await self._get_finance_client(symbol)
-
-            reports = []
-
-            # Get balance sheet
-            balance_sheet = finance_client.balance_sheet(
-                period=period,
-                lang=language,
-                dropna=True,
-            )
-            if balance_sheet is not None and not balance_sheet.empty:
-                reports.append(
-                    self._convert_balance_sheet_to_report(
-                        balance_sheet, symbol, period, language
-                    )
-                )
-
-            # Get income statement
-            income_statement = finance_client.income_statement(
-                period=period,
-                lang=language,
-                dropna=True,
-            )
-            if income_statement is not None and not income_statement.empty:
-                reports.append(
-                    self._convert_income_statement_to_report(
-                        income_statement, symbol, period, language
-                    )
-                )
-
-            # Get cash flow
-            cash_flow = finance_client.cash_flow(
-                period=period,
-                dropna=True,
-            )
-            if cash_flow is not None and not cash_flow.empty:
-                reports.append(
-                    self._convert_cash_flow_to_report(
-                        cash_flow, symbol, period, language
-                    )
-                )
-
-            return reports
-
-        return await self._execute_with_retry(_fetch_reports)
-
-    async def get_financial_metrics(
-        self,
-        symbol: str,
-        period: str = "year",
-        language: str = "vi",
-    ) -> Optional[VietnameseFinancialMetrics]:
-        """Get financial metrics from VCI.
-
-        Args:
-            symbol: Stock symbol
-            period: Report period (year, quarter)
-            language: Report language (vi, en)
-
-        Returns:
-            Financial metrics or None if not found
-        """
-        symbol = self._validate_symbol(symbol)
-
-        self._log_operation(
-            "get_financial_metrics",
-            symbol=symbol,
-            period=period,
-            language=language,
+        return HistoricalDataResponse(
+            symbol=request.symbol,
+            asset_type=request.asset_type,
+            data_source="VCI",
+            interval=request.interval,
+            data=data_points,
+            total_records=len(data_points),
         )
-
-        async def _fetch_metrics():
-            await self._rate_limit()
-            finance_client = await self._get_finance_client(symbol)
-
-            # Get financial ratios
-            ratios_df = finance_client.ratio(
-                period=period,
-                lang=language,
-                flatten_columns=True,
-                drop_levels=[0],
-                dropna=True,
-            )
-
-            if ratios_df is None or ratios_df.empty:
-                return None
-
-            return self._convert_ratios_to_metrics(ratios_df, symbol)
-
-        return await self._execute_with_retry(_fetch_metrics)
 
     async def get_real_time_quote(
-        self, symbol: str
-    ) -> Optional[VietnameseStock]:
-        """Get real-time stock quote from VCI.
-
-        Args:
-            symbol: Stock symbol
-
-        Returns:
-            Real-time stock data or None if not available
-        """
-        symbol = self._validate_symbol(symbol)
-
-        self._log_operation("get_real_time_quote", symbol=symbol)
-
-        async def _fetch_quote():
-            await self._rate_limit()
-            trading_client = await self._get_trading_client()
-
-            # Get price board data
-            price_board = trading_client.price_board([symbol])
-
-            if price_board is None or price_board.empty:
-                return None
-
-            return self._convert_price_board_to_stock(price_board, symbol)
-
-        return await self._execute_with_retry(_fetch_quote)
-
-    async def get_market_data(
-        self,
-        exchange: VietnameseExchange,
-        date: Optional[datetime] = None,
-    ) -> Optional[VietnameseMarketData]:
-        """Get market-wide data from VCI.
-
-        Args:
-            exchange: Vietnamese exchange
-            date: Date for market data (defaults to latest)
-
-        Returns:
-            Market data or None if not available
-        """
-        self._log_operation(
-            "get_market_data",
-            exchange=exchange.value,
-            date=date.isoformat() if date else None,
+        self, symbol: str, asset_type: AssetType
+    ) -> OHLCVTData:
+        """Get real-time quote from VCI."""
+        logger.info(
+            f"VCI: Starting real-time quote request for {symbol} ({asset_type})"
         )
 
-        async def _fetch_market_data():
-            await self._rate_limit()
-            # VCI doesn't provide direct market data API
-            # This would need to be implemented based on available VCI endpoints
-            # For now, return None as placeholder
-            return None
-
-        return await self._execute_with_retry(_fetch_market_data)
-
-    async def get_company_news(
-        self,
-        symbol: str,
-        limit: int = 10,
-    ) -> List[VietnameseNews]:
-        """Get company news from VCI.
-
-        Args:
-            symbol: Stock symbol
-            limit: Maximum number of news items
-
-        Returns:
-            List of news items
-        """
-        symbol = self._validate_symbol(symbol)
-
-        self._log_operation("get_company_news", symbol=symbol, limit=limit)
-
-        async def _fetch_news():
-            await self._rate_limit()
-            company_client = await self._get_company_client(symbol)
-
-            news_df = company_client.news()
-
-            if news_df is None or news_df.empty:
-                return []
-
-            return self._convert_news_to_vietnamese_news(
-                news_df.head(limit), symbol
+        if not self.session:
+            logger.error("VCI: Session not initialized for real-time quote")
+            raise DataSourceUnavailableError(
+                "Session not initialized", DataSource.VCI
             )
 
-        return await self._execute_with_retry(_fetch_news)
+        await self._respect_rate_limit()
+        logger.debug("VCI: Rate limit check passed for real-time quote")
 
-    async def search_symbols(
-        self,
-        query: str,
-        exchange: Optional[VietnameseExchange] = None,
-    ) -> List[str]:
-        """Search for stock symbols using VCI.
+        start_time = datetime.now(timezone.utc)
+        url = f"{self.config.base_url}/api/v1/stock/quote"
+        params = {"symbol": symbol}
 
-        Args:
-            query: Search query
-            exchange: Optional exchange filter
-
-        Returns:
-            List of matching symbols
-        """
-        self._log_operation(
-            "search_symbols",
-            query=query,
-            exchange=exchange.value if exchange else None,
-        )
-
-        async def _search():
-            await self._rate_limit()
-            listing_client = await self._get_listing_client()
-
-            # Get all symbols
-            all_symbols = listing_client.all_symbols()
-
-            if all_symbols is None or all_symbols.empty:
-                return []
-
-            # Filter by query
-            filtered = all_symbols[
-                all_symbols["symbol"].str.contains(query.upper(), na=False)
-            ]
-
-            # Filter by exchange if specified
-            if exchange:
-                # This would need to be implemented based on VCI data structure
-                pass
-
-            return filtered["symbol"].tolist()
-
-        return await self._execute_with_retry(_search)
-
-    def _convert_dataframe_to_stocks(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> List[VietnameseStock]:
-        """Convert pandas DataFrame to VietnameseStock objects.
-
-        Args:
-            df: Historical data DataFrame
-            symbol: Stock symbol
-
-        Returns:
-            List of VietnameseStock objects
-        """
-        stocks = []
-
-        for _, row in df.iterrows():
-            try:
-                stock = VietnameseStock(
-                    company_id=uuid4(),  # This should be resolved from symbol
-                    vnstock_symbol=symbol,
-                    exchange=self._determine_exchange(symbol),
-                    date=pd.to_datetime(row.get("time", row.name)),
-                    open_price=float(row.get("open", 0)),
-                    close_price=float(row.get("close", 0)),
-                    high_price=float(row.get("high", 0)),
-                    low_price=float(row.get("low", 0)),
-                    volume=int(row.get("volume", 0)),
-                    market_cap=row.get("market_cap"),
-                    free_float=row.get("free_float"),
-                )
-                stocks.append(stock)
-            except Exception as e:
-                self.logger.warning(
-                    "Failed to convert row to VietnameseStock",
-                    symbol=symbol,
-                    row_index=row.name,
-                    error=str(e),
-                )
-
-        return stocks
-
-    def _convert_overview_to_company(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> VietnameseCompany:
-        """Convert overview DataFrame to VietnameseCompany.
-
-        Args:
-            df: Company overview DataFrame
-            symbol: Stock symbol
-
-        Returns:
-            VietnameseCompany object
-        """
-        # This is a simplified conversion
-        # In practice, you'd need to map the actual VCI data structure
-        row = df.iloc[0] if not df.empty else {}
-
-        return VietnameseCompany(
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            name=row.get("company_name", ""),
-            ticker_symbol=symbol,
-            industry=row.get("industry"),
-            country="Vietnam",
-            market_cap=row.get("market_cap"),
-            free_float=row.get("free_float"),
-            listing_date=(
-                pd.to_datetime(row.get("listing_date"))
-                if row.get("listing_date")
-                else None
-            ),
-        )
-
-    def _determine_exchange(self, symbol: str) -> VietnameseExchange:
-        """Determine exchange based on symbol.
-
-        Args:
-            symbol: Stock symbol
-
-        Returns:
-            Vietnamese exchange
-        """
-        # This is a simplified logic
-        # In practice, you'd need to check against actual exchange listings
-        if symbol.endswith(".HNX"):
-            return VietnameseExchange.HNX
-        elif symbol.endswith(".UPCOM"):
-            return VietnameseExchange.UPCOM
-        else:
-            return VietnameseExchange.HOSE
-
-    def _convert_balance_sheet_to_report(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        period: str,
-        language: str,
-    ) -> VietnameseFinancialReport:
-        """Convert balance sheet to financial report.
-
-        Args:
-            df: Balance sheet DataFrame
-            symbol: Stock symbol
-            period: Report period
-            language: Report language
-
-        Returns:
-            VietnameseFinancialReport object
-        """
-        # Implementation would depend on VCI data structure
-        return VietnameseFinancialReport(
-            company_id=uuid4(),  # Should be resolved from symbol
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            report_type="balance_sheet",
-            period_start=datetime.now(),
-            period_end=datetime.now(),
-            filing_date=datetime.now(),
-            document_url="",
-            report_language=language,
-        )
-
-    def _convert_income_statement_to_report(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        period: str,
-        language: str,
-    ) -> VietnameseFinancialReport:
-        """Convert income statement to financial report."""
-        return VietnameseFinancialReport(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            report_type="income_statement",
-            period_start=datetime.now(),
-            period_end=datetime.now(),
-            filing_date=datetime.now(),
-            document_url="",
-            report_language=language,
-        )
-
-    def _convert_cash_flow_to_report(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        period: str,
-        language: str,
-    ) -> VietnameseFinancialReport:
-        """Convert cash flow to financial report."""
-        return VietnameseFinancialReport(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            report_type="cash_flow",
-            period_start=datetime.now(),
-            period_end=datetime.now(),
-            filing_date=datetime.now(),
-            document_url="",
-            report_language=language,
-        )
-
-    def _convert_ratios_to_metrics(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> VietnameseFinancialMetrics:
-        """Convert ratios DataFrame to financial metrics."""
-        # This would need to map VCI ratio data to our metrics model
-        return VietnameseFinancialMetrics(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            period_end=datetime.now(),
-        )
-
-    def _convert_price_board_to_stock(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> VietnameseStock:
-        """Convert price board data to stock."""
-        row = df.iloc[0] if not df.empty else {}
-
-        return VietnameseStock(
-            company_id=uuid4(),
-            vnstock_symbol=symbol,
-            exchange=self._determine_exchange(symbol),
-            date=datetime.now(),
-            open_price=float(row.get("open", 0)),
-            close_price=float(row.get("close", 0)),
-            high_price=float(row.get("high", 0)),
-            low_price=float(row.get("low", 0)),
-            volume=int(row.get("volume", 0)),
-        )
-
-    def _convert_news_to_vietnamese_news(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-    ) -> List[VietnameseNews]:
-        """Convert news DataFrame to VietnameseNews objects."""
-        news_list = []
-
-        for _, row in df.iterrows():
-            try:
-                news = VietnameseNews(
-                    vnstock_symbol=symbol,
-                    title=row.get("title", ""),
-                    content=row.get("content", ""),
-                    source=row.get("source", "VCI"),
-                    url=row.get("url"),
-                    published_at=pd.to_datetime(
-                        row.get("published_at", datetime.now())
-                    ),
-                    language="vi",
-                )
-                news_list.append(news)
-            except Exception as e:
-                self.logger.warning(
-                    "Failed to convert news row",
-                    symbol=symbol,
-                    error=str(e),
-                )
-
-        return news_list
-
-    # Listing API Methods
-    async def get_all_symbols(self) -> List[StockSymbol]:
-        """Get all stock symbols from VCI."""
         try:
-            listing_client = await self._get_listing_client()
-            symbols_df = listing_client.all_symbols()
+            logger.debug(
+                f"VCI: Making real-time quote request to {url} for {symbol}"
+            )
+            async with self.session.get(url, params=params) as response:
+                response_time_ms = (
+                    datetime.now(timezone.utc) - start_time
+                ).total_seconds() * 1000
+                logger.debug(
+                    f"VCI: Real-time quote response - Status: {response.status}, Response time: {response_time_ms:.2f}ms"
+                )
 
-            if symbols_df is None or symbols_df.empty:
-                return []
-
-            symbols = []
-            for _, row in symbols_df.iterrows():
-                try:
-                    symbol = StockSymbol(
-                        ticker=row.get("symbol", ""),
-                        organ_name=row.get("organ_name", ""),
+                if response.status == 200:
+                    logger.debug("VCI: Parsing real-time quote response")
+                    data = await response.json()
+                    quote_data = self._parse_real_time_quote(data)
+                    success = True
+                    logger.info(
+                        f"VCI: Successfully retrieved real-time quote for {symbol}"
                     )
-                    symbols.append(symbol)
-                except Exception as e:
-                    self.logger.warning(
-                        "Failed to convert symbol row",
-                        symbol=row.get("symbol"),
-                        error=str(e),
+                elif response.status == 404:
+                    logger.warning(
+                        f"VCI: Symbol not found for real-time quote - {symbol}"
+                    )
+                    raise SymbolNotFoundError(
+                        f"Symbol {symbol} not found in VCI", symbol, asset_type
+                    )
+                elif response.status == 429:
+                    logger.warning(
+                        f"VCI: Rate limit exceeded for real-time quote - {symbol}"
+                    )
+                    raise RateLimitExceededError(
+                        "Rate limit exceeded for VCI", symbol, asset_type
+                    )
+                else:
+                    logger.warning(
+                        f"VCI: Unexpected status for real-time quote - {response.status} for {symbol}"
+                    )
+                    raise DataSourceUnavailableError(
+                        f"VCI error: {response.status}", symbol, asset_type
                     )
 
-            return symbols
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            logger.error(
+                f"VCI: Network error for real-time quote {symbol}: {str(e)}"
+            )
+            raise NetworkError(
+                f"Network error getting real-time quote from VCI: {str(e)}",
+                symbol,
+                asset_type,
+            )
+
+        except ValueError as e:
+            logger.error(
+                f"VCI: Data parsing error for real-time quote {symbol}: {str(e)}"
+            )
+            raise DataValidationError(
+                f"Failed to parse VCI quote response: {str(e)}",
+                symbol,
+                asset_type,
+            )
+
         except Exception as e:
-            self.logger.error(
-                "Failed to get all symbols from VCI", error=str(e)
+            logger.error(
+                f"VCI: Unexpected error for real-time quote {symbol}: {str(e)}",
+                exc_info=True,
             )
-            return []
+            raise HistoricalDataError(
+                f"Unexpected error with VCI real-time quote: {str(e)}",
+                symbol,
+                asset_type,
+            )
 
-    async def get_symbols_by_exchange(
-        self, exchange: VietnameseExchange
-    ) -> List[ExchangeSymbol]:
-        """Get symbols by exchange from VCI."""
+        finally:
+            logger.debug(
+                f"VCI: Recording real-time quote metrics - Success: {success}, Response time: {response_time_ms:.2f}ms"
+            )
+            self.metrics.record_request(
+                data_source=DataSource.VCI,
+                success=success,
+                response_time_ms=response_time_ms,
+                data_points=1,
+            )
+
+        logger.info(
+            f"VCI: Completed real-time quote request for {symbol} - Success: {success}"
+        )
+        return quote_data
+
+    async def get_intraday_data(
+        self,
+        symbol: str,
+        asset_type: AssetType,
+        interval: TimeInterval,
+        page_size: int = 100,
+    ) -> List[OHLCVTData]:
+        """Get intraday data from VCI."""
+        logger.info(
+            f"VCI: Starting intraday data request for {symbol} ({asset_type}) - Interval: {interval.value}, Page size: {page_size}"
+        )
+
+        if not self.session:
+            logger.error("VCI: Session not initialized for intraday data")
+            raise DataSourceUnavailableError(
+                "Session not initialized", DataSource.VCI
+            )
+
+        await self._respect_rate_limit()
+        logger.debug("VCI: Rate limit check passed for intraday data")
+
+        start_time = datetime.now(timezone.utc)
+        url = f"{self.config.base_url}/api/v1/stock/intraday"
+
+        params = {
+            "symbol": symbol,
+            "interval": interval.value,
+            "limit": page_size,
+        }
+
+        data_points = []
+
         try:
-            listing_client = await self._get_listing_client()
-            symbols_df = listing_client.symbols_by_exchange(exchange.value)
+            logger.debug(
+                f"VCI: Making intraday request to {url} with params: {params}"
+            )
+            async with self.session.get(url, params=params) as response:
+                response_time_ms = (
+                    datetime.now(timezone.utc) - start_time
+                ).total_seconds() * 1000
+                logger.debug(
+                    f"VCI: Intraday response - Status: {response.status}, Response time: {response_time_ms:.2f}ms"
+                )
 
-            if symbols_df is None or symbols_df.empty:
-                return []
-
-            symbols = []
-            for _, row in symbols_df.iterrows():
-                try:
-                    symbol = ExchangeSymbol(
-                        ticker=row.get("symbol", ""),
-                        organ_name=row.get("organ_name", ""),
-                        symbol_id=row.get("id", 0),
-                        type=row.get("type", "stock"),
-                        exchange=exchange.value,
+                if response.status == 200:
+                    logger.debug("VCI: Parsing intraday response data")
+                    data = await response.json()
+                    data_points = self._parse_intraday_data(data)
+                    success = True
+                    logger.info(
+                        f"VCI: Successfully retrieved {len(data_points)} intraday data points for {symbol}"
                     )
-                    symbols.append(symbol)
-                except Exception as e:
-                    self.logger.warning(
-                        "Failed to convert exchange symbol row",
-                        symbol=row.get("symbol"),
-                        error=str(e),
+                elif response.status == 404:
+                    logger.warning(
+                        f"VCI: Symbol not found for intraday data - {symbol}"
+                    )
+                    raise SymbolNotFoundError(
+                        f"Symbol {symbol} not found in VCI", symbol, asset_type
+                    )
+                elif response.status == 429:
+                    logger.warning(
+                        f"VCI: Rate limit exceeded for intraday data - {symbol}"
+                    )
+                    raise RateLimitExceededError(
+                        "Rate limit exceeded for VCI", symbol, asset_type
+                    )
+                else:
+                    logger.warning(
+                        f"VCI: Unexpected status for intraday data - {response.status} for {symbol}"
+                    )
+                    raise DataSourceUnavailableError(
+                        f"VCI error: {response.status}", symbol, asset_type
                     )
 
-            return symbols
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            logger.error(
+                f"VCI: Network error for intraday data {symbol}: {str(e)}"
+            )
+            raise NetworkError(
+                f"Network error getting intraday data from VCI: {str(e)}",
+                symbol,
+                asset_type,
+            )
+
+        except ValueError as e:
+            logger.error(
+                f"VCI: Data parsing error for intraday data {symbol}: {str(e)}"
+            )
+            raise DataValidationError(
+                f"Failed to parse VCI intraday response: {str(e)}",
+                symbol,
+                asset_type,
+            )
+
         except Exception as e:
-            self.logger.error(
-                f"Failed to get symbols by exchange {exchange.value} from VCI",
-                error=str(e),
+            logger.error(
+                f"VCI: Unexpected error for intraday data {symbol}: {str(e)}",
+                exc_info=True,
             )
-            return []
+            raise HistoricalDataError(
+                f"Unexpected error with VCI intraday data: {str(e)}",
+                symbol,
+                asset_type,
+            )
 
-    async def get_vn30_constituents(self) -> List[str]:
-        """Get VN30 constituents from VCI."""
+        finally:
+            logger.debug(
+                f"VCI: Recording intraday metrics - Success: {success}, Response time: {response_time_ms:.2f}ms, Data points: {len(data_points)}"
+            )
+            self.metrics.record_request(
+                data_source=DataSource.VCI,
+                success=success,
+                response_time_ms=response_time_ms,
+                data_points=len(data_points),
+            )
+
+        logger.info(
+            f"VCI: Completed intraday data request for {symbol} - Success: {success}, Records: {len(data_points)}"
+        )
+        return data_points
+
+    def _parse_historical_data(
+        self, data: Dict[str, Any], request: HistoricalDataRequest
+    ) -> List[OHLCVTData]:
+        """Parse historical data response from VCI."""
+        logger.debug(
+            f"VCI: Parsing historical data for {request.symbol}, raw data keys: {list(data.keys())}"
+        )
+        data_points = []
+
         try:
-            listing_client = await self._get_listing_client()
-            vn30_series = listing_client.symbols_by_group(group="VN30")
+            # Handle different response formats
+            if "data" in data:
+                records = data["data"]
+                logger.debug("VCI: Found 'data' key in response")
+            elif "historical" in data:
+                records = data["historical"]
+                logger.debug("VCI: Found 'historical' key in response")
+            else:
+                records = data
+                logger.debug("VCI: Using root data as records")
 
-            if vn30_series is None or vn30_series.empty:
-                return []
+            if not isinstance(records, list):
+                logger.error(
+                    f"VCI: Expected list of records, got {type(records)}"
+                )
+                raise ValueError("Expected list of data records")
 
-            return vn30_series.tolist()
-        except Exception as e:
-            self.logger.error(
-                "Failed to get VN30 constituents from VCI", error=str(e)
+            logger.debug(
+                f"VCI: Processing {len(records)} records for {request.symbol}"
             )
-            return []
-
-    async def get_symbols_by_group(self, group_name: str) -> List[StockSymbol]:
-        """Get symbols by market group from VCI."""
-        try:
-            listing_client = await self._get_listing_client()
-            # Get all symbols by combining all exchanges
-            exchanges = ["HOSE", "HNX", "UPCOM"]
-            all_symbols_dfs = []
-
-            for exchange in exchanges:
+            for record in records:
                 try:
-                    exchange_df = listing_client.symbols_by_exchange(
-                        exchange=exchange, lang="vi"
-                    )
-                    if exchange_df is not None and not exchange_df.empty:
-                        all_symbols_dfs.append(exchange_df)
-                except Exception as e:
-                    self.logger.warning(
-                        f"Failed to get symbols for exchange {exchange}",
-                        error=str(e),
-                    )
+                    # Parse timestamp (VCI might use different formats)
+                    if "time" in record:
+                        time_str = record["time"]
+                    elif "date" in record:
+                        time_str = record["date"]
+                    elif "timestamp" in record:
+                        time_str = record["timestamp"]
+                    else:
+                        logger.debug("VCI: Skipping record without timestamp")
+                        continue  # Skip records without time
 
-            if not all_symbols_dfs:
-                return []
-
-            # Combine all dataframes
-            import pandas as pd
-
-            all_symbols_df = pd.concat(all_symbols_dfs, ignore_index=True)
-
-            # Remove duplicates based on symbol
-            all_symbols_df = all_symbols_df.drop_duplicates(subset=["symbol"])
-
-            if all_symbols_df.empty:
-                return []
-
-            # Get group constituents
-            group_symbols_series = listing_client.symbols_by_group(
-                group=group_name
-            )
-
-            if group_symbols_series is None or group_symbols_series.empty:
-                return []
-
-            group_symbols = set(group_symbols_series.tolist())
-
-            symbols = []
-            for _, row in all_symbols_df.iterrows():
-                try:
-                    symbol_val = row.get("symbol", "")
-                    if symbol_val in group_symbols:
-                        symbol = StockSymbol(
-                            ticker=symbol_val,
-                            organ_name=row.get("organ_name", ""),
+                    # Parse datetime
+                    if isinstance(time_str, str):
+                        # Try different date formats
+                        for fmt in [
+                            "%Y-%m-%d",
+                            "%Y-%m-%dT%H:%M:%S",
+                            "%Y-%m-%d %H:%M:%S",
+                        ]:
+                            try:
+                                time_dt = datetime.strptime(time_str, fmt)
+                                break
+                            except ValueError:
+                                continue
+                        else:
+                            # Default to current date if parsing fails
+                            time_dt = datetime.now(timezone.utc)
+                    elif isinstance(time_str, (int, float)):
+                        # Unix timestamp
+                        time_dt = datetime.fromtimestamp(
+                            time_str, timezone.utc
                         )
-                        symbols.append(symbol)
-                except Exception as e:
-                    self.logger.warning(
-                        "Failed to convert group symbol row",
-                        ticker=row.get("symbol"),
-                        error=str(e),
+                    else:
+                        continue
+
+                    # Parse OHLCV data
+                    open_price = float(
+                        record.get("open", record.get("Open", 0))
                     )
+                    high_price = float(
+                        record.get("high", record.get("High", 0))
+                    )
+                    low_price = float(record.get("low", record.get("Low", 0)))
+                    close_price = float(
+                        record.get("close", record.get("Close", 0))
+                    )
+                    volume = int(record.get("volume", record.get("Volume", 0)))
 
-            return symbols
-        except Exception as e:
-            self.logger.error(
-                f"Failed to get symbols by group {group_name} from VCI",
-                error=str(e),
-            )
-            return []
-
-    async def get_industry_symbols(
-        self, industry_name: Optional[str] = None
-    ) -> List[IndustrySymbol]:
-        """Get industry symbols from VCI."""
-        try:
-            listing_client = await self._get_listing_client()
-            symbols_df = listing_client.symbols_by_industries(lang="vi")
-
-            if symbols_df is None or symbols_df.empty:
-                return []
-
-            symbols = []
-            for _, row in symbols_df.iterrows():
-                try:
-                    # Filter by industry name if specified
-                    if (
-                        industry_name
-                        and industry_name.lower()
-                        not in str(row.get("icb_name3", "")).lower()
+                    # Validate OHLC relationships
+                    if not (
+                        low_price <= high_price
+                        and low_price <= close_price <= high_price
                     ):
                         continue
 
-                    symbol = IndustrySymbol(
-                        ticker=row.get("symbol", ""),
-                        organ_name=row.get("organ_name", ""),
-                        icb_name3=row.get("icb_name3", ""),
-                        icb_code=row.get(
-                            "icb_code3", ""
-                        ),  # Use icb_code3 instead of icb_code
+                    data_point = OHLCVTData(
+                        time=time_dt,
+                        open=open_price,
+                        high=high_price,
+                        low=low_price,
+                        close=close_price,
+                        volume=volume,
                     )
-                    symbols.append(symbol)
-                except Exception as e:
-                    self.logger.warning(
-                        "Failed to convert industry symbol row",
-                        ticker=row.get("symbol"),
-                        error=str(e),
-                    )
+                    data_points.append(data_point)
 
-            return symbols
-        except Exception as e:
-            self.logger.error(
-                f"Failed to get industry symbols from VCI",
-                industry_name=industry_name,
-                error=str(e),
+                except (ValueError, KeyError, TypeError) as e:
+                    # Skip malformed records
+                    continue
+
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(
+                f"VCI: Data parsing error for {request.symbol}: {str(e)}"
             )
-            return []
-
-    async def get_icb_industries(self) -> List[ICBIndustry]:
-        """Get ICB industries from VCI."""
-        try:
-            listing_client = await self._get_listing_client()
-            industries_df = listing_client.industries_icb(lang="vi")
-
-            if industries_df is None or industries_df.empty:
-                return []
-
-            industries = []
-            for _, row in industries_df.iterrows():
-                try:
-                    industry = ICBIndustry(
-                        icb_name=row.get("icb_name", ""),
-                        en_icb_name=row.get("en_icb_name", ""),
-                        icb_code=row.get("icb_code", ""),
-                        level=row.get("level", 4),
-                    )
-                    industries.append(industry)
-                except Exception as e:
-                    self.logger.warning(
-                        "Failed to convert ICB industry row",
-                        icb_code=row.get("icb_code"),
-                        error=str(e),
-                    )
-
-            return industries
-        except Exception as e:
-            self.logger.error(
-                "Failed to get ICB industries from VCI", error=str(e)
+            raise DataValidationError(
+                f"Failed to parse VCI historical data: {str(e)}"
             )
-            return []
 
-    async def search_international_symbols(
-        self, query: str
-    ) -> List[InternationalSymbol]:
-        """Search international symbols from VCI."""
-        # VCI may not support international symbols, return empty list
-        self.logger.warning(
-            "International symbol search not supported by VCI adapter"
+        # Sort by time
+        data_points.sort(key=lambda x: x.time)
+        logger.debug(
+            f"VCI: Successfully parsed {len(data_points)} valid data points for {request.symbol}"
         )
-        return []
 
-    async def get_exchange_metadata(self) -> Dict[str, Any]:
-        """Get exchange metadata from VCI."""
+        return data_points
+
+    def _parse_real_time_quote(self, data: Dict[str, Any]) -> OHLCVTData:
+        """Parse real-time quote response from VCI."""
+        logger.debug(
+            f"VCI: Parsing real-time quote, data keys: {list(data.keys())}"
+        )
         try:
-            listing_client = await self._get_listing_client()
-            exchanges_df = listing_client.exchanges()
+            # Get current time as quote time
+            quote_time = datetime.now(timezone.utc)
 
-            if exchanges_df is None or exchanges_df.empty:
-                return {}
-
-            return exchanges_df.to_dict("records")
-        except Exception as e:
-            self.logger.error(
-                "Failed to get exchange metadata from VCI", error=str(e)
+            # Extract quote data
+            open_price = float(data.get("open", data.get("Open", 0)))
+            high_price = float(data.get("high", data.get("High", 0)))
+            low_price = float(data.get("low", data.get("Low", 0)))
+            close_price = float(
+                data.get("close", data.get("Close", data.get("price", 0)))
             )
-            return {}
+            volume = int(data.get("volume", data.get("Volume", 0)))
 
-    async def get_market_group_metadata(self) -> Dict[str, Any]:
-        """Get market group metadata from VCI."""
-        try:
-            listing_client = await self._get_listing_client()
-            groups_df = listing_client.market_groups()
-
-            if groups_df is None or groups_df.empty:
-                return {}
-
-            return groups_df.to_dict("records")
-        except Exception as e:
-            self.logger.error(
-                "Failed to get market group metadata from VCI", error=str(e)
+            logger.debug(
+                f"VCI: Parsed quote - O:{open_price}, H:{high_price}, L:{low_price}, C:{close_price}, V:{volume}"
             )
-            return {}
+            return OHLCVTData(
+                time=quote_time,
+                open=open_price,
+                high=high_price,
+                low=low_price,
+                close=close_price,
+                volume=volume,
+            )
+
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"VCI: Real-time quote parsing error: {str(e)}")
+            raise DataValidationError(
+                f"Failed to parse VCI real-time quote: {str(e)}"
+            )
+
+    def _parse_intraday_data(self, data: Dict[str, Any]) -> List[OHLCVTData]:
+        """Parse intraday data response from VCI."""
+        logger.debug("VCI: Parsing intraday data using historical data parser")
+        # Similar to historical data parsing but for intraday format
+        return self._parse_historical_data(data, None)
+
+    async def get_metrics(self) -> DataSourceMetrics:
+        """Get current VCI metrics."""
+        logger.debug("VCI: Retrieving current metrics")
+        return self.metrics
+
+    def is_supported_asset_type(self, asset_type: AssetType) -> bool:
+        """Check if asset type is supported by VCI."""
+        supported_types = [AssetType.STOCK, AssetType.INDEX, AssetType.ETF]
+        is_supported = asset_type in supported_types
+        logger.debug(f"VCI: Asset type {asset_type} supported: {is_supported}")
+        return is_supported
+
+    def is_supported_interval(self, interval: TimeInterval) -> bool:
+        """Check if time interval is supported by VCI."""
+        # VCI typically supports most intervals
+        supported_intervals = [
+            TimeInterval.MINUTE_1,
+            TimeInterval.MINUTE_5,
+            TimeInterval.MINUTE_15,
+            TimeInterval.MINUTE_30,
+            TimeInterval.HOUR_1,
+            TimeInterval.DAY_1,
+            TimeInterval.WEEK_1,
+            TimeInterval.MONTH_1,
+        ]
+        is_supported = interval in supported_intervals
+        logger.debug(
+            f"VCI: Interval {interval.value} supported: {is_supported}"
+        )
+        return is_supported
