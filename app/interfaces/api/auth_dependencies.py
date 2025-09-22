@@ -20,9 +20,20 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 
-async def get_auth_service() -> AuthService:
+async def get_auth_service() -> Optional[AuthService]:
     """Get authentication service instance."""
     from app.main import auth_service
+    from config.settings import get_settings
+
+    settings = get_settings()
+
+    # In development mode, return None if auth service failed to initialize
+    if settings.is_development:
+        return auth_service
+
+    # In production, require auth service
+    if auth_service is None:
+        raise RuntimeError("Authentication service not available")
 
     return auth_service
 
@@ -30,7 +41,7 @@ async def get_auth_service() -> AuthService:
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Optional[AuthService] = Depends(get_auth_service),
 ) -> Dict[str, Any]:
     """
     Get current authenticated user from JWT token.
@@ -48,6 +59,38 @@ async def get_current_user(
     """
     try:
         token = credentials.credentials
+
+        # Handle development mode with test authentication
+        if auth_service is None:
+            from config.settings import get_settings
+
+            settings = get_settings()
+
+            if settings.is_development:
+                # Use test authentication for development
+                if token == "dev_test_token":
+                    user_claims = {
+                        "sub": "dev-user-id",
+                        "email": "dev@example.com",
+                        "name": "Development User",
+                        "roles": ["user", "api"],
+                        "active": True,
+                        "iat": 1634567890,
+                        "exp": 1734567890,
+                    }
+                    request.state.user = user_claims
+                    return user_claims
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid development token. Use 'dev_test_token'",
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Authentication service unavailable",
+                )
+
         user_claims = await auth_service.validate_token(token)
 
         # Add user info to request state for middleware access
@@ -200,7 +243,7 @@ def require_permission(required_permission: str):
 
 async def optional_auth(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Optional[AuthService] = Depends(get_auth_service),
 ) -> Optional[Dict[str, Any]]:
     """
     Optional authentication dependency.
@@ -221,6 +264,40 @@ async def optional_auth(
 
     try:
         token = auth_header[7:]  # Remove "Bearer " prefix
+
+        # Handle development mode with test authentication
+        if auth_service is None:
+            from config.settings import get_settings
+
+            settings = get_settings()
+
+            if settings.is_development:
+                # Use test authentication for development
+                if token == "dev_test_token":
+                    user_claims = {
+                        "sub": "dev-user-id",
+                        "email": "dev@example.com",
+                        "name": "Development User",
+                        "roles": ["user", "api"],
+                        "active": True,
+                        "iat": 1634567890,
+                        "exp": 1734567890,
+                    }
+                    request.state.user = user_claims
+                    return user_claims
+                else:
+                    # Invalid token in development, return None for optional auth
+                    logger.debug(
+                        "Invalid development token provided for optional authentication"
+                    )
+                    return None
+            else:
+                # Production mode without auth service
+                logger.debug(
+                    "Authentication service unavailable for optional authentication"
+                )
+                return None
+
         user_claims = await auth_service.validate_token(token)
         request.state.user = user_claims
         return user_claims

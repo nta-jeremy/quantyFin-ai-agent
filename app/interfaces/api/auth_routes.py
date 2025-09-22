@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field, validator
 
-from app.core.domain.models import Role, User
+from app.core.domain import Role, User
 from app.infrastructure.auth.keycloak_adapter import (
     KeycloakAuthenticationError,
     KeycloakAuthManager,
