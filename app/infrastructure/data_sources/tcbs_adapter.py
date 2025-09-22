@@ -8,15 +8,16 @@ from uuid import uuid4
 import pandas as pd
 from vnstock.explorer.tcbs import Company, Finance, Quote, Screener, Trading
 
-from app.core.domain.models import (
-    VietnameseCompany,
-    VietnameseExchange,
+from app.core.domain.company_models import VietnameseCompany
+from app.core.domain.enums import VietnameseExchange, VnstockDataSource
+from app.core.domain.financial_models import (
     VietnameseFinancialMetrics,
     VietnameseFinancialReport,
+)
+from app.core.domain.stock_models import VietnameseStock
+from app.core.domain.vietnamese_market_data import (
     VietnameseMarketData,
     VietnameseNews,
-    VietnameseStock,
-    VnstockDataSource,
 )
 
 from .vnstock_adapter import VnstockAdapter, VnstockAdapterConfig
@@ -96,23 +97,25 @@ class TCBSAdapter(VnstockAdapter):
         async def _fetch_data():
             await self._rate_limit()
             quote_client = await self._get_quote_client()
-            
+
             # Convert datetime to string format expected by vnstock
             start_str = start_date.strftime("%Y-%m-%d")
             end_str = end_date.strftime("%Y-%m-%d")
-            
+
             df = quote_client.history(
                 symbol=symbol,
                 start=start_str,
                 end=end_str,
                 interval=interval,
             )
-            
+
             return self._convert_dataframe_to_stocks(df, symbol)
 
         return await self._execute_with_retry(_fetch_data)
 
-    async def get_company_info(self, symbol: str) -> Optional[VietnameseCompany]:
+    async def get_company_info(
+        self, symbol: str
+    ) -> Optional[VietnameseCompany]:
         """Get company information from TCBS.
 
         Args:
@@ -128,7 +131,7 @@ class TCBSAdapter(VnstockAdapter):
         async def _fetch_company():
             await self._rate_limit()
             company_client = await self._get_company_client(symbol)
-            
+
             # Get company overview
             overview_df = company_client.overview()
             if overview_df is None or overview_df.empty:
@@ -167,9 +170,9 @@ class TCBSAdapter(VnstockAdapter):
         async def _fetch_reports():
             await self._rate_limit()
             finance_client = await self._get_finance_client(symbol)
-            
+
             reports = []
-            
+
             # Get balance sheet
             balance_sheet = finance_client.balance_sheet(
                 period=period,
@@ -240,7 +243,7 @@ class TCBSAdapter(VnstockAdapter):
         async def _fetch_metrics():
             await self._rate_limit()
             finance_client = await self._get_finance_client(symbol)
-            
+
             # Get financial ratios
             ratios_df = finance_client.ratio(
                 period=period,
@@ -249,7 +252,7 @@ class TCBSAdapter(VnstockAdapter):
                 drop_levels=[0],
                 dropna=True,
             )
-            
+
             if ratios_df is None or ratios_df.empty:
                 return None
 
@@ -257,7 +260,9 @@ class TCBSAdapter(VnstockAdapter):
 
         return await self._execute_with_retry(_fetch_metrics)
 
-    async def get_real_time_quote(self, symbol: str) -> Optional[VietnameseStock]:
+    async def get_real_time_quote(
+        self, symbol: str
+    ) -> Optional[VietnameseStock]:
         """Get real-time stock quote from TCBS.
 
         Args:
@@ -273,10 +278,10 @@ class TCBSAdapter(VnstockAdapter):
         async def _fetch_quote():
             await self._rate_limit()
             trading_client = await self._get_trading_client()
-            
+
             # Get price board data
             price_board = trading_client.price_board([symbol])
-            
+
             if price_board is None or price_board.empty:
                 return None
 
@@ -333,9 +338,9 @@ class TCBSAdapter(VnstockAdapter):
         async def _fetch_news():
             await self._rate_limit()
             company_client = await self._get_company_client(symbol)
-            
+
             news_df = company_client.news()
-            
+
             if news_df is None or news_df.empty:
                 return []
 
@@ -368,7 +373,7 @@ class TCBSAdapter(VnstockAdapter):
         async def _search():
             await self._rate_limit()
             screener_client = await self._get_screener_client()
-            
+
             # Use screener to search for symbols
             params = {}
             if exchange:
@@ -378,13 +383,13 @@ class TCBSAdapter(VnstockAdapter):
                     VietnameseExchange.UPCOM: "UPCOM",
                 }
                 params["exchangeName"] = exchange_mapping[exchange]
-            
+
             # Add search query if TCBS supports it
             if query:
                 params["search"] = query
-            
+
             screener_df = screener_client.stock(params=params, limit=100)
-            
+
             if screener_df is None or screener_df.empty:
                 return []
 
@@ -399,7 +404,7 @@ class TCBSAdapter(VnstockAdapter):
     ) -> List[VietnameseStock]:
         """Convert pandas DataFrame to VietnameseStock objects."""
         stocks = []
-        
+
         for _, row in df.iterrows():
             try:
                 stock = VietnameseStock(
@@ -433,7 +438,7 @@ class TCBSAdapter(VnstockAdapter):
     ) -> VietnameseCompany:
         """Convert overview DataFrame to VietnameseCompany."""
         row = df.iloc[0] if not df.empty else {}
-        
+
         return VietnameseCompany(
             vnstock_symbol=symbol,
             exchange=self._determine_exchange(symbol),
@@ -443,7 +448,11 @@ class TCBSAdapter(VnstockAdapter):
             country="Vietnam",
             market_cap=row.get("market_cap"),
             free_float=row.get("free_float"),
-            listing_date=pd.to_datetime(row.get("listing_date")) if row.get("listing_date") else None,
+            listing_date=(
+                pd.to_datetime(row.get("listing_date"))
+                if row.get("listing_date")
+                else None
+            ),
         )
 
     def _determine_exchange(self, symbol: str) -> VietnameseExchange:
@@ -535,7 +544,7 @@ class TCBSAdapter(VnstockAdapter):
     ) -> VietnameseStock:
         """Convert price board data to stock."""
         row = df.iloc[0] if not df.empty else {}
-        
+
         return VietnameseStock(
             company_id=uuid4(),
             vnstock_symbol=symbol,
@@ -555,7 +564,7 @@ class TCBSAdapter(VnstockAdapter):
     ) -> List[VietnameseNews]:
         """Convert news DataFrame to VietnameseNews objects."""
         news_list = []
-        
+
         for _, row in df.iterrows():
             try:
                 news = VietnameseNews(
@@ -564,7 +573,9 @@ class TCBSAdapter(VnstockAdapter):
                     content=row.get("content", ""),
                     source=row.get("source", "TCBS"),
                     url=row.get("url"),
-                    published_at=pd.to_datetime(row.get("published_at", datetime.now())),
+                    published_at=pd.to_datetime(
+                        row.get("published_at", datetime.now())
+                    ),
                     language="vi",
                 )
                 news_list.append(news)

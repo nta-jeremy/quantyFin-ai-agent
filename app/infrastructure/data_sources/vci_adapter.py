@@ -8,15 +8,24 @@ from uuid import uuid4
 import pandas as pd
 from vnstock.explorer.vci import Company, Finance, Listing, Quote, Trading
 
-from app.core.domain.models import (
-    VietnameseCompany,
-    VietnameseExchange,
+from app.core.domain.company_models import VietnameseCompany
+from app.core.domain.enums import VietnameseExchange, VnstockDataSource
+from app.core.domain.financial_models import (
     VietnameseFinancialMetrics,
     VietnameseFinancialReport,
+)
+from app.core.domain.listing_models import (
+    ExchangeSymbol,
+    ICBIndustry,
+    IndustrySymbol,
+    InternationalSymbol,
+    ListingData,
+    StockSymbol,
+)
+from app.core.domain.stock_models import VietnameseStock
+from app.core.domain.vietnamese_market_data import (
     VietnameseMarketData,
     VietnameseNews,
-    VietnameseStock,
-    VnstockDataSource,
 )
 
 from .vnstock_adapter import VnstockAdapter, VnstockAdapterConfig
@@ -96,23 +105,25 @@ class VCIAdapter(VnstockAdapter):
         async def _fetch_data():
             await self._rate_limit()
             quote_client = await self._get_quote_client()
-            
+
             # Convert datetime to string format expected by vnstock
             start_str = start_date.strftime("%Y-%m-%d")
             end_str = end_date.strftime("%Y-%m-%d")
-            
+
             df = quote_client.history(
                 symbol=symbol,
                 start=start_str,
                 end=end_str,
                 interval=interval,
             )
-            
+
             return self._convert_dataframe_to_stocks(df, symbol)
 
         return await self._execute_with_retry(_fetch_data)
 
-    async def get_company_info(self, symbol: str) -> Optional[VietnameseCompany]:
+    async def get_company_info(
+        self, symbol: str
+    ) -> Optional[VietnameseCompany]:
         """Get company information from VCI.
 
         Args:
@@ -128,7 +139,7 @@ class VCIAdapter(VnstockAdapter):
         async def _fetch_company():
             await self._rate_limit()
             company_client = await self._get_company_client(symbol)
-            
+
             # Get company overview
             overview_df = company_client.overview()
             if overview_df is None or overview_df.empty:
@@ -167,9 +178,9 @@ class VCIAdapter(VnstockAdapter):
         async def _fetch_reports():
             await self._rate_limit()
             finance_client = await self._get_finance_client(symbol)
-            
+
             reports = []
-            
+
             # Get balance sheet
             balance_sheet = finance_client.balance_sheet(
                 period=period,
@@ -240,7 +251,7 @@ class VCIAdapter(VnstockAdapter):
         async def _fetch_metrics():
             await self._rate_limit()
             finance_client = await self._get_finance_client(symbol)
-            
+
             # Get financial ratios
             ratios_df = finance_client.ratio(
                 period=period,
@@ -249,7 +260,7 @@ class VCIAdapter(VnstockAdapter):
                 drop_levels=[0],
                 dropna=True,
             )
-            
+
             if ratios_df is None or ratios_df.empty:
                 return None
 
@@ -257,7 +268,9 @@ class VCIAdapter(VnstockAdapter):
 
         return await self._execute_with_retry(_fetch_metrics)
 
-    async def get_real_time_quote(self, symbol: str) -> Optional[VietnameseStock]:
+    async def get_real_time_quote(
+        self, symbol: str
+    ) -> Optional[VietnameseStock]:
         """Get real-time stock quote from VCI.
 
         Args:
@@ -273,10 +286,10 @@ class VCIAdapter(VnstockAdapter):
         async def _fetch_quote():
             await self._rate_limit()
             trading_client = await self._get_trading_client()
-            
+
             # Get price board data
             price_board = trading_client.price_board([symbol])
-            
+
             if price_board is None or price_board.empty:
                 return None
 
@@ -334,9 +347,9 @@ class VCIAdapter(VnstockAdapter):
         async def _fetch_news():
             await self._rate_limit()
             company_client = await self._get_company_client(symbol)
-            
+
             news_df = company_client.news()
-            
+
             if news_df is None or news_df.empty:
                 return []
 
@@ -369,10 +382,10 @@ class VCIAdapter(VnstockAdapter):
         async def _search():
             await self._rate_limit()
             listing_client = await self._get_listing_client()
-            
+
             # Get all symbols
             all_symbols = listing_client.all_symbols()
-            
+
             if all_symbols is None or all_symbols.empty:
                 return []
 
@@ -405,7 +418,7 @@ class VCIAdapter(VnstockAdapter):
             List of VietnameseStock objects
         """
         stocks = []
-        
+
         for _, row in df.iterrows():
             try:
                 stock = VietnameseStock(
@@ -449,7 +462,7 @@ class VCIAdapter(VnstockAdapter):
         # This is a simplified conversion
         # In practice, you'd need to map the actual VCI data structure
         row = df.iloc[0] if not df.empty else {}
-        
+
         return VietnameseCompany(
             vnstock_symbol=symbol,
             exchange=self._determine_exchange(symbol),
@@ -459,7 +472,11 @@ class VCIAdapter(VnstockAdapter):
             country="Vietnam",
             market_cap=row.get("market_cap"),
             free_float=row.get("free_float"),
-            listing_date=pd.to_datetime(row.get("listing_date")) if row.get("listing_date") else None,
+            listing_date=(
+                pd.to_datetime(row.get("listing_date"))
+                if row.get("listing_date")
+                else None
+            ),
         )
 
     def _determine_exchange(self, symbol: str) -> VietnameseExchange:
@@ -572,7 +589,7 @@ class VCIAdapter(VnstockAdapter):
     ) -> VietnameseStock:
         """Convert price board data to stock."""
         row = df.iloc[0] if not df.empty else {}
-        
+
         return VietnameseStock(
             company_id=uuid4(),
             vnstock_symbol=symbol,
@@ -592,7 +609,7 @@ class VCIAdapter(VnstockAdapter):
     ) -> List[VietnameseNews]:
         """Convert news DataFrame to VietnameseNews objects."""
         news_list = []
-        
+
         for _, row in df.iterrows():
             try:
                 news = VietnameseNews(
@@ -601,7 +618,9 @@ class VCIAdapter(VnstockAdapter):
                     content=row.get("content", ""),
                     source=row.get("source", "VCI"),
                     url=row.get("url"),
-                    published_at=pd.to_datetime(row.get("published_at", datetime.now())),
+                    published_at=pd.to_datetime(
+                        row.get("published_at", datetime.now())
+                    ),
                     language="vi",
                 )
                 news_list.append(news)
@@ -613,3 +632,280 @@ class VCIAdapter(VnstockAdapter):
                 )
 
         return news_list
+
+    # Listing API Methods
+    async def get_all_symbols(self) -> List[StockSymbol]:
+        """Get all stock symbols from VCI."""
+        try:
+            listing_client = await self._get_listing_client()
+            symbols_df = listing_client.all_symbols()
+
+            if symbols_df is None or symbols_df.empty:
+                return []
+
+            symbols = []
+            for _, row in symbols_df.iterrows():
+                try:
+                    symbol = StockSymbol(
+                        ticker=row.get("symbol", ""),
+                        organ_name=row.get("organ_name", ""),
+                    )
+                    symbols.append(symbol)
+                except Exception as e:
+                    self.logger.warning(
+                        "Failed to convert symbol row",
+                        symbol=row.get("symbol"),
+                        error=str(e),
+                    )
+
+            return symbols
+        except Exception as e:
+            self.logger.error(
+                "Failed to get all symbols from VCI", error=str(e)
+            )
+            return []
+
+    async def get_symbols_by_exchange(
+        self, exchange: VietnameseExchange
+    ) -> List[ExchangeSymbol]:
+        """Get symbols by exchange from VCI."""
+        try:
+            listing_client = await self._get_listing_client()
+            symbols_df = listing_client.symbols_by_exchange(exchange.value)
+
+            if symbols_df is None or symbols_df.empty:
+                return []
+
+            symbols = []
+            for _, row in symbols_df.iterrows():
+                try:
+                    symbol = ExchangeSymbol(
+                        ticker=row.get("symbol", ""),
+                        organ_name=row.get("organ_name", ""),
+                        symbol_id=row.get("id", 0),
+                        type=row.get("type", "stock"),
+                        exchange=exchange.value,
+                    )
+                    symbols.append(symbol)
+                except Exception as e:
+                    self.logger.warning(
+                        "Failed to convert exchange symbol row",
+                        symbol=row.get("symbol"),
+                        error=str(e),
+                    )
+
+            return symbols
+        except Exception as e:
+            self.logger.error(
+                f"Failed to get symbols by exchange {exchange.value} from VCI",
+                error=str(e),
+            )
+            return []
+
+    async def get_vn30_constituents(self) -> List[str]:
+        """Get VN30 constituents from VCI."""
+        try:
+            listing_client = await self._get_listing_client()
+            vn30_series = listing_client.symbols_by_group(group="VN30")
+
+            if vn30_series is None or vn30_series.empty:
+                return []
+
+            return vn30_series.tolist()
+        except Exception as e:
+            self.logger.error(
+                "Failed to get VN30 constituents from VCI", error=str(e)
+            )
+            return []
+
+    async def get_symbols_by_group(self, group_name: str) -> List[StockSymbol]:
+        """Get symbols by market group from VCI."""
+        try:
+            listing_client = await self._get_listing_client()
+            # Get all symbols by combining all exchanges
+            exchanges = ["HOSE", "HNX", "UPCOM"]
+            all_symbols_dfs = []
+
+            for exchange in exchanges:
+                try:
+                    exchange_df = listing_client.symbols_by_exchange(
+                        exchange=exchange, lang="vi"
+                    )
+                    if exchange_df is not None and not exchange_df.empty:
+                        all_symbols_dfs.append(exchange_df)
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to get symbols for exchange {exchange}",
+                        error=str(e),
+                    )
+
+            if not all_symbols_dfs:
+                return []
+
+            # Combine all dataframes
+            import pandas as pd
+
+            all_symbols_df = pd.concat(all_symbols_dfs, ignore_index=True)
+
+            # Remove duplicates based on symbol
+            all_symbols_df = all_symbols_df.drop_duplicates(subset=["symbol"])
+
+            if all_symbols_df.empty:
+                return []
+
+            # Get group constituents
+            group_symbols_series = listing_client.symbols_by_group(
+                group=group_name
+            )
+
+            if group_symbols_series is None or group_symbols_series.empty:
+                return []
+
+            group_symbols = set(group_symbols_series.tolist())
+
+            symbols = []
+            for _, row in all_symbols_df.iterrows():
+                try:
+                    symbol_val = row.get("symbol", "")
+                    if symbol_val in group_symbols:
+                        symbol = StockSymbol(
+                            ticker=symbol_val,
+                            organ_name=row.get("organ_name", ""),
+                        )
+                        symbols.append(symbol)
+                except Exception as e:
+                    self.logger.warning(
+                        "Failed to convert group symbol row",
+                        ticker=row.get("symbol"),
+                        error=str(e),
+                    )
+
+            return symbols
+        except Exception as e:
+            self.logger.error(
+                f"Failed to get symbols by group {group_name} from VCI",
+                error=str(e),
+            )
+            return []
+
+    async def get_industry_symbols(
+        self, industry_name: Optional[str] = None
+    ) -> List[IndustrySymbol]:
+        """Get industry symbols from VCI."""
+        try:
+            listing_client = await self._get_listing_client()
+            symbols_df = listing_client.symbols_by_industries(lang="vi")
+
+            if symbols_df is None or symbols_df.empty:
+                return []
+
+            symbols = []
+            for _, row in symbols_df.iterrows():
+                try:
+                    # Filter by industry name if specified
+                    if (
+                        industry_name
+                        and industry_name.lower()
+                        not in str(row.get("icb_name3", "")).lower()
+                    ):
+                        continue
+
+                    symbol = IndustrySymbol(
+                        ticker=row.get("symbol", ""),
+                        organ_name=row.get("organ_name", ""),
+                        icb_name3=row.get("icb_name3", ""),
+                        icb_code=row.get(
+                            "icb_code3", ""
+                        ),  # Use icb_code3 instead of icb_code
+                    )
+                    symbols.append(symbol)
+                except Exception as e:
+                    self.logger.warning(
+                        "Failed to convert industry symbol row",
+                        ticker=row.get("symbol"),
+                        error=str(e),
+                    )
+
+            return symbols
+        except Exception as e:
+            self.logger.error(
+                f"Failed to get industry symbols from VCI",
+                industry_name=industry_name,
+                error=str(e),
+            )
+            return []
+
+    async def get_icb_industries(self) -> List[ICBIndustry]:
+        """Get ICB industries from VCI."""
+        try:
+            listing_client = await self._get_listing_client()
+            industries_df = listing_client.industries_icb(lang="vi")
+
+            if industries_df is None or industries_df.empty:
+                return []
+
+            industries = []
+            for _, row in industries_df.iterrows():
+                try:
+                    industry = ICBIndustry(
+                        icb_name=row.get("icb_name", ""),
+                        en_icb_name=row.get("en_icb_name", ""),
+                        icb_code=row.get("icb_code", ""),
+                        level=row.get("level", 4),
+                    )
+                    industries.append(industry)
+                except Exception as e:
+                    self.logger.warning(
+                        "Failed to convert ICB industry row",
+                        icb_code=row.get("icb_code"),
+                        error=str(e),
+                    )
+
+            return industries
+        except Exception as e:
+            self.logger.error(
+                "Failed to get ICB industries from VCI", error=str(e)
+            )
+            return []
+
+    async def search_international_symbols(
+        self, query: str
+    ) -> List[InternationalSymbol]:
+        """Search international symbols from VCI."""
+        # VCI may not support international symbols, return empty list
+        self.logger.warning(
+            "International symbol search not supported by VCI adapter"
+        )
+        return []
+
+    async def get_exchange_metadata(self) -> Dict[str, Any]:
+        """Get exchange metadata from VCI."""
+        try:
+            listing_client = await self._get_listing_client()
+            exchanges_df = listing_client.exchanges()
+
+            if exchanges_df is None or exchanges_df.empty:
+                return {}
+
+            return exchanges_df.to_dict("records")
+        except Exception as e:
+            self.logger.error(
+                "Failed to get exchange metadata from VCI", error=str(e)
+            )
+            return {}
+
+    async def get_market_group_metadata(self) -> Dict[str, Any]:
+        """Get market group metadata from VCI."""
+        try:
+            listing_client = await self._get_listing_client()
+            groups_df = listing_client.market_groups()
+
+            if groups_df is None or groups_df.empty:
+                return {}
+
+            return groups_df.to_dict("records")
+        except Exception as e:
+            self.logger.error(
+                "Failed to get market group metadata from VCI", error=str(e)
+            )
+            return {}
