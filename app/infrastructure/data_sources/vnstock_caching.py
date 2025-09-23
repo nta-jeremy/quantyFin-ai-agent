@@ -13,6 +13,12 @@ from typing import Any, Dict, Optional, Union
 
 import structlog
 
+from app.core.domain.financial_reports import (
+    BalanceSheetRow,
+    CashFlowRow,
+    FinancialRatioRow,
+    IncomeStatementRow,
+)
 from app.core.domain.listing_models import (
     ExchangeSymbol,
     ICBIndustry,
@@ -91,6 +97,12 @@ def get_cache_ttl_for_operation(operation: str) -> int:
         "industry_symbols": 1800,
         # International data - shorter TTL (15 minutes)
         "international_search": 900,
+        # Financial reports - medium TTL (4 hours)
+        "balance_sheet": 14400,
+        "income_statement": 14400,
+        "cash_flow": 14400,
+        "financial_ratios": 14400,
+        "comprehensive_financial": 14400,
         # Default TTL
         "default": 300,
     }
@@ -105,6 +117,10 @@ def serialize_model_for_cache(
         IndustrySymbol,
         InternationalSymbol,
         ICBIndustry,
+        BalanceSheetRow,
+        IncomeStatementRow,
+        CashFlowRow,
+        FinancialRatioRow,
         list,
     ],
 ) -> str:
@@ -120,14 +136,20 @@ def serialize_model_for_cache(
         # Handle lists of models
         serialized_data = []
         for item in data:
-            if hasattr(item, "dict"):
+            if hasattr(item, "model_dump"):
+                serialized_data.append(item.model_dump())
+            elif hasattr(item, "dict"):
                 serialized_data.append(item.dict())
             else:
                 serialized_data.append(item)
         return json.dumps(serialized_data, default=str)
 
+    elif hasattr(data, "model_dump"):
+        # Handle single Pydantic models (v2)
+        return json.dumps(data.model_dump(), default=str)
+
     elif hasattr(data, "dict"):
-        # Handle single models
+        # Handle single Pydantic models (v1)
         return json.dumps(data.dict(), default=str)
 
     else:
@@ -290,6 +312,37 @@ def get_cache_strategy_for_operation(operation: str) -> Dict[str, Any]:
             "ttl": 900,
             "stale_while_revalidate": 180,
             "compress": False,
+        },
+        # Financial reports - medium TTL with stale-while-revalidate
+        "balance_sheet": {
+            "enabled": True,
+            "ttl": 14400,  # 4 hours
+            "stale_while_revalidate": 1800,  # Serve stale for 30 minutes
+            "compress": True,
+        },
+        "income_statement": {
+            "enabled": True,
+            "ttl": 14400,  # 4 hours
+            "stale_while_revalidate": 1800,  # Serve stale for 30 minutes
+            "compress": True,
+        },
+        "cash_flow": {
+            "enabled": True,
+            "ttl": 14400,  # 4 hours
+            "stale_while_revalidate": 1800,  # Serve stale for 30 minutes
+            "compress": True,
+        },
+        "financial_ratios": {
+            "enabled": True,
+            "ttl": 14400,  # 4 hours
+            "stale_while_revalidate": 1800,  # Serve stale for 30 minutes
+            "compress": True,
+        },
+        "comprehensive_financial": {
+            "enabled": True,
+            "ttl": 14400,  # 4 hours
+            "stale_while_revalidate": 1800,  # Serve stale for 30 minutes
+            "compress": True,
         },
         "default": {
             "enabled": True,

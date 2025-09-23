@@ -24,6 +24,7 @@ from app.interfaces.api.middleware import (
 )
 from app.interfaces.api.v1 import (
     agent_router,
+    financial_router,
     health_router,
     hello_router,
     historical_router,
@@ -112,6 +113,7 @@ def create_app() -> FastAPI:
     app.include_router(listing_router, prefix="/api/v1", tags=["listing"])
     app.include_router(historical_router, prefix="/api/v1")
     app.include_router(international_router, prefix="/api/v1")
+    app.include_router(financial_router, prefix="/api/v1", tags=["financial-reports"])
 
     # Global exception handler
     @app.exception_handler(HTTPException)

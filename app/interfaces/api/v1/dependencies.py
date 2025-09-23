@@ -10,11 +10,13 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from app.core.application.financial_report_service import FinancialReportService
 from app.core.application.historical_data_service import HistoricalDataService
 from app.core.application.international_market_service import (
     InternationalMarketService,
 )
-from app.core.domain.data_source_models import DataSourceConfig
+from app.core.domain.cache_models import CacheConfig
+from app.core.domain.data_source_models import DataSourceConfig, DataSourceRegistry
 from app.infrastructure.cache.redis_adapter import RedisCacheManager
 from app.infrastructure.data_sources.msn_adapter import MSNAdapter
 from app.infrastructure.data_sources.tcbs_adapter import TCBSAdapter
@@ -129,6 +131,42 @@ def get_international_market_service() -> InternationalMarketService:
     )
 
 
+@lru_cache()
+def get_data_source_registry() -> DataSourceRegistry:
+    """Get data source registry instance with all adapters."""
+    vci_adapter = get_vci_adapter()
+    tcbs_adapter = get_tcbs_adapter()
+    msn_adapter = get_msn_adapter()
+
+    registry = DataSourceRegistry()
+    registry.register_adapter("VCI", vci_adapter)
+    registry.register_adapter("TCBS", tcbs_adapter)
+    registry.register_adapter("MSN", msn_adapter)
+
+    return registry
+
+
+@lru_cache()
+def get_financial_report_service() -> FinancialReportService:
+    """Get financial report service instance with all dependencies."""
+    settings = get_settings_cached()
+    cache_manager = get_cache_manager()
+    registry = get_data_source_registry()
+
+    cache_config = CacheConfig(
+        enabled=settings.cache.enabled,
+        default_ttl=settings.cache.default_ttl,
+        max_size=settings.cache.max_size,
+        strategy=settings.cache.strategy,
+    )
+
+    return FinancialReportService(
+        data_source_registry=registry,
+        cache_manager=cache_manager,
+        cache_config=cache_config,
+    )
+
+
 # Type annotations for better IDE support and type safety
 CacheManagerDep = Annotated[RedisCacheManager, Depends(get_cache_manager)]
 HistoricalDataServiceDep = Annotated[
@@ -136,6 +174,9 @@ HistoricalDataServiceDep = Annotated[
 ]
 InternationalMarketServiceDep = Annotated[
     InternationalMarketService, Depends(get_international_market_service)
+]
+FinancialReportServiceDep = Annotated[
+    FinancialReportService, Depends(get_financial_report_service)
 ]
 VCIAdapterDep = Annotated[VCIAdapter, Depends(get_vci_adapter)]
 TCBSAdapterDep = Annotated[TCBSAdapter, Depends(get_tcbs_adapter)]

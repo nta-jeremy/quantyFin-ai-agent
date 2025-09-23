@@ -1,9 +1,7 @@
 <!--
 Sync Impact Report:
-- Version change: 1.0.0 → 1.1.0 (Minor version - added timezone and Pydantic requirements)
-- Modified principles:
-  - IV. Async-First Development (added timezone.utc requirement)
-  - Code Quality Standards (added Pydantic field_validator requirement)
+- Version change: 1.1.0 → 1.1.1 (Patch version - updated governance dates and template references)
+- Modified principles: None
 - Added sections: None
 - Removed sections: None
 - Templates requiring updates:
@@ -105,4 +103,4 @@ Constitution amendments require:
 - **Documentation**: CLAUDE.md MUST be updated to reflect constitutional requirements
 - **Training**: Team members MUST be trained on constitutional principles and practices
 
-**Version**: 1.1.0 | **Ratified**: 2025-09-20 | **Last Amended**: 2025-09-20
+**Version**: 1.1.1 | **Ratified**: 2025-09-20 | **Last Amended**: 2025-09-22

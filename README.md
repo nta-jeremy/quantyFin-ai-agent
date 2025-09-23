@@ -4,7 +4,7 @@ AI-powered financial analysis and stock prediction system implementing a 7-agent
 
 ## 🚀 Features
 
-- **Multi-Agent RAG System**: 7 specialized agents for financial analysis
+- **Multi-Agent RAG System**: specialized agents for financial analysis
 - **Vector Database**: PostgreSQL with pgvector for efficient similarity search
 - **Real-time Processing**: Streamlined data ingestion and analysis pipeline
 - **Financial Intelligence**: Advanced sentiment analysis and prediction capabilities
