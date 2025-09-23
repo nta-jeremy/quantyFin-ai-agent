@@ -13,6 +13,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import aiohttp
 import pandas as pd
 
+try:
+    import vnstock as vn
+except ImportError:
+    vn = None
+
 from app.core.domain.data_source_models import (
     DataSource,
     DataSourceConfig,
@@ -35,16 +40,30 @@ from app.core.domain.historical_models import (
     TimeInterval,
     TimeoutError,
 )
+from app.core.domain.financial_models import (
+    VietnameseFinancialReport,
+    VietnameseFinancialMetrics,
+)
+from app.core.domain.financial_reports import (
+    BalanceSheetRow,
+    IncomeStatementRow,
+    CashFlowRow,
+    FinancialRatioRow,
+)
+from app.core.application.financial_data_transformer import (
+    FinancialDataTransformer,
+)
+from .vnstock_adapter import VnstockAdapter
 
 logger = logging.getLogger(__name__)
 
 
-class VCIAdapter:
+class VCIAdapter(VnstockAdapter):
     """VCI data source adapter implementation."""
 
     def __init__(self, config: DataSourceConfig):
         """Initialize VCI adapter with configuration."""
-        self.config = config
+        super().__init__(config)
         self.session: Optional[aiohttp.ClientSession] = None
         self.metrics = DataSourceMetrics(data_source=DataSource.VCI)
         self.last_request_time = 0
@@ -753,3 +772,337 @@ class VCIAdapter:
             f"VCI: Interval {interval.value} supported: {is_supported}"
         )
         return is_supported
+
+    async def get_financial_reports(
+        self,
+        symbol: str,
+        period: str = "year",
+        language: str = "vi",
+    ) -> List[VietnameseFinancialReport]:
+        """Get financial reports from VCI data source.
+
+        Args:
+            symbol: Stock symbol
+            period: Report period (year, quarter)
+            language: Report language (vi, en)
+
+        Returns:
+            List of financial reports
+        """
+        self._validate_symbol(symbol)
+        self._log_operation("get_financial_reports", {"symbol": symbol, "period": period, "language": language})
+
+        if vn is None:
+            raise DataSourceUnavailableError("vnstock library not available")
+
+        try:
+            # Use vnstock to fetch financial data
+            if period == "year":
+                df_balance = vn.financial_balance_sheet(symbol, lang=language, yearly=True)
+                df_income = vn.financial_income(symbol, lang=language, yearly=True)
+                df_cash = vn.financial_cash(symbol, lang=language, yearly=True)
+            else:  # quarterly
+                df_balance = vn.financial_balance_sheet(symbol, lang=language, yearly=False)
+                df_income = vn.financial_income(symbol, lang=language, yearly=False)
+                df_cash = vn.financial_cash(symbol, lang=language, yearly=False)
+
+            # Transform data using the financial data transformer
+            balance_sheet_data = FinancialDataTransformer.transform_balance_sheet(
+                df_balance, symbol, DataSource.VCI, language
+            )
+            income_statement_data = FinancialDataTransformer.transform_income_statement(
+                df_income, symbol, DataSource.VCI, language
+            )
+            cash_flow_data = FinancialDataTransformer.transform_cash_flow(
+                df_cash, symbol, DataSource.VCI, language
+            )
+
+            # Create financial report objects
+            reports = []
+
+            # Create balance sheet reports
+            for balance_row in balance_sheet_data:
+                report = VietnameseFinancialReport(
+                    symbol=symbol,
+                    period_end=balance_row.period_end,
+                    report_type="balance_sheet",
+                    data=balance_row.model_dump(),
+                    source=DataSource.VCI,
+                    language=language,
+                    created_at=datetime.now(timezone.utc)
+                )
+                reports.append(report)
+
+            # Create income statement reports
+            for income_row in income_statement_data:
+                report = VietnameseFinancialReport(
+                    symbol=symbol,
+                    period_end=income_row.period_end,
+                    report_type="income_statement",
+                    data=income_row.model_dump(),
+                    source=DataSource.VCI,
+                    language=language,
+                    created_at=datetime.now(timezone.utc)
+                )
+                reports.append(report)
+
+            # Create cash flow reports
+            for cash_row in cash_flow_data:
+                report = VietnameseFinancialReport(
+                    symbol=symbol,
+                    period_end=cash_row.period_end,
+                    report_type="cash_flow",
+                    data=cash_row.model_dump(),
+                    source=DataSource.VCI,
+                    language=language,
+                    created_at=datetime.now(timezone.utc)
+                )
+                reports.append(report)
+
+            logger.info(f"VCI: Retrieved {len(reports)} financial reports for {symbol}")
+            return reports
+
+        except Exception as e:
+            logger.error(f"VCI: Error getting financial reports for {symbol}: {str(e)}")
+            raise DataSourceUnavailableError(f"Failed to get financial reports from VCI: {str(e)}")
+
+    async def get_financial_metrics(
+        self,
+        symbol: str,
+        period: str = "year",
+        language: str = "vi",
+    ) -> Optional[VietnameseFinancialMetrics]:
+        """Get financial metrics and ratios from VCI data source.
+
+        Args:
+            symbol: Stock symbol
+            period: Report period (year, quarter)
+            language: Report language (vi, en)
+
+        Returns:
+            Financial metrics or None if not found
+        """
+        self._validate_symbol(symbol)
+        self._log_operation("get_financial_metrics", {"symbol": symbol, "period": period, "language": language})
+
+        if vn is None:
+            raise DataSourceUnavailableError("vnstock library not available")
+
+        try:
+            # Use vnstock to fetch financial ratios
+            if period == "year":
+                df_ratios = vn.financial_ratio(symbol, lang=language, yearly=True)
+            else:  # quarterly
+                df_ratios = vn.financial_ratio(symbol, lang=language, yearly=False)
+
+            if df_ratios.empty:
+                logger.warning(f"VCI: No financial ratios found for {symbol}")
+                return None
+
+            # Transform ratios data
+            ratios_data = FinancialDataTransformer.transform_financial_ratios(
+                df_ratios, symbol, DataSource.VCI, language
+            )
+
+            if not ratios_data:
+                return None
+
+            # Get the most recent ratio data
+            latest_ratio = ratios_data[0]
+
+            # Create financial metrics object
+            metrics = VietnameseFinancialMetrics(
+                symbol=symbol,
+                period_end=latest_ratio.period_end,
+                data=latest_ratio.model_dump(),
+                source=DataSource.VCI,
+                language=language,
+                created_at=datetime.now(timezone.utc)
+            )
+
+            logger.info(f"VCI: Retrieved financial metrics for {symbol}")
+            return metrics
+
+        except Exception as e:
+            logger.error(f"VCI: Error getting financial metrics for {symbol}: {str(e)}")
+            raise DataSourceUnavailableError(f"Failed to get financial metrics from VCI: {str(e)}")
+
+    async def get_balance_sheet(
+        self,
+        symbol: str,
+        period: str = "year",
+        language: str = "vi",
+    ) -> List[BalanceSheetRow]:
+        """Get balance sheet data from VCI data source.
+
+        Args:
+            symbol: Stock symbol
+            period: Report period (year, quarter)
+            language: Report language (vi, en)
+
+        Returns:
+            List of balance sheet data rows
+        """
+        self._validate_symbol(symbol)
+        self._log_operation("get_balance_sheet", {"symbol": symbol, "period": period, "language": language})
+
+        if vn is None:
+            raise DataSourceUnavailableError("vnstock library not available")
+
+        try:
+            # Use vnstock to fetch balance sheet data
+            if period == "year":
+                df_balance = vn.financial_balance_sheet(symbol, lang=language, yearly=True)
+            else:  # quarterly
+                df_balance = vn.financial_balance_sheet(symbol, lang=language, yearly=False)
+
+            if df_balance.empty:
+                logger.warning(f"VCI: No balance sheet data found for {symbol}")
+                return []
+
+            # Transform data using the financial data transformer
+            balance_sheet_data = FinancialDataTransformer.transform_balance_sheet(
+                df_balance, symbol, DataSource.VCI, language
+            )
+
+            logger.info(f"VCI: Retrieved {len(balance_sheet_data)} balance sheet records for {symbol}")
+            return balance_sheet_data
+
+        except Exception as e:
+            logger.error(f"VCI: Error getting balance sheet for {symbol}: {str(e)}")
+            raise DataSourceUnavailableError(f"Failed to get balance sheet from VCI: {str(e)}")
+
+    async def get_income_statement(
+        self,
+        symbol: str,
+        period: str = "year",
+        language: str = "vi",
+    ) -> List[IncomeStatementRow]:
+        """Get income statement data from VCI data source.
+
+        Args:
+            symbol: Stock symbol
+            period: Report period (year, quarter)
+            language: Report language (vi, en)
+
+        Returns:
+            List of income statement data rows
+        """
+        self._validate_symbol(symbol)
+        self._log_operation("get_income_statement", {"symbol": symbol, "period": period, "language": language})
+
+        if vn is None:
+            raise DataSourceUnavailableError("vnstock library not available")
+
+        try:
+            # Use vnstock to fetch income statement data
+            if period == "year":
+                df_income = vn.financial_income(symbol, lang=language, yearly=True)
+            else:  # quarterly
+                df_income = vn.financial_income(symbol, lang=language, yearly=False)
+
+            if df_income.empty:
+                logger.warning(f"VCI: No income statement data found for {symbol}")
+                return []
+
+            # Transform data using the financial data transformer
+            income_data = FinancialDataTransformer.transform_income_statement(
+                df_income, symbol, DataSource.VCI, language
+            )
+
+            logger.info(f"VCI: Retrieved {len(income_data)} income statement records for {symbol}")
+            return income_data
+
+        except Exception as e:
+            logger.error(f"VCI: Error getting income statement for {symbol}: {str(e)}")
+            raise DataSourceUnavailableError(f"Failed to get income statement from VCI: {str(e)}")
+
+    async def get_cash_flow(
+        self,
+        symbol: str,
+        period: str = "year",
+        language: str = "vi",
+    ) -> List[CashFlowRow]:
+        """Get cash flow data from VCI data source.
+
+        Args:
+            symbol: Stock symbol
+            period: Report period (year, quarter)
+            language: Report language (vi, en)
+
+        Returns:
+            List of cash flow data rows
+        """
+        self._validate_symbol(symbol)
+        self._log_operation("get_cash_flow", {"symbol": symbol, "period": period, "language": language})
+
+        if vn is None:
+            raise DataSourceUnavailableError("vnstock library not available")
+
+        try:
+            # Use vnstock to fetch cash flow data
+            if period == "year":
+                df_cash = vn.financial_cash(symbol, lang=language, yearly=True)
+            else:  # quarterly
+                df_cash = vn.financial_cash(symbol, lang=language, yearly=False)
+
+            if df_cash.empty:
+                logger.warning(f"VCI: No cash flow data found for {symbol}")
+                return []
+
+            # Transform data using the financial data transformer
+            cash_flow_data = FinancialDataTransformer.transform_cash_flow(
+                df_cash, symbol, DataSource.VCI, language
+            )
+
+            logger.info(f"VCI: Retrieved {len(cash_flow_data)} cash flow records for {symbol}")
+            return cash_flow_data
+
+        except Exception as e:
+            logger.error(f"VCI: Error getting cash flow for {symbol}: {str(e)}")
+            raise DataSourceUnavailableError(f"Failed to get cash flow from VCI: {str(e)}")
+
+    async def get_financial_ratios(
+        self,
+        symbol: str,
+        period: str = "year",
+        language: str = "vi",
+    ) -> List[FinancialRatioRow]:
+        """Get financial ratios data from VCI data source.
+
+        Args:
+            symbol: Stock symbol
+            period: Report period (year, quarter)
+            language: Report language (vi, en)
+
+        Returns:
+            List of financial ratio data rows
+        """
+        self._validate_symbol(symbol)
+        self._log_operation("get_financial_ratios", {"symbol": symbol, "period": period, "language": language})
+
+        if vn is None:
+            raise DataSourceUnavailableError("vnstock library not available")
+
+        try:
+            # Use vnstock to fetch financial ratios data
+            if period == "year":
+                df_ratios = vn.financial_ratio(symbol, lang=language, yearly=True)
+            else:  # quarterly
+                df_ratios = vn.financial_ratio(symbol, lang=language, yearly=False)
+
+            if df_ratios.empty:
+                logger.warning(f"VCI: No financial ratios data found for {symbol}")
+                return []
+
+            # Transform data using the financial data transformer
+            ratios_data = FinancialDataTransformer.transform_financial_ratios(
+                df_ratios, symbol, DataSource.VCI, language
+            )
+
+            logger.info(f"VCI: Retrieved {len(ratios_data)} financial ratio records for {symbol}")
+            return ratios_data
+
+        except Exception as e:
+            logger.error(f"VCI: Error getting financial ratios for {symbol}: {str(e)}")
+            raise DataSourceUnavailableError(f"Failed to get financial ratios from VCI: {str(e)}")
