@@ -1,13 +1,13 @@
 <!--
 Sync Impact Report:
-- Version change: 1.1.0 → 1.1.1 (Patch version - updated governance dates and template references)
+- Version change: 1.1.1 → 1.1.2 (Patch version - updated governance dates)
 - Modified principles: None
 - Added sections: None
 - Removed sections: None
 - Templates requiring updates:
-  ✅ .specify/templates/plan-template.md (Constitution Check section)
-  ✅ .specify/templates/spec-template.md (scope/requirements alignment)
-  ✅ .specify/templates/tasks-template.md (task categorization)
+  ✅ .specify/templates/plan-template.md (version reference updated)
+  ✅ .specify/templates/spec-template.md (no changes needed)
+  ✅ .specify/templates/tasks-template.md (no changes needed)
 - Follow-up TODOs: None
 -->
 
@@ -103,4 +103,4 @@ Constitution amendments require:
 - **Documentation**: CLAUDE.md MUST be updated to reflect constitutional requirements
 - **Training**: Team members MUST be trained on constitutional principles and practices
 
-**Version**: 1.1.1 | **Ratified**: 2025-09-20 | **Last Amended**: 2025-09-22
+**Version**: 1.1.2 | **Ratified**: 2025-09-20 | **Last Amended**: 2025-09-23
