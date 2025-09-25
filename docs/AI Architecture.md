@@ -13,9 +13,9 @@ RAG is a powerful technique that enhances the capabilities of Large Language Mod
 3.  **Context Augmentation:** The retrieved information is then provided to an LLM as additional context alongside the original query.
 4.  **Response Generation:** The LLM generates a response that is grounded in the retrieved facts, leading to more accurate, reliable, and up-to-date answers.
 
-## 2. Multi-Agent System with LangGraph
+## 2. Multi-Agent System with Dual Engines (LangGraph & Google ADK)
 
-The RAG process in QuantyFinAI Agent is orchestrated through a multi-agent system built using **LangGraph**. LangGraph allows for the creation of stateful, multi-actor applications with LLMs, enabling complex workflows where different AI agents collaborate and pass information between each other.
+The RAG process in QuantyFinAI Agent is orchestrated through a multi-agent system that supports two engines: **LangGraph** and **Google ADK**. This dual-engine design enables stateful, multi-actor applications with LLMs, where specialized agents collaborate and pass information between each other. The active engine is selected via configuration at runtime.
 
 ### Benefits of a Multi-Agent Architecture:
 
@@ -38,7 +38,7 @@ The knowledge base is a critical component, comprising diverse data sources:
 
 *   **Structured Data:** Financial reports, stock prices, company profiles stored in PostgresDB.
 *   **Unstructured Data:** News articles, legal documents, economic reports, and other textual content, converted into embeddings and stored in the Postgres Vector Database.
-*   **Web Search:** Capability to perform real-time web searches for the most current information.
-*   **APIs:** Integration with external APIs for dynamic data retrieval.
+*   **Web Search (Later Stage):** Real-time web search can be added in later sprints.
+*   **APIs (Later Stage):** External APIs for dynamic data retrieval are planned beyond MVP.
 
-This comprehensive AI architecture, combining RAG with a multi-agent system, positions QuantyFinAI Agent as a powerful tool for sophisticated financial analysis and prediction.
+This AI architecture, combining RAG with a multi-agent system and dual-engine orchestration, positions QuantyFinAI Agent as a powerful tool for grounded financial analysis. In the MVP, prediction can be deferred, with a focus on retrieval, analysis, and cited answers.

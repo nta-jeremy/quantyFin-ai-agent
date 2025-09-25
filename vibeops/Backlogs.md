@@ -6,12 +6,12 @@ This document outlines the initial backlog items for the QuantyFinAI Agent proje
 
 These tasks focus on establishing the project's foundational structure, adhering to specified architectural principles, and setting up essential services.
 
-*   **Establish Standard Project Structure:** Implement a project directory structure that aligns with Hexagonal Architecture, Test-Driven Development (TDD), SOLID Principles, and Clean Code. This includes setting up appropriate folders for application logic, infrastructure, tests, and configuration.
+*   **Establish Standard Project Structure:** Implement a project directory structure that aligns with Clean Architecture (DDD), Test-Driven Development (TDD), SOLID Principles, and Clean Code. This includes setting up appropriate folders for application logic, infrastructure, tests, and configuration.
 *   **Develop Core Codebase for Integrations:** Create a standardized codebase for seamless integration with key technologies, ensuring maintainability and scalability. This includes:
     *   LangGraph integration boilerplate.
     *   Database connection (PostgresDB).
     *   Vector Database connection (Postgres Vector Database).
-    *   Keycloak integration for authentication and authorization.
+    *   Internal Auth service for OAuth2 login and JWT issuance.
     *   Redis integration for caching and session management.
     *   Generic API client setup for external services.
 *   **Implement Basic FastAPI Endpoints:** Develop initial FastAPI endpoints to validate the setup and provide basic functionalities:
@@ -23,7 +23,7 @@ These tasks focus on establishing the project's foundational structure, adhering
 
 These tasks focus on securing the application through robust user authentication and granular access control.
 
-*   **User Authentication via SSO (Keycloak, JWT, OAuth2):** Implement the full authentication flow, including:
+*   **User Authentication (OAuth2, JWT):** Implement the full authentication flow, including:
     *   User login and logout.
     *   User registration.
     *   Password management (forgot password, reset password).

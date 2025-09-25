@@ -1,5 +1,0 @@
-# Migration Dependencies
-# Install with: pip install -r scripts/migrations/requirements.txt
-
-psycopg2-binary>=2.9.9
-python-dotenv>=1.0.0

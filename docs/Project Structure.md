@@ -1,99 +1,137 @@
 # Project Structure
 
-The project structure is designed to adhere to Hexagonal Architecture principles, promoting clear separation of concerns, testability, and scalability. The following tree-like representation outlines the main directories and files:
+This project follows Clean Architecture with Domain-Driven Design (DDD). The goal is clear separation of concerns, strict dependency direction, testability, and business-centric design via bounded contexts. Business logic prefers pure functions; classes are used for connectors to external systems.
 
 ```
 QuantyFinAI-agent/
-├── .github/                 # GitHub Actions for CI/CD
+├── .github/
 │   └── workflows/
-│       └── main.yml
-├── app/                     # Application core (Hexagonal Architecture - Domain/Application Layer)
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application entry point
-│   ├── core/                # Core business logic, domain models, interfaces (Ports)
+├── app/
+│   ├── domain/                      # DDD: Enterprise business rules (pure, framework-agnostic)
 │   │   ├── __init__.py
-│   │   ├── domain/
-│   │   │   ├── __init__.py
-│   │   │   ├── models.py    # Pydantic models for data entities
-│   │   │   └── services.py  # Domain services interfaces
-│   │   └── application/
-│   │       ├── __init__.py
-│   │       ├── use_cases/   # Application-specific business rules (Use Cases)
-│   │       │   ├── __init__.py
-│   │       │   └── financial_analysis.py
-│   │       └── dtos.py      # Data Transfer Objects
-│   ├── infrastructure/      # Adapters for external concerns (Adapters)
+│   │   ├── entities/               # Entities, Aggregates, Value Objects
+│   │   ├── events/                 # Domain events
+│   │   ├── repositories/           # Repository interfaces (ports)
+│   │   ├── services/               # Domain services (pure functions)
+│   │   └── specifications/         # Business invariants/specifications
+│   ├── application/                 # Application business rules (use cases)
 │   │   ├── __init__.py
-│   │   ├── persistence/     # Database adapters
-│   │   │   ├── __init__.py
-│   │   │   ├── postgres_adapter.py
-│   │   │   └── vector_db_adapter.py
-│   │   ├── api/             # External API integrations (e.g., LLM providers, external data sources)
-│   │   │   ├── __init__.py
-│   │   │   ├── llm_client.py
-│   │   │   └── external_news_api.py
-│   │   ├── cache/           # Redis cache adapter
-│   │   │   ├── __init__.py
-│   │   │   └── redis_adapter.py
-│   │   └── auth/            # Keycloak/JWT authentication adapter
-│   │       ├── __init__.py
-│   │       └── keycloak_adapter.py
-│   ├── interfaces/          # Entry points to the application (Ports/APIs)
+│   │   ├── use_cases/              # Orchestrate domain operations
+│   │   ├── dto/                    # Input/Output models for use cases
+│   │   ├── mappers/                # Conversions between layers
+│   │   └── contracts/              # Ports used by use cases (e.g., message bus)
+│   ├── interfaces/                  # Interface adapters (delivery mechanisms)
 │   │   ├── __init__.py
-│   │   ├── api/             # FastAPI endpoints
-│   │   │   ├── __init__.py
-│   │   │   ├── v1/
-│   │   │   │   ├── __init__.py
-│   │   │   │   └── stock_routes.py
-│   │   │   └── auth_routes.py
-│   │   └── cli/             # Command Line Interface (if any)
-│   │       └── __init__.py
-│   └── agents/              # LangGraph agents implementation
+│   │   ├── api/                    # FastAPI routers/controllers, request/response models
+│   │   ├── cli/                    # CLI entry points
+│   │   └── subscribers/            # Event handlers bridging outward
+│   ├── infrastructure/              # Frameworks & drivers (outer layer)
+│   │   ├── __init__.py
+│   │   ├── persistence/            # DB implementations of repositories
+│   │   ├── external_services/      # LLMs, news APIs, pricing feeds
+│   │   ├── cache/                  # Redis or in-memory cache
+│   │   ├── auth/                   # JWT/OIDC adapters
+│   │   └── messaging/              # Message bus, background jobs
+│   └── agents/                      # Agent workflows (pluggable engines)
 │       ├── __init__.py
-│       ├── guard_agent.py
-│       ├── embedding_agent.py
-│       ├── aggregator_agent.py
-│       ├── search_agent.py
-│       ├── retriever_agent.py
-│       ├── analyze_agent.py
-│       └── predict_agent.py
-├── config/                  # Configuration files
+│       ├── engines/
+│       │   ├── __init__.py
+│       │   ├── google_adk/         # Google ADK-based agent implementation
+│       │   │   ├── __init__.py
+│       │   │   ├── builders.py     # Build ADK tools/graphs from ports
+│       │   │   └── runtime.py      # ADK runtime wiring
+│       │   └── langgraph/          # LangChain/LangGraph-based agent implementation
+│       │       ├── __init__.py
+│       │       ├── workflow.py     # LangGraph graph definitions
+│       │       └── nodes.py        # Node/tool definitions
+│       ├── orchestration/          # Engine-agnostic orchestration (use-case level)
+│       │   ├── __init__.py
+│       │   ├── planner.py
+│       │   └── policies.py
+│       ├── ports/                  # Agent-facing ports to application layer
+│       │   ├── __init__.py
+│       │   └── tool_contracts.py   # Definitions mapped by each engine
+│       └── registry.py             # Select engine at runtime via config (AGENT_ENGINE)
+├── config/
 │   ├── __init__.py
-│   └── settings.py          # Environment-specific settings
-├── tests/                   # Test suite (following TDD)
-│   ├── __init__.py
+│   └── settings.py
+├── tests/
 │   ├── unit/
-│   │   ├── __init__.py
-│   │   └── core/
-│   │       └── domain/
-│   │           └── test_models.py
+│   │   ├── domain/
+│   │   └── application/
 │   ├── integration/
-│   │   ├── __init__.py
+│   │   ├── interfaces/
 │   │   └── infrastructure/
-│   │       └── persistence/
-│   │           └── test_postgres_adapter.py
 │   └── e2e/
-│       ├── __init__.py
-│       └── test_api_endpoints.py
-├── scripts/                 # Utility scripts (e.g., database migrations, data seeding)
-│   ├── __init__.py
-│   └── init_db.py
-├── docs/                    # Project documentation
-│   └── architecture.md
-├── .env.example             # Example environment variables
-├── Dockerfile               # Docker build instructions
-├── docker-compose.yml       # Docker Compose for local development
-├── pyproject.toml           # Project metadata and dependencies (e.g., Poetry/PDM)
-├── README.md                # Project README
-└── .gitignore               # Git ignore file
+├── docs/
+├── Dockerfile
+├── docker-compose.yml
+├── pyproject.toml
+├── README.md
+└── main.py                         # Composition root (wiring/bootstrapping)
 ```
 
-## Explanation of Key Directories:
+## Layer Responsibilities (Clean Architecture + DDD)
 
-*   **`app/core/`**: Contains the application's domain logic and abstract interfaces (ports) that define what the application can do, independent of how it's implemented.
-*   **`app/infrastructure/`**: Houses the concrete implementations (adapters) that connect the core application to external services like databases, APIs, and caching mechanisms.
-*   **`app/interfaces/`**: Defines the entry points into the application, such as REST API endpoints using FastAPI.
-*   **`app/agents/`**: Dedicated directory for the LangGraph-based AI agents, each encapsulating specific functionalities.
-*   **`config/`**: Centralized management for application settings and environment variables.
-*   **`tests/`**: Organized by testing levels (unit, integration, end-to-end) to support the TDD methodology.
-*   **`.github/workflows/`**: Contains CI/CD pipeline definitions for automated testing and deployment.
+- **`app/domain`**: Pure business concepts. Contains entities, value objects, aggregates, domain services, domain events, and repository interfaces. No framework imports.
+- **`app/application`**: Use cases orchestrating domain behavior. Depends only on `domain` and contracts. Contains DTOs and mappers for IO boundaries. No infrastructure imports.
+- **`app/interfaces`**: Adapters that translate delivery protocols (HTTP/CLI/events) into application use case inputs and back to responses.
+- **`app/infrastructure`**: Concrete implementations for repositories, external APIs, cache, messaging, and auth. Depends inward on `domain` and `application` interfaces.
+- **`app/agents`**: Agent workflows coordinating multiple use cases; treat as application orchestration. Keep pure where possible; external calls via ports. Supports Google ADK and LangGraph engines.
+  - Engine-agnostic orchestration lives in `app/agents/orchestration` and depends on `app/application` use cases only.
+  - Engine-specific adapters live under `app/agents/engines/{google_adk|langgraph}` and adapt agent ports to the chosen runtime.
+  - `app/agents/registry.py` is the single entrypoint to resolve the current engine and expose a unified agent interface to the rest of the app.
+
+## Dependency Rule
+
+Dependencies point inward only: `infrastructure` → `interfaces` → `application` → `domain`. Inner layers must not import outer layers.
+
+## Bounded Contexts
+
+As the system grows, organize by bounded contexts inside each layer to keep cohesion high. Example:
+
+```
+app/
+  domain/
+    research/
+    analysis/
+    prediction/
+  application/
+    research/
+    analysis/
+    prediction/
+  interfaces/
+    api/
+      v1/
+  infrastructure/
+    persistence/
+    external_services/
+```
+
+Each bounded context exposes its own aggregates, use cases, and ports. Cross-context interactions should go through application-level use cases and contracts.
+
+## Conventions
+
+- **Pure functions** in domain and application layers; no hidden state.
+- **Strict typing** everywhere; prefer Pydantic models for DTOs and request/response shapes. No default parameter values; use explicit parameters.
+- **Errors**: raise specific error types; do not continue after failures.
+- **Mapping**: confine serialization/deserialization to `interfaces` and `application/mappers`.
+- **Testing**: unit tests for `domain` and `application`; integration tests for `interfaces` and `infrastructure`; e2e for full flows.
+
+## Mapping to Current Codebase
+
+- Existing `app/agents/` remains but is now split into engine-agnostic orchestration and engine-specific implementations (Google ADK, LangGraph).
+- `main.py` serves as the composition root to wire adapters (infrastructure) into application ports and expose delivery (FastAPI) in `interfaces/api`.
+
+### Agent Engine Selection
+
+- Configure the active engine via environment/config (e.g., `AGENT_ENGINE=google_adk` or `AGENT_ENGINE=langgraph`).
+- `config/settings.py` should expose a typed setting `agent_engine: Literal["google_adk", "langgraph"]`.
+- `app/agents/registry.py` reads the setting and returns the appropriate engine façade with a consistent API.
+
+### Testing Guidance
+
+- Unit tests for `app/agents/orchestration` mock agent ports (engine-agnostic).
+- Engine-specific tests live under `tests/integration/agents/engines/{google_adk|langgraph}` and verify wiring to their runtimes.
+
+This structure keeps business rules independent of frameworks and implementation details, enabling easy testing and future replacement of adapters without touching core logic.

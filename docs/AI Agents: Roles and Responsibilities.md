@@ -1,6 +1,6 @@
 # AI Agents: Roles and Responsibilities
 
-The QuantyFinAI Agent system is built upon a multi-agent architecture, where each AI agent is specialized for a particular task, collaborating to achieve comprehensive financial analysis and stock prediction. The agents are orchestrated using LangGraph.
+The QuantyFinAI Agent system uses a multi-agent architecture, where each AI agent is specialized for a particular task, collaborating to achieve comprehensive financial analysis. Orchestration supports two engines: Google ADK and LangGraph, selected at runtime via configuration. For MVP, the Predict Agent can be deferred.
 
 ## 1. Guard Agent
 

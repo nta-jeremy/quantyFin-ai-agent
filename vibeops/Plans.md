@@ -18,7 +18,7 @@ This document outlines a phased development plan for the QuantyFinAI Agent proje
     *   **Database (PostgresDB):** Implement `postgres_adapter.py` in `app/infrastructure/persistence/` for basic CRUD operations.
     *   **Vector Database (Postgres Vector DB):** Implement `vector_db_adapter.py` in `app/infrastructure/persistence/` for vector storage and retrieval.
     *   **Redis:** Implement `redis_adapter.py` in `app/infrastructure/cache/` for caching and session management.
-    *   **Keycloak:** Implement `keycloak_adapter.py` in `app/infrastructure/auth/` for initial connection and configuration.
+    *   **Auth Service:** Implement `auth_adapter.py` in `app/infrastructure/auth/` for token issuance and verification.
 
 3.  **Basic FastAPI Endpoints:**
     *   Create `main.py` as the FastAPI application entry point.
@@ -33,21 +33,21 @@ This document outlines a phased development plan for the QuantyFinAI Agent proje
 
 ## Phase 2: Authentication & Authorization
 
-**Goal:** Implement a secure and robust user authentication and authorization system using Keycloak, JWT, and OAuth2.
+**Goal:** Implement a secure and robust user authentication and authorization system using OAuth2 and JWT.
 
 **Tasks:**
 
-1.  **Keycloak Integration:**
-    *   Configure Keycloak client within the application settings.
-    *   Implement OAuth2 authorization code flow for user login.
-    *   Handle JWT token issuance, refresh, and revocation.
+1.  **Auth Service & OAuth2 Flow:**
+    *   Implement Authorization Code flow with PKCE for user login.
+    *   Issue, refresh, and revoke JWTs via internal auth service.
+    *   Validate tokens (issuer, audience, signature, expiry) at the API gateway/middleware.
 
 2.  **User Management Endpoints:**
     *   Develop FastAPI routes for user registration, login, logout, and password management (forgot/reset).
     *   Implement endpoints for retrieving, updating, and deleting user profiles.
 
 3.  **RBAC Implementation:**
-    *   Define roles (System, Super Admin, Admin, User, API) and their associated permissions in Keycloak.
+    *   Define roles (System, Super Admin, Admin, User, API) and their permissions in application config/database.
     *   Integrate role-based access control into FastAPI endpoints using decorators or middleware.
     *   Ensure proper authorization checks are performed before allowing access to resources.
 

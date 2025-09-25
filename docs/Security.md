@@ -2,31 +2,30 @@
 
 Security is a paramount concern for the QuantyFinAI Agent system, encompassing both authentication and authorization to protect sensitive financial data and user information. This document details the authorization mechanisms and other security considerations.
 
-## Authorization
+## Authorization (RBAC)
 
-### Role-Based Access Control (RBAC) with Keycloak
+### Role-Based Access Control (RBAC) with JWT Claims
 
-**Keycloak** will be utilized to implement **Role-Based Access Control (RBAC)**, providing a granular and flexible system for managing user permissions. RBAC ensures that users can only perform actions and access resources for which they have explicit authorization.
+RBAC is enforced via roles embedded as claims inside signed JWTs, issued by the application's auth service (OAuth2/OIDC). Users can perform only actions allowed by their roles and associated permissions.
 
-Keycloak allows for the definition of roles and the assignment of these roles to users. Each role will be associated with a specific set of permissions, dictating what actions a user with that role can perform within the application. The system will define a hierarchy of roles to manage access levels effectively.
+Roles are defined and managed within the application (and persisted in Postgres). Each role maps to a set of permissions enforced at API/middleware boundaries.
 
-## Defined Roles (Conceptual)
+## Defined Roles (MVP)
 
-While the exact permissions for each role will be detailed during implementation, the anticipated roles include:
+For MVP, keep roles minimal and clear:
 
-*   **System:** Reserved for internal system processes or highly privileged automated tasks.
-*   **Super Admin:** Full administrative access, capable of managing all aspects of the system, including user management, configuration, and data access.
-*   **Admin:** Elevated administrative privileges, typically managing specific modules or user groups, but with some restrictions compared to Super Admin.
-*   **User:** Standard user access, primarily for interacting with the AI agent, querying financial data, and viewing predictions.
-*   **API:** Specific role for external applications or services that interact with the QuantyFinAI Agent via its API, with permissions tailored to API consumption.
+*   **Admin:** Administrative access to manage users, configuration, and data ingestion.
+*   **User:** Standard access to query the agent and view cited results.
+
+Additional roles (e.g., service accounts) can be added in later sprints.
 
 ## Other Security Considerations
 
-1.  **Prompt Injection Protection:** The **Guard Agent** is specifically designed to act as a protective layer against prompt injection attacks, ensuring that user inputs do not maliciously manipulate the behavior of other AI agents.
+1.  **Prompt Injection Protection:** The **Guard Agent** validates inputs/outputs to reduce prompt injection risks and enforce policies.
 
 2.  **Data Encryption:** All sensitive data, both at rest (in databases) and in transit (over networks), will be encrypted using industry-standard encryption protocols.
 
-3.  **Secure API Design:** FastAPI endpoints will be designed with security in mind, including input validation, rate limiting, and proper error handling to prevent common web vulnerabilities.
+3.  **Secure API Design:** FastAPI endpoints include input validation, rate limiting, and clear error handling to prevent common web vulnerabilities.
 
 4.  **Dependency Management:** Regular security audits of third-party libraries and dependencies will be conducted to mitigate risks from known vulnerabilities.
 

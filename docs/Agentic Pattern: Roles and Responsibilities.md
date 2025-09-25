@@ -1,6 +1,6 @@
 # Agentic Pattern: Roles and Responsibilities
 
-The QuantyFinAI Agent system employs a sophisticated multi-agent architecture, where specialized AI agents collaborate to achieve the overarching goal of financial analysis and stock prediction. This agentic pattern, orchestrated by LangGraph, ensures modularity, efficiency, and robust handling of complex tasks. Each agent has a distinct role and set of responsibilities:
+The QuantyFinAI Agent system employs a sophisticated multi-agent architecture, where specialized AI agents collaborate to achieve the overarching goal of financial analysis. Orchestration supports two engines (Google ADK and LangGraph) selected by configuration at runtime. In the MVP, prediction may be deferred to later sprints.
 
 ## 1. Guard Agent
 

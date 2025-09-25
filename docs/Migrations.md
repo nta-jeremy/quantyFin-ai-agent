@@ -11,24 +11,11 @@ This document outlines the database migration system for the QuantyFinAI Agent p
 - **Tables Created**:
   - `roles`: User roles for RBAC system
   - `users`: User authentication and profile information
-  - `companies`: Basic company information and ticker symbols
 - **Features**:
   - UUID primary keys for better scalability
   - Automatic timestamp triggers for `updated_at` fields
   - Default role seeding (admin, analyst, viewer, api_user)
   - Performance indexes on frequently queried columns
-
-#### 002_financial_data.sql
-- **Purpose**: Create financial data tables for reports and stock data
-- **Tables Created**:
-  - `financial_reports`: Metadata and links to financial reports
-  - `stock_data`: Historical stock price data
-  - `market_indicators`: Broader market data (indices, currencies, commodities)
-- **Features**:
-  - Data validation constraints (positive prices, valid date ranges)
-  - Unique constraints to prevent duplicate data
-  - Comprehensive indexing for performance
-  - Date validation functions for financial reports
 
 #### 003_vector_database.sql
 - **Purpose**: Setup vector database for RAG system with pgvector extension
@@ -42,20 +29,6 @@ This document outlines the database migration system for the QuantyFinAI Agent p
   - Support for multiple distance metrics (cosine, L2, inner product)
   - Hybrid search functions combining vector and text search
   - Automatic cleanup functions for old embeddings
-
-#### 004_analytics_tables.sql
-- **Purpose**: Create analytics and monitoring tables for system insights
-- **Tables Created**:
-  - `system_metrics`: System performance monitoring
-  - `agent_performance`: AI agent performance tracking
-  - `user_activity`: User interaction analytics
-  - `api_usage`: API endpoint usage statistics
-  - `data_quality_metrics`: Data quality monitoring
-- **Features**:
-  - Automated cleanup functions for old data
-  - System health monitoring functions
-  - Performance summary views
-  - Comprehensive indexing for analytics queries
 
 ## Migration Utilities
 
