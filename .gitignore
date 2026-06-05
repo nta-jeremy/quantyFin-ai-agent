@@ -1,0 +1,27 @@
+# BMAD
+node_modules/
+dist/
+
+# Env files (can be added for local dev if needed)
+.env
+.env.local
+
+# Logs
+logs/
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# AI
+.agent
+.agents
+.claude
+.opencode
