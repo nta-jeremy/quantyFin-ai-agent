@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuantyFin ID — ITDX EA Portal · UI Kit</title>
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+    integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+    integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+    integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"
+    crossorigin="anonymous"></script>
+</head>
+
+<body data-surface="portal">
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect } = React;
+
+    // ── Header ──────────────────────────────────────────────
+    function Header({ active, onNav }) {
+      const items = [
+        { id: 'dashboard', label: 'Tổng quan' },
+        { id: 'mindmap', label: 'Bản đồ EA' },
+        { id: 'health', label: 'Sức khoẻ' },
+        { id: 'roadmap', label: 'Lộ trình' },
+      ];
+      return (
+        <header className="hdr">
+          <div className="logo">
+            <div className="logo-mark">y</div>
+            <div className="logo-name">quantyfin<span>·id</span></div>
+          </div>
+          <div className="hdr-sep" />
+          <nav className="hdr-nav">
+            {items.map(it => (
+              <a key={it.id} className={active === it.id ? 'active' : ''} onClick={() => onNav(it.id)}>{it.label}</a>
+            ))}
+          </nav>
+          <div className="hdr-right">
+            <span className="hdr-tag">TOGAF Governance</span>
+            <span className="hdr-updated">Cập nhật T5/2026</span>
+          </div>
+        </header>
+      );
+    }
+
+    function StatusTag({ status, size = 'sm' }) {
+      const cls = `tag tag-${status.toLowerCase()} ${size === 'lg' ? 'tag-lg' : ''}`;
+      return <span className={cls}>{status}</span>;
+    }
+
+    // Light Hightech domain palette — A & E anchor brand DNA (navy + gold)
+    const DOMAIN_COLORS = {
+      A: '#2a2b86', B: '#7c6cf5', C: '#4fd1c5', D: '#f472b6',
+      E: '#fcaf16', F: '#4a4bc8', G: '#6b6f8c', H: '#fb923c', I: '#10b981',
+    };
+    const DOMAIN_INK = { C: '#06484a', E: '#4a3300' }; // light badges need dark ink
+    function DomainBadge({ letter, size = 28 }) {
+      return (
+        <div className="dom-badge" style={{
+          width: size, height: size,
+          background: DOMAIN_COLORS[letter] || 'var(--accent)',
+          color: DOMAIN_INK[letter] || '#fff',
+          fontSize: size * 0.46
+        }}>
+          {letter}
+        </div>
+      );
+    }
+
+    function KpiCard({ label, value, suffix, trend, accent = 'iris' }) {
+      const accentMap = {
+        iris: 'var(--accent)', mint: 'var(--mint)', rose: 'var(--rose)',
+        gold: 'var(--brand-gold)', brand: 'var(--brand)',
+        live: 'var(--live)', build: 'var(--build)', gap: 'var(--gap)', plan: 'var(--plan)',
+      };
+      const tintMap = {
+        iris: 'rgba(124,108,245,0.18)', mint: 'rgba(79,209,197,0.20)',
+        rose: 'rgba(244,114,182,0.18)', gold: 'rgba(252,175,22,0.20)',
+        brand: 'rgba(42,43,134,0.16)', live: 'rgba(16,185,129,0.18)',
+        build: 'rgba(124,108,245,0.18)', gap: 'rgba(239,68,68,0.16)',
+        plan: 'rgba(245,158,11,0.20)',
+      };
+      const accentColor = accentMap[accent] || 'var(--accent)';
+      const tint = tintMap[accent] || 'rgba(124,108,245,0.18)';
+      const trendCls = trend?.startsWith('+') || trend?.startsWith('↗') ? 'up' : trend?.startsWith('-') || trend?.startsWith('↘') ? 'down' : 'flat';
+      return (
+        <div className="kpi-card" style={{ '--kpi-accent': accentColor, '--kpi-tint': tint }}>
+          <div className="kpi-label">{label}</div>
+          <div className="kpi-num">{value}{suffix && <span className="kpi-suffix">{suffix}</span>}</div>
+          {trend && <div className={`kpi-trend ${trendCls}`}>{trend}</div>}
+        </div>
+      );
+    }
+
+    function DomainCard({ letter, title, subtitle, status, platform, maturity, onClick }) {
+      return (
+        <div className="dom-card" onClick={onClick}>
+          <DomainBadge letter={letter} />
+          <div className="dom-body">
+            <div className="dom-title">{title}</div>
+            <div className="dom-sub">{subtitle}</div>
+            <div className="dom-row">
+              <StatusTag status={status} />
+              {platform && <span className="platform-chip">{platform}</span>}
+            </div>
+            {maturity != null && (
+              <div className="bar"><i style={{
+                width: `${maturity * 20}%`,
+                background:
+                  status === 'LIVE' ? 'var(--live)' :
+                    status === 'GAP' ? 'var(--gap)' :
+                      status === 'PLAN' ? 'var(--plan)' :
+                        'var(--build)'
+              }} /></div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function SidePanel({ open, onClose, item }) {
+      useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        if (open) window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [open, onClose]);
+
+      return (
+        <>
+          <div className={`backdrop ${open ? 'open' : ''}`} onClick={onClose} />
+          <aside className={`panel ${open ? 'open' : ''}`} role="dialog" aria-modal="true">
+            {item && (
+              <>
+                <div className="panel-hdr">
+                  <div className="panel-eyebrow">{item.platform || 'TOGAF'} · Domain {item.letter}</div>
+                  <h2 className="panel-title">{item.title}</h2>
+                  <button className="panel-close" onClick={onClose} aria-label="Close">×</button>
+                </div>
+                <div className="panel-body">
+                  <p className="panel-desc">{item.desc}</p>
+                  <div className="panel-section">
+                    <div className="panel-label">Trạng thái</div>
+                    <StatusTag status={item.status} size="lg" />
+                  </div>
+                  <div className="panel-section">
+                    <div className="panel-label">Owner / Squad</div>
+                    <span className="owner-chip">{item.owner}</span>
+                  </div>
+                  <div className="panel-section">
+                    <div className="panel-label">Hệ thống liên quan</div>
+                    <ul className="sys-list">
+                      {(item.systems || []).map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+                  <div className="panel-section">
+                    <div className="panel-label">Maturity (CMMI)</div>
+                    <div className="bar tall"><i style={{ width: `${(item.maturity || 0) * 20}%` }} /></div>
+                    <div className="caption">{item.maturity?.toFixed(1)} / 5.0</div>
+                  </div>
+                </div>
+              </>
+            )}
+          </aside>
+        </>
+      );
+    }
+
+    function FilterPills({ active, onChange }) {
+      const pills = ['ALL', 'LIVE', 'BUILD', 'GAP', 'PLAN'];
+      return (
+        <div className="filter-pills">
+          {pills.map(p => (
+            <button key={p} className={`pill ${active === p ? 'active' : ''}`} onClick={() => onChange(p)}>{p}</button>
+          ))}
+        </div>
+      );
+    }
+
+    function SectionHeader({ eyebrow, title, sub }) {
+      return (
+        <div className="section-head">
+          {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+          <h2 className="section-title">{title}</h2>
+          {sub && <p className="section-sub">{sub}</p>}
+        </div>
+      );
+    }
+
+    function Insight({ children }) {
+      return (
+        <div className="insight">
+          <p className="insight-text">{children}</p>
+        </div>
+      );
+    }
+
+    // ── Data ────────────────────────────────────────────────
+    const KPIS = [
+      { label: 'Maturity Score', value: '3.2', suffix: '/5', trend: '+0.4 YoY', accent: 'iris' },
+      { label: 'Systems Modernized', value: '65', suffix: '%', trend: '+5% YoY', accent: 'mint' },
+      { label: 'Critical Gaps', value: '4', trend: '-2 QoQ', accent: 'rose' },
+      { label: 'Investment 2026', value: '127', suffix: 'B ₫', trend: 'Approved', accent: 'gold' },
+    ];
+
+    const DOMAINS = [
+      {
+        letter: 'A', title: 'Strategy & Governance', subtitle: 'TOGAF Domain A', status: 'LIVE', platform: 'PHOENIX', maturity: 4.1, owner: 'CTO Office',
+        desc: 'Khung quản trị kiến trúc + decision rights cho 274 stores. PMO đã onboard 100% squads.',
+        systems: ['ArchiOps Studio', 'Decision Log v2', 'EA Council Hub']
+      },
+      {
+        letter: 'B', title: 'Business Architecture', subtitle: 'TOGAF Domain B', status: 'BUILD', platform: 'COMMERCE', maturity: 3.0, owner: 'Squad Trinity',
+        desc: 'Capability mapping cho Order, Fulfillment, Customer. 60% capabilities đã có owner cụ thể.',
+        systems: ['Capability Map', 'Org Matrix Tool', 'Process Atlas']
+      },
+      {
+        letter: 'C', title: 'Data Architecture', subtitle: 'TOGAF Domain C', status: 'BUILD', platform: 'INSIGHT', maturity: 2.8, owner: 'Data Platform',
+        desc: 'Lakehouse migration đang ở giai đoạn 2/3. 1.2M giao dịch/ngày streaming qua Kafka.',
+        systems: ['QuantyFin Lakehouse', 'Stream Hub', 'Data Catalog']
+      },
+      {
+        letter: 'D', title: 'Application Architecture', subtitle: 'TOGAF Domain D', status: 'GAP', platform: 'COMMERCE', maturity: 2.2, owner: 'Platform Eng',
+        desc: 'Legacy POS coupling vẫn block API-first roadmap. 3 hệ thống core cần refactor trước Q4.',
+        systems: ['POS Legacy v3', 'Order Service', 'Inventory Hub']
+      },
+      {
+        letter: 'E', title: 'Technology Architecture', subtitle: 'TOGAF Domain E', status: 'LIVE', platform: 'CLOUDOPS', maturity: 3.8, owner: 'SRE Squad',
+        desc: 'Multi-cloud (AWS + Azure) đã GA. Kubernetes self-service cho 12 squads.',
+        systems: ['CloudOps Console', 'K8s Self-Service', 'Edge CDN']
+      },
+      {
+        letter: 'F', title: 'Migration Planning', subtitle: 'TOGAF Domain F', status: 'PLAN', platform: 'PROGRAM', maturity: 1.6, owner: 'Program Office',
+        desc: 'Lộ trình 2026-2030 đã approve. 8 chương trình lớn đang ở stage gate 1.',
+        systems: ['Wave Plan 2026', 'Dependency Tracker', 'Risk Register']
+      },
+    ];
+
+    function App() {
+      const [active, setActive] = useState('dashboard');
+      const [filter, setFilter] = useState('ALL');
+      const [open, setOpen] = useState(null);
+
+      const filtered = filter === 'ALL' ? DOMAINS : DOMAINS.filter(d => d.status === filter);
+
+      return (
+        <>
+          <Header active={active} onNav={setActive} />
+          <main className="container">
+
+            <div className="hero">
+              <div className="hero-eyebrow">ITDX · Enterprise Architecture</div>
+              <h1 className="hero-title">
+                Kiến trúc <em>dữ liệu</em><br />
+                được dệt bằng <em>trực giác</em>,<br />
+                kỷ luật và mã code<span className="dot">.</span>
+              </h1>
+              <p>Dashboard chiến lược cho Business Owners và CTO — đo sức khoẻ 6 trụ cột TOGAF, theo dõi gap, ưu tiên đầu tư cho 274 cửa hàng QuantyFin.</p>
+              <div className="brand-line" />
+            </div>
+
+            <SectionHeader eyebrow="01 · KPI" title={<>Sức khoẻ <em>tổng thể</em></>} sub="Cập nhật T5/2026 · nguồn: ArchiOps Studio + Data Catalog" />
+            <div className="kpi-grid">
+              {KPIS.map(k => <KpiCard key={k.label} {...k} />)}
+            </div>
+
+            <Insight>Maturity 3.2/5 — vượt mục tiêu Q1 (3.0) nhờ rollout CloudOps. Vẫn còn <em>4 gap nghiêm trọng</em> tập trung ở Application Domain.</Insight>
+
+            <SectionHeader eyebrow="02 · TOGAF" title={<>Trụ cột <em>Kiến trúc</em></>} sub="Click một domain để mở chi tiết hệ thống, owner, lộ trình." />
+            <FilterPills active={filter} onChange={setFilter} />
+            <div className="dom-grid">
+              {filtered.map(d => (
+                <DomainCard key={d.letter} {...d} onClick={() => setOpen(d)} />
+              ))}
+            </div>
+
+          </main>
+
+          <SidePanel open={!!open} onClose={() => setOpen(null)} item={open} />
+
+          <div className="footer">
+            QuantyFin ID · TOGAF Governance · Cập nhật T5/2026
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+
+</html>

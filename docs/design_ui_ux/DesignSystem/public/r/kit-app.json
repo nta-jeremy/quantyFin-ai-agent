@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "kit-app",
+  "type": "registry:component",
+  "title": "App Kit",
+  "description": "Composite back-office/PLM blocks: app shell · top-bar · side-rail · tabs · data-table · filter-bar · command palette · chart engine. Token-driven, Tailwind-enabled.",
+  "registryDependencies": [
+    "theme",
+    "components"
+  ],
+  "files": [
+    {
+      "path": "ui_kits/quantyFin-app/index.css",
+      "content": "/* ─────────────────────────────────────────────────────────\n   QuantyFin App Kit · INDEX\n   ─────────────────────────────────────────────────────────\n   Composite components for [data-surface=\"app\"] surfaces:\n   admin, PLM, OMS, vendor portal,\n   internal mobile/tablet apps.\n\n   Load order:\n     1. colors_and_type.css       (foundation tokens)\n     2. tailwind/quantyfin.components.css (inline)      (primitives)\n     3. ui_kits/quantyFin-app/index.css (this file)\n\n   <link rel=\"stylesheet\" href=\"colors_and_type.css\" />\n   <link rel=\"stylesheet\" href=\"tailwind/quantyfin.components.css (inline)\" />\n   <link rel=\"stylesheet\" href=\"ui_kits/quantyFin-app/index.css\" />\n\n   Set <body data-surface=\"app\"> on app routes.\n   ───────────────────────────────────────────────────────── */\n\n@import url('./chrome.css');\n@import url('./data-table.css');\n@import url('./filter-bar.css');\n@import url('./cmd-palette.css');\n@import url('./charts.css');\n",
+      "type": "registry:component",
+      "target": "ui_kits/quantyFin-app/index.css"
+    }
+  ]
+}

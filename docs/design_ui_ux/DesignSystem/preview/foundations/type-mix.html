@@ -1,0 +1,317 @@
+<!-- @dsCard group="Type" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: #f4f1e8;
+      padding: 56px 64px;
+      margin: 0;
+    }
+
+    .frame {
+      max-width: 920px;
+    }
+
+    .meta {
+      font: var(--type-mono);
+      color: var(--fg-3);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 18px;
+    }
+
+    .hero {
+      font: var(--type-display);
+      color: var(--fg-1);
+      letter-spacing: -0.025em;
+      line-height: 1.0;
+      font-size: clamp(56px, 7vw, 88px);
+      font-weight: 800;
+    }
+
+    .hero .it {
+      font: var(--type-accent-italic);
+      font-size: inherit;
+      line-height: inherit;
+      color: var(--fg-1);
+      letter-spacing: -0.005em;
+      display: inline-block;
+    }
+
+    .hero .dot {
+      color: var(--rose);
+    }
+
+    .block {
+      padding-top: 36px;
+      border-top: 1px solid #d8d3c0;
+      margin-top: 36px;
+    }
+
+    .stack-row {
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .tag-mono {
+      font: 600 9px/1 var(--font-mono);
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      min-width: 130px;
+    }
+
+    .sample {
+      color: var(--fg-1);
+    }
+
+    .pair-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .pair {
+      padding: 20px;
+      background: #fcfcff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+
+    .pair h3 {
+      font: 700 22px/1.15 var(--font-display);
+      letter-spacing: -0.015em;
+      margin: 0 0 6px;
+      color: var(--fg-1);
+    }
+
+    .pair h3 em {
+      font: italic 700 22px/1.15 var(--font-serif);
+      font-style: italic;
+      letter-spacing: -0.005em;
+      color: var(--accent);
+    }
+
+    .pair p {
+      margin: 0;
+    }
+
+    .pair .num {
+      font: 800 36px/1 var(--font-numeric);
+      letter-spacing: -0.02em;
+      color: var(--fg-1);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pair .lbl {
+      font: 600 10px/1 var(--font-body);
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .role {
+      background: #fcfcff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 22px;
+    }
+
+    .role+.role {
+      margin-top: 10px;
+    }
+
+    .role-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .role-title b {
+      font: 700 13px/1 var(--font-display);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .role-title span {
+      font: 500 11px/1 var(--font-mono);
+      color: var(--fg-3);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+
+  <div class="frame">
+
+    <div class="meta">Hero · phá cách · Montserrat 800 + Playfair Display Italic 800</div>
+    <div class="hero">
+      Kiến trúc <span class="it">dữ liệu</span><br />
+      được dệt bằng <span class="it">trực giác</span>,<br />
+      kỷ luật <span class="it">và</span> mã code<span class="dot">.</span>
+    </div>
+
+    <!-- English mirror to match the reference image vibe -->
+    <div class="hero" style="margin-top: 28px; font-size: clamp(48px, 6vw, 72px);">
+      Designing <span class="it">intelligence</span><br />
+      with skills, <span class="it">taste,</span> and<br />
+      <span class="it">code</span><span class="dot">.</span>
+    </div>
+
+    <div class="block">
+      <div class="meta">Tỉ lệ · scale</div>
+
+      <div class="stack-row"><span class="tag-mono">Display 72 / 800</span>
+        <span class="sample" style="font: 800 56px/1 var(--font-display); letter-spacing: -0.025em;">Sức khoẻ Kiến
+          trúc</span>
+      </div>
+      <div class="stack-row"><span class="tag-mono">Italic Serif 56 / 800</span>
+        <span class="sample" style="font: italic 800 48px/1 var(--font-serif); letter-spacing: -0.005em;">trưởng
+          thành</span>
+      </div>
+      <div class="stack-row"><span class="tag-mono">H1 · 40 / 800</span>
+        <span class="sample" style="font: 800 36px/1.1 var(--font-display); letter-spacing: -0.02em;">Lộ trình sản
+          phẩm</span>
+      </div>
+      <div class="stack-row"><span class="tag-mono">H2 · 26 / 700</span>
+        <span class="sample" style="font: 700 24px/1.25 var(--font-display); letter-spacing: -0.01em;">Tiêu đề
+          mục</span>
+      </div>
+      <div class="stack-row"><span class="tag-mono">Card title · 14 / 600 (brand)</span>
+        <span class="sample" style="font: 600 14px/1.3 var(--font-brand);">PLM — Product Lifecycle</span>
+      </div>
+      <div class="stack-row"><span class="tag-mono">Body · 14 / 400 (Be Vietnam Pro)</span>
+        <span class="sample" style="font: 400 14px/1.55 var(--font-body); max-width: 560px;">QuantyFin Design System
+          trình bày nội dung dài dạng blog-portal, dễ đọc ở khoảng cách máy chiếu — đo gap, ưu tiên đầu tư, đồng bộ cho
+          274 cửa hàng.</span>
+      </div>
+      <div class="stack-row"><span class="tag-mono">KPI numeral · 32 / 800</span>
+        <span class="sample"
+          style="font: 800 32px/1 var(--font-numeric); letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">3.2
+          / 5</span>
+      </div>
+      <div class="stack-row"><span class="tag-mono">Mono · 12 / 500</span>
+        <span class="sample" style="font: 500 12px/1.4 var(--font-mono);">BE VIETNAM PRO · MONTSERRAT · JETBRAINS
+          MONO</span>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="meta">Cách kết hợp · pairing patterns</div>
+      <div class="pair-grid">
+        <div class="pair">
+          <div class="lbl">Section header · mixed</div>
+          <h3>Trụ cột <em>chiến lược</em></h3>
+          <p style="font: 400 13px/1.55 var(--font-body); color: var(--fg-2);">Inter 400 cho body. Tiêu đề pha
+            Montserrat 700 với Playfair 700 Italic ở từ accent.</p>
+        </div>
+        <div class="pair">
+          <div class="lbl">KPI block</div>
+          <div class="num">127B ₫</div>
+          <p style="font: 500 12px/1.4 var(--font-body); color: var(--fg-2); margin-top: 4px;">Investment 2026 ·
+            Approved</p>
+        </div>
+        <div class="pair">
+          <div class="lbl">Brand product chrome</div>
+          <div
+            style="font-family: var(--font-brand); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; color: var(--fg-1);">
+            QuantyFin ID · Portal</div>
+          <p style="font: 400 12px/1.5 var(--font-body); color: var(--fg-2); margin-top: 4px;">Be Vietnam Pro 700 cho
+            header / wordmark / chrome — anchor brand DNA.</p>
+        </div>
+        <div class="pair">
+          <div class="lbl">Pull quote · italic</div>
+          <p
+            style="font: italic 600 18px/1.4 var(--font-serif); color: var(--fg-1); letter-spacing: -0.005em; margin: 0;">
+            "Trưởng thành kiến trúc không phải đích đến, mà là một <em
+              style="font-style: normal; font-weight: 700;">nhịp điệu</em>."</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="meta">Phân vai · role table</div>
+      <div class="role">
+        <div class="role-title"><b>Inter</b><span>--font-body · 400/500</span></div>
+        <div style="font: 400 14px/1.5 var(--font-body); color: var(--fg-2);">Body văn bản, label, nav, caption,
+          paragraph dài — neutral, đầy đủ dấu tiếng Việt.</div>
+      </div>
+      <div class="role">
+        <div class="role-title"><b style="font-family: var(--font-brand);">Be Vietnam Pro</b><span>--font-brand ·
+            600/700/900</span></div>
+        <div
+          style="font-family: var(--font-brand); font-weight: 500; font-size: 14px; line-height: 1.5; color: var(--fg-2);">
+          Wordmark "quantyfin", header brand chunk, card title — giữ DNA brand khi UI chrome.</div>
+      </div>
+      <div class="role">
+        <div class="role-title"><b style="font-family: var(--font-display);">Montserrat</b><span>--font-display +
+            --font-numeric · 700/800/900</span></div>
+        <div style="font: 500 14px/1.5 var(--font-display); color: var(--fg-2);">Hero impact, H1/H2/H3 chính, KPI
+          numerals, eyebrow uppercase.</div>
+      </div>
+      <div class="role">
+        <div class="role-title"><b style="font-family: var(--font-serif); font-style: italic;">Playfair Display
+            Italic</b><span>--font-serif · 700/800/900 italic</span></div>
+        <div style="font: italic 500 14px/1.5 var(--font-serif); color: var(--fg-2);">Accent một-từ trong heading, pull
+          quote, hero phá cách. Có dấu tiếng Việt đầy đủ.</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+
+</html>

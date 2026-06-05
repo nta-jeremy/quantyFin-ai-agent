@@ -1,0 +1,24 @@
+/* ─────────────────────────────────────────────────────────
+   QuantyFin App Kit · INDEX
+   ─────────────────────────────────────────────────────────
+   Composite components for [data-surface="app"] surfaces:
+   admin, PLM, OMS, vendor portal,
+   internal mobile/tablet apps.
+
+   Load order:
+     1. colors_and_type.css       (foundation tokens)
+     2. tailwind/quantyfin.components.css (inline)      (primitives)
+     3. ui_kits/quantyFin-app/index.css (this file)
+
+   <link rel="stylesheet" href="colors_and_type.css" />
+   <link rel="stylesheet" href="tailwind/quantyfin.components.css (inline)" />
+   <link rel="stylesheet" href="ui_kits/quantyFin-app/index.css" />
+
+   Set <body data-surface="app"> on app routes.
+   ───────────────────────────────────────────────────────── */
+
+@import url('./chrome.css');
+@import url('./data-table.css');
+@import url('./filter-bar.css');
+@import url('./cmd-palette.css');
+@import url('./charts.css');

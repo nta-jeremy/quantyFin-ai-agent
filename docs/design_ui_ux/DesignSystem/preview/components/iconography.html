@@ -1,0 +1,705 @@
+<!-- @dsCard group="Components" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <script src="https://unpkg.com/lucide@0.474.0/dist/umd/lucide.min.js"></script>
+  <style>
+    body {
+      background: var(--bg);
+      padding: 40px 48px;
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--fg-1);
+    }
+
+    .frame {
+      max-width: 1080px;
+    }
+
+    .head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .h-title {
+      font: 700 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      color: var(--brand);
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .h-title::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--brand);
+      opacity: 0.5;
+    }
+
+    .h-title.iris {
+      color: var(--iris-deep);
+    }
+
+    .h-title.iris::before {
+      background: var(--iris);
+    }
+
+    .h-title.gold {
+      color: var(--gold-deep);
+    }
+
+    .h-title.gold::before {
+      background: var(--gold);
+    }
+
+    .h-title.mint {
+      color: var(--mint-deep);
+    }
+
+    .h-title.mint::before {
+      background: var(--mint);
+    }
+
+    .h-title.rose {
+      color: var(--rose-deep);
+    }
+
+    .h-title.rose::before {
+      background: var(--rose);
+    }
+
+    .h-sub {
+      font: 500 13px/1 var(--font-mono);
+      color: var(--fg-3);
+      letter-spacing: 0.06em;
+    }
+
+    .block+.block {
+      margin-top: 56px;
+    }
+
+    .lede {
+      font: 400 17px/1.55 var(--font-body);
+      color: var(--fg-2);
+      max-width: 760px;
+      margin-bottom: 24px;
+    }
+
+    .lede strong {
+      color: var(--fg-1);
+      font-weight: 600;
+    }
+
+    .lede code {
+      font: 500 0.85em var(--font-mono);
+      background: var(--bg-muted);
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: var(--brand);
+    }
+
+    /* ── Size scale ── */
+    .size-row {
+      display: flex;
+      gap: 32px;
+      align-items: flex-end;
+      padding: 28px 32px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+
+    .size-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .size-cell svg {
+      color: var(--fg-1);
+      stroke-width: 1.75;
+    }
+
+    .size-cell .size-label {
+      font: 600 11px/1 var(--font-mono);
+      color: var(--fg-3);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .size-cell .size-px {
+      font: 700 12px/1 var(--font-impact);
+      color: var(--fg-1);
+      margin-top: 2px;
+      letter-spacing: -0.01em;
+    }
+
+    .size-cell .use {
+      font: 400 11px/1.4 var(--font-body);
+      color: var(--fg-2);
+      text-align: center;
+      max-width: 80px;
+    }
+
+    /* ── Color usage ── */
+    .color-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .color-cell {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 18px;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .color-cell svg {
+      stroke-width: 1.75;
+    }
+
+    .color-cell .name {
+      font: 700 13px/1 var(--font-impact);
+      color: var(--fg-1);
+      letter-spacing: -0.005em;
+    }
+
+    .color-cell .hint {
+      font: 500 11px/1.4 var(--font-mono);
+      color: var(--fg-3);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Status icons paired with tags ── */
+    .status-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .status-cell {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .status-cell .pair {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-cell .pair svg {
+      stroke-width: 1.75;
+    }
+
+    .pill {
+      align-self: flex-start;
+      font: 700 10px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      padding: 5px 12px;
+      border-radius: 9999px;
+    }
+
+    .pill.live {
+      background: rgba(16, 185, 129, .10);
+      color: var(--mint-deep);
+      border: 1px solid rgba(16, 185, 129, .22);
+    }
+
+    .pill.build {
+      background: rgba(124, 108, 245, .10);
+      color: var(--iris-deep);
+      border: 1px solid rgba(124, 108, 245, .22);
+    }
+
+    .pill.gap {
+      background: rgba(239, 68, 68, .08);
+      color: var(--gap);
+      border: 1px solid rgba(239, 68, 68, .20);
+    }
+
+    .pill.plan {
+      background: rgba(245, 158, 11, .10);
+      color: var(--gold-deep);
+      border: 1px solid rgba(245, 158, 11, .22);
+    }
+
+    .status-cell .use {
+      font: 400 12px/1.4 var(--font-body);
+      color: var(--fg-2);
+    }
+
+    /* ── Catalog grid ── */
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      background: var(--bg);
+    }
+
+    .ic-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 8px;
+      border-radius: var(--radius-sm);
+      transition: all var(--motion-hover);
+      cursor: default;
+    }
+
+    .ic-tile:hover {
+      background: var(--bg-2);
+    }
+
+    .ic-tile svg {
+      color: var(--fg-1);
+      stroke-width: 1.75;
+    }
+
+    .ic-tile .lab {
+      font: 500 10px/1.2 var(--font-mono);
+      color: var(--fg-3);
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+
+    /* ── Don't / Do ── */
+    .dont-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .rule {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .rule.do {
+      border-left: 3px solid var(--mint);
+    }
+
+    .rule.dont {
+      border-left: 3px solid var(--gap);
+    }
+
+    .rule .tag-label {
+      font: 700 11px/1 var(--font-mono);
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+    }
+
+    .rule.do .tag-label {
+      color: var(--mint-deep);
+    }
+
+    .rule.dont .tag-label {
+      color: var(--gap);
+    }
+
+    .rule .demo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font: 500 14px/1.4 var(--font-body);
+      color: var(--fg-1);
+    }
+
+    .rule .demo svg {
+      stroke-width: 1.75;
+      flex-shrink: 0;
+    }
+
+    .rule .demo .emoji {
+      font-size: 18px;
+    }
+
+    .rule .note {
+      font: 400 13px/1.5 var(--font-body);
+      color: var(--fg-2);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+
+  <div class="frame">
+
+    <!-- 1 · Size scale -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title">Iconography · Lucide</span>
+        <span class="h-sub">1.75px stroke · monoline · currentColor</span>
+      </div>
+      <p class="lede">
+        System dùng <strong>Lucide</strong> (open source, ~1000+ glyphs, MIT). Tất cả icon là
+        <code>monoline</code>, stroke <code>1.75px</code>, đầu cap tròn — match light hightech aesthetic.
+        Icon kế thừa <code>currentColor</code> — không bao giờ hardcode màu.
+      </p>
+      <div class="size-row">
+        <div class="size-cell">
+          <i data-lucide="check-circle" style="width:14px;height:14px"></i>
+          <div class="size-label">XS</div>
+          <div class="size-px">14px</div>
+          <div class="use">Inline với mono caption</div>
+        </div>
+        <div class="size-cell">
+          <i data-lucide="check-circle" style="width:16px;height:16px"></i>
+          <div class="size-label">SM</div>
+          <div class="size-px">16px</div>
+          <div class="use">Tag pill · button label</div>
+        </div>
+        <div class="size-cell">
+          <i data-lucide="check-circle" style="width:20px;height:20px"></i>
+          <div class="size-label">MD</div>
+          <div class="size-px">20px</div>
+          <div class="use">Nav · card title · default</div>
+        </div>
+        <div class="size-cell">
+          <i data-lucide="check-circle" style="width:24px;height:24px"></i>
+          <div class="size-label">LG</div>
+          <div class="size-px">24px</div>
+          <div class="use">Panel header · hero CTA</div>
+        </div>
+        <div class="size-cell">
+          <i data-lucide="check-circle" style="width:32px;height:32px"></i>
+          <div class="size-label">XL</div>
+          <div class="size-px">32px</div>
+          <div class="use">Max in body. Empty state.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 · Color usage -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title iris">Color usage</span>
+        <span class="h-sub">inherit · status · never gold</span>
+      </div>
+      <p class="lede">
+        Icon mặc định = màu text (<code>currentColor</code>). Status icons dùng <code>-deep</code> variant
+        cho legibility. <strong>Không bao giờ icon màu gold</strong> — gold reserve cho text climax,
+        không dùng cho UI controls.
+      </p>
+      <div class="color-row">
+        <div class="color-cell">
+          <i data-lucide="layers" style="width:24px;height:24px; color: var(--fg-1)"></i>
+          <div class="name">fg-1 (default)</div>
+          <div class="hint">currentColor · #1A1B3A</div>
+        </div>
+        <div class="color-cell">
+          <i data-lucide="layers" style="width:24px;height:24px; color: var(--fg-3)"></i>
+          <div class="name">fg-3 (muted)</div>
+          <div class="hint">metadata · disabled · #6B6D8C</div>
+        </div>
+        <div class="color-cell">
+          <i data-lucide="layers" style="width:24px;height:24px; color: var(--iris)"></i>
+          <div class="name">iris (accent)</div>
+          <div class="hint">link · focus · AI/tech · #7C6CF5</div>
+        </div>
+        <div class="color-cell">
+          <i data-lucide="layers" style="width:24px;height:24px; color: var(--brand)"></i>
+          <div class="name">brand (primary)</div>
+          <div class="hint">on white only · #2A2B86</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 · Status icons -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title mint">Status icon set</span>
+        <span class="h-sub">4 reserved glyphs · pair with tag</span>
+      </div>
+      <p class="lede">
+        Bốn glyph cố định cho LIVE / BUILD / GAP / PLAN — luôn pair với mono pill, không bao giờ thay thế.
+        Icon dùng <code>-deep</code> variant để qua contrast trên bg-tint.
+      </p>
+      <div class="status-row">
+        <div class="status-cell">
+          <span class="pill live">LIVE</span>
+          <div class="pair">
+            <i data-lucide="check-circle-2" style="width:20px;height:20px; color: var(--mint-deep)"></i>
+            <span
+              style="font: 600 14px/1 var(--font-mono); color: var(--mint-deep); letter-spacing: 0.06em;">check-circle-2</span>
+          </div>
+          <div class="use">Operational. Đã GA, đo được, không nợ.</div>
+        </div>
+        <div class="status-cell">
+          <span class="pill build">BUILD</span>
+          <div class="pair">
+            <i data-lucide="loader-circle" style="width:20px;height:20px; color: var(--iris-deep)"></i>
+            <span
+              style="font: 600 14px/1 var(--font-mono); color: var(--iris-deep); letter-spacing: 0.06em;">loader-circle</span>
+          </div>
+          <div class="use">In progress. Có owner, có deadline.</div>
+        </div>
+        <div class="status-cell">
+          <span class="pill gap">GAP</span>
+          <div class="pair">
+            <i data-lucide="alert-triangle" style="width:20px;height:20px; color: var(--gap)"></i>
+            <span
+              style="font: 600 14px/1 var(--font-mono); color: var(--gap); letter-spacing: 0.06em;">alert-triangle</span>
+          </div>
+          <div class="use">Alert only. Chưa có owner / chưa có plan.</div>
+        </div>
+        <div class="status-cell">
+          <span class="pill plan">PLAN</span>
+          <div class="pair">
+            <i data-lucide="calendar-clock" style="width:20px;height:20px; color: var(--gold-deep)"></i>
+            <span
+              style="font: 600 14px/1 var(--font-mono); color: var(--gold-deep); letter-spacing: 0.06em;">calendar-clock</span>
+          </div>
+          <div class="use">Scheduled. Đã approve, chưa start.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 · Vendored catalog ─ 40 most-used -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title gold">Vendored catalog · 40 glyphs</span>
+        <span class="h-sub">cover 90% portal needs</span>
+      </div>
+      <p class="lede">
+        Tập hợp 40 icon dùng nhiều nhất trong portal. Khi pha 2 of upgrade ship, sẽ
+        vendor SVG vào <code>assets/icons/</code> để offline-capable. Tạm thời load qua Lucide CDN runtime.
+      </p>
+      <div class="catalog">
+        <!-- Nav / chrome -->
+        <div class="ic-tile"><i data-lucide="layout-dashboard" style="width:22px;height:22px"></i>
+          <div class="lab">layout-dashboard</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="git-branch" style="width:22px;height:22px"></i>
+          <div class="lab">git-branch</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="activity" style="width:22px;height:22px"></i>
+          <div class="lab">activity</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="route" style="width:22px;height:22px"></i>
+          <div class="lab">route</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="settings" style="width:22px;height:22px"></i>
+          <div class="lab">settings</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="bell" style="width:22px;height:22px"></i>
+          <div class="lab">bell</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="search" style="width:22px;height:22px"></i>
+          <div class="lab">search</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="filter" style="width:22px;height:22px"></i>
+          <div class="lab">filter</div>
+        </div>
+
+        <!-- Status -->
+        <div class="ic-tile"><i data-lucide="check-circle-2" style="width:22px;height:22px"></i>
+          <div class="lab">check-circle-2</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="loader-circle" style="width:22px;height:22px"></i>
+          <div class="lab">loader-circle</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="alert-triangle" style="width:22px;height:22px"></i>
+          <div class="lab">alert-triangle</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="calendar-clock" style="width:22px;height:22px"></i>
+          <div class="lab">calendar-clock</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="circle-dashed" style="width:22px;height:22px"></i>
+          <div class="lab">circle-dashed</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="info" style="width:22px;height:22px"></i>
+          <div class="lab">info</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="alert-octagon" style="width:22px;height:22px"></i>
+          <div class="lab">alert-octagon</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="x-circle" style="width:22px;height:22px"></i>
+          <div class="lab">x-circle</div>
+        </div>
+
+        <!-- Data / EA -->
+        <div class="ic-tile"><i data-lucide="database" style="width:22px;height:22px"></i>
+          <div class="lab">database</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="boxes" style="width:22px;height:22px"></i>
+          <div class="lab">boxes</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="layers" style="width:22px;height:22px"></i>
+          <div class="lab">layers</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="network" style="width:22px;height:22px"></i>
+          <div class="lab">network</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="workflow" style="width:22px;height:22px"></i>
+          <div class="lab">workflow</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="users" style="width:22px;height:22px"></i>
+          <div class="lab">users</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="building" style="width:22px;height:22px"></i>
+          <div class="lab">building</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="cloud" style="width:22px;height:22px"></i>
+          <div class="lab">cloud</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ic-tile"><i data-lucide="plus" style="width:22px;height:22px"></i>
+          <div class="lab">plus</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="pencil" style="width:22px;height:22px"></i>
+          <div class="lab">pencil</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="trash-2" style="width:22px;height:22px"></i>
+          <div class="lab">trash-2</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="download" style="width:22px;height:22px"></i>
+          <div class="lab">download</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="external-link" style="width:22px;height:22px"></i>
+          <div class="lab">external-link</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="chevron-right" style="width:22px;height:22px"></i>
+          <div class="lab">chevron-right</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="arrow-up-right" style="width:22px;height:22px"></i>
+          <div class="lab">arrow-up-right</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="x" style="width:22px;height:22px"></i>
+          <div class="lab">x</div>
+        </div>
+
+        <!-- Trend -->
+        <div class="ic-tile"><i data-lucide="trending-up" style="width:22px;height:22px"></i>
+          <div class="lab">trending-up</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="trending-down" style="width:22px;height:22px"></i>
+          <div class="lab">trending-down</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="zap" style="width:22px;height:22px"></i>
+          <div class="lab">zap</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="sparkles" style="width:22px;height:22px"></i>
+          <div class="lab">sparkles</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="bot" style="width:22px;height:22px"></i>
+          <div class="lab">bot</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="target" style="width:22px;height:22px"></i>
+          <div class="lab">target</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="flag" style="width:22px;height:22px"></i>
+          <div class="lab">flag</div>
+        </div>
+        <div class="ic-tile"><i data-lucide="award" style="width:22px;height:22px"></i>
+          <div class="lab">award</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 · Do / Don't -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title rose">Rules</span>
+        <span class="h-sub">no emoji · no unicode · no gold icons</span>
+      </div>
+      <div class="dont-row">
+        <div class="rule do">
+          <span class="tag-label">Do</span>
+          <div class="demo"><i data-lucide="check-circle-2" style="width:20px;height:20px; color: var(--mint-deep)"></i>
+            LIVE — 65% systems modernised</div>
+          <div class="demo"><i data-lucide="trending-up" style="width:20px;height:20px; color: var(--fg-1)"></i> +5.2%
+            YoY growth</div>
+          <div class="note">Lucide monoline · currentColor · paired with mono pill.</div>
+        </div>
+        <div class="rule dont">
+          <span class="tag-label">Don't</span>
+          <div class="demo"><span class="emoji">🟢</span> LIVE — 65% systems modernised</div>
+          <div class="demo"><span class="emoji">📈</span> +5.2% YoY growth</div>
+          <div class="note">Emoji rendering varies by OS / browser. No unicode glyphs as icons (✓ ★ ➔). Omit before
+            substituting.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+
+</html>

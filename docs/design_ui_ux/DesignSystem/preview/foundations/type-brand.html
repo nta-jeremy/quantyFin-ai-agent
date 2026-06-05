@@ -1,0 +1,219 @@
+<!-- @dsCard group="Type" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: var(--bg);
+      padding: 32px;
+      margin: 0;
+    }
+
+    .meta {
+      font: var(--type-mono);
+      color: var(--fg-3);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 8px;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .row {
+      border-top: 1px solid var(--border-light);
+      padding-top: 14px;
+    }
+
+    .row:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .wordmark {
+      font-family: var(--font-brand);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: var(--brand);
+      line-height: 1;
+    }
+
+    .specimen {
+      font-family: var(--font-brand);
+      color: var(--fg-1);
+      letter-spacing: -0.02em;
+    }
+
+    .stack-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+
+    .lockup-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .logo-box {
+      width: 88px;
+      height: 88px;
+      border-radius: var(--radius);
+      background: var(--brand-gold);
+      display: grid;
+      place-items: center;
+    }
+
+    .logo-mark {
+      font-family: var(--font-brand);
+      font-weight: 900;
+      font-size: 56px;
+      color: var(--brand);
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .weight-grid {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 8px 18px;
+      align-items: baseline;
+    }
+
+    .weight-grid .label {
+      font: var(--type-mono);
+      font-size: 10px;
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .weight-grid .glyph {
+      font-family: var(--font-brand);
+      color: var(--fg-1);
+      font-size: 22px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+  <div class="stack">
+
+    <div class="stack-card lockup-row">
+      <div class="logo-box"><span class="logo-mark">y</span></div>
+      <div>
+        <div class="meta">Brand wordmark · self-hosted</div>
+        <div class="wordmark" style="font-size: 64px;">quantyfin</div>
+        <div class="meta" style="margin-top: 8px;">Be Vietnam Pro 900 · letter-spacing −0.04em · brand navy on gold
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="meta">Full weight range · 100 → 900 (self-hosted .ttf)</div>
+      <div class="weight-grid">
+        <span class="label">100 Thin</span> <span class="glyph" style="font-weight: 100;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">200 ExtraLight</span> <span class="glyph" style="font-weight: 200;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">300 Light</span> <span class="glyph" style="font-weight: 300;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">400 Regular</span> <span class="glyph" style="font-weight: 400;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">500 Medium</span> <span class="glyph" style="font-weight: 500;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">600 SemiBold</span> <span class="glyph" style="font-weight: 600;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">700 Bold</span> <span class="glyph" style="font-weight: 700;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">800 ExtraBold</span> <span class="glyph" style="font-weight: 800;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">900 Black</span> <span class="glyph" style="font-weight: 900;">QuantyFin · Kiến trúc Dữ
+          liệu</span>
+        <span class="label">400 Italic</span> <span class="glyph"
+          style="font-weight: 400; font-style: italic;">QuantyFin · Kiến trúc Dữ liệu</span>
+        <span class="label">700 Bold It.</span> <span class="glyph"
+          style="font-weight: 700; font-style: italic;">QuantyFin · Kiến trúc Dữ liệu</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="meta">Display · 56 · Be Vietnam Pro 800</div>
+      <div class="specimen" style="font-weight: 800; font-size: 56px; line-height: 1.05;">Kiến trúc Dữ liệu</div>
+    </div>
+    <div class="row">
+      <div class="meta">H1 · 32 · Be Vietnam Pro 700</div>
+      <div class="specimen" style="font-weight: 700; font-size: 32px; line-height: 1.2;">Lộ trình trưởng thành sản phẩm
+      </div>
+    </div>
+    <div class="row">
+      <div class="meta">H2 · 24 · Be Vietnam Pro 700</div>
+      <div class="specimen" style="font-weight: 700; font-size: 24px; line-height: 1.3;">Tiêu đề mục cấp hai</div>
+    </div>
+    <div class="row">
+      <div class="meta">Numerals · tabular · Be Vietnam Pro 800</div>
+      <div class="specimen"
+        style="font-weight: 800; font-size: 48px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">3.2 ·
+        65% · 127B ₫</div>
+    </div>
+
+  </div>
+</body>
+
+</html>

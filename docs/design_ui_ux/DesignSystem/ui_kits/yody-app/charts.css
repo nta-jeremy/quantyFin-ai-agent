@@ -1,0 +1,570 @@
+/* ─────────────────────────────────────────────────────────
+   QuantyFin App Kit · CHART ENGINE
+   ─────────────────────────────────────────────────────────
+   Extended SVG chart primitives. Builds on data-viz.css
+   (sparkline/donut/bar-h were there); this adds the full
+   suite needed for PLM dashboards.
+
+   New primitives:
+     .chart            — SVG wrapper card
+     .chart-svg        — the <svg> element
+     .chart-grid       — light reference grid lines
+     .chart-axis       — axis lines + ticks
+     .chart-line       — multi-series line chart (.series + .line + .area)
+     .chart-bar-v      — vertical bar chart (grouped/stacked)
+     .chart-scatter    — 2D scatter / bubble plot
+     .chart-gantt      — production schedule bars
+     .chart-calendar   — full-month grid
+     .chart-pareto     — bar + cumulative line combo
+     .chart-tooltip    — hover label
+
+   Color palette via .series.s1–.s6 utility tones.
+   ───────────────────────────────────────────────────────── */
+
+
+/* ═══ COMMON ═════════════════════════════════════════════ */
+.chart {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  position: relative;
+}
+
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.chart-title {
+  font: var(--type-h3);
+  letter-spacing: -0.005em;
+  color: var(--fg-1);
+  margin: 0;
+}
+
+.chart-meta {
+  font: var(--type-caption);
+  color: var(--fg-3);
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Axis lines & ticks */
+.chart-svg .axis line,
+.chart-svg .axis path {
+  stroke: var(--border);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.chart-svg .axis text {
+  font: var(--type-mono-sm, 11px sans-serif);
+  fill: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-svg .grid line {
+  stroke: var(--border-light);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+  shape-rendering: crispEdges;
+}
+
+/* Series colors (6 tones, in narrative order) */
+.chart-svg .s1 {
+  --series: var(--iris);
+  --series-tint: rgba(124, 108, 245, 0.12);
+}
+
+.chart-svg .s2 {
+  --series: var(--mint-deep);
+  --series-tint: rgba(16, 185, 129, 0.12);
+}
+
+.chart-svg .s3 {
+  --series: var(--gold-deep);
+  --series-tint: rgba(252, 175, 22, 0.14);
+}
+
+.chart-svg .s4 {
+  --series: var(--rose-deep);
+  --series-tint: rgba(244, 114, 182, 0.12);
+}
+
+.chart-svg .s5 {
+  --series: var(--brand);
+  --series-tint: rgba(42, 43, 134, 0.08);
+}
+
+.chart-svg .s6 {
+  --series: var(--gap);
+  --series-tint: rgba(239, 68, 68, 0.10);
+}
+
+
+/* ═══ LINE CHART ═════════════════════════════════════════ */
+.chart-line .area {
+  fill: var(--series, var(--iris));
+  fill-opacity: 0.12;
+  stroke: none;
+}
+
+.chart-line .line {
+  fill: none;
+  stroke: var(--series, var(--iris));
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-line .dot {
+  fill: var(--series, var(--iris));
+  stroke: var(--bg);
+  stroke-width: 1.5;
+  r: 3;
+}
+
+.chart-line .dot.dot-active {
+  r: 5;
+  stroke-width: 2;
+}
+
+.chart-line .target-line {
+  stroke: var(--fg-3);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart-line .target-label {
+  font: var(--type-mono-sm, 11px sans-serif);
+  fill: var(--fg-3);
+}
+
+
+/* ═══ BAR · VERTICAL (grouped/stacked) ══════════════════ */
+.chart-bar-v .bar {
+  fill: var(--series, var(--iris));
+  rx: 2;
+  transition: fill-opacity var(--dur-fast);
+}
+
+.chart-bar-v .bar:hover {
+  fill-opacity: 0.85;
+}
+
+.chart-bar-v .bar-label {
+  font: 600 11px/1 var(--font-mono);
+  fill: var(--fg-1);
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Negative bars (delta) */
+.chart-bar-v .bar.neg {
+  fill: var(--gap);
+}
+
+
+/* ═══ SCATTER / BUBBLE ═══════════════════════════════════ */
+.chart-scatter .pt {
+  fill: var(--series, var(--iris));
+  fill-opacity: 0.7;
+  stroke: var(--bg);
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: fill-opacity var(--dur-fast), r var(--dur-fast);
+}
+
+.chart-scatter .pt:hover {
+  fill-opacity: 1;
+}
+
+.chart-scatter .pt-label {
+  font: 500 10px/1 var(--font-mono);
+  fill: var(--fg-2);
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-scatter .quadrant-line {
+  stroke: var(--fg-3);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0.5;
+}
+
+.chart-scatter .quadrant-label {
+  font: 600 9.5px/1 var(--font-mono);
+  fill: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+
+/* ═══ GANTT ══════════════════════════════════════════════ */
+.chart-gantt-wrap {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 0;
+}
+
+.chart-gantt-labels {
+  border-right: 1px solid var(--border-light);
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-gantt-labels .row {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 0;
+  font: var(--type-body-sm);
+  color: var(--fg-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.chart-gantt-labels .row:first-child {
+  border-top: 1px solid var(--border-light);
+}
+
+.chart-gantt-labels .row strong {
+  color: var(--fg-1);
+  font-weight: 600;
+}
+
+.chart-gantt-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-gantt-svg .header-bg {
+  fill: var(--bg-2);
+}
+
+.chart-gantt-svg .header-tick {
+  stroke: var(--border-light);
+  stroke-width: 1;
+}
+
+.chart-gantt-svg .header-label {
+  font: var(--type-label);
+  fill: var(--fg-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chart-gantt-svg .row-bg {
+  fill: var(--bg);
+}
+
+.chart-gantt-svg .row-bg.alt {
+  fill: var(--bg-2);
+}
+
+.chart-gantt-svg .row-divider {
+  stroke: var(--border-light);
+  stroke-width: 1;
+}
+
+.chart-gantt-svg .bar {
+  rx: 4;
+  ry: 4;
+}
+
+.chart-gantt-svg .bar.proto {
+  fill: var(--iris);
+}
+
+.chart-gantt-svg .bar.fit {
+  fill: var(--gold-deep);
+}
+
+.chart-gantt-svg .bar.pp {
+  fill: var(--mint-deep);
+}
+
+.chart-gantt-svg .bar.bulk {
+  fill: var(--brand);
+}
+
+.chart-gantt-svg .bar.delay {
+  fill: var(--gap);
+}
+
+.chart-gantt-svg .bar-label {
+  font: 600 11px/1 var(--font-body);
+  fill: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-gantt-svg .today-line {
+  stroke: var(--gap);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.chart-gantt-svg .today-label {
+  font: 700 10px/1 var(--font-mono);
+  fill: var(--gap);
+  letter-spacing: 0.04em;
+}
+
+
+/* ═══ CALENDAR ═══════════════════════════════════════════ */
+.chart-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.chart-calendar-day {
+  position: relative;
+  background: var(--bg-2);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  font: var(--type-body-sm);
+  color: var(--fg-1);
+  border: 1px solid transparent;
+  transition: border-color var(--dur-fast);
+}
+
+.chart-calendar-day:hover {
+  border-color: var(--brand);
+}
+
+.chart-calendar-day .num {
+  font: 600 12px/1 var(--font-body);
+  color: var(--fg-1);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+
+.chart-calendar-day.outside {
+  background: var(--bg);
+  border-style: dashed;
+  border-color: var(--border-light);
+}
+
+.chart-calendar-day.outside .num {
+  color: var(--fg-3);
+}
+
+.chart-calendar-day.today {
+  background: var(--brand-tint);
+  border-color: var(--brand);
+}
+
+.chart-calendar-day.today .num {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.chart-calendar-day.weekend {
+  background: var(--bg);
+}
+
+.chart-calendar-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.chart-calendar-event {
+  font: 500 10.5px/1.2 var(--font-body);
+  background: var(--iris-tint);
+  color: var(--iris-deep);
+  padding: 2px 4px;
+  border-radius: 3px;
+  border-left: 2px solid var(--iris);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-calendar-event.mint {
+  background: var(--mint-tint);
+  color: var(--mint-deep);
+  border-color: var(--mint);
+}
+
+.chart-calendar-event.gold {
+  background: var(--gold-tint);
+  color: var(--gold-deep);
+  border-color: var(--gold);
+}
+
+.chart-calendar-event.gap {
+  background: var(--gap-bg);
+  color: var(--gap);
+  border-color: var(--gap);
+}
+
+.chart-calendar-event.rose {
+  background: var(--rose-tint);
+  color: var(--rose-deep);
+  border-color: var(--rose);
+}
+
+.chart-calendar-more {
+  font: var(--type-caption);
+  color: var(--fg-3);
+  padding: 0 4px;
+}
+
+.chart-calendar-head {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.chart-calendar-head .name {
+  font: var(--type-label-sm, var(--type-label));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  text-align: center;
+  padding: 4px 0;
+}
+
+
+/* ═══ PARETO (bar + cumulative line) ═════════════════════ */
+.chart-pareto .bar {
+  fill: var(--iris);
+  rx: 2;
+}
+
+.chart-pareto .cum-line {
+  fill: none;
+  stroke: var(--gap);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-pareto .cum-dot {
+  fill: var(--gap);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+  r: 3.5;
+}
+
+.chart-pareto .threshold-line {
+  stroke: var(--fg-3);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+
+/* ═══ TOOLTIP (hover affordance) ════════════════════════ */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--bg-ink);
+  color: #fff;
+  font: var(--type-body-sm);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transform: translate(-50%, -100%);
+  transition: opacity var(--dur-fast);
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.chart-tooltip[data-open="true"] {
+  opacity: 1;
+}
+
+.chart-tooltip strong {
+  font-weight: 600;
+  color: #fff;
+}
+
+.chart-tooltip .meta {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  margin-top: 2px;
+  display: block;
+}
+
+
+/* ═══ LEGEND (chart-specific, smaller variant) ═══════════ */
+.chart-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font: var(--type-caption);
+  color: var(--fg-2);
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chart-legend-mark {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--series, var(--iris));
+}
+
+.chart-legend-mark.s1 {
+  background: var(--iris);
+}
+
+.chart-legend-mark.s2 {
+  background: var(--mint-deep);
+}
+
+.chart-legend-mark.s3 {
+  background: var(--gold-deep);
+}
+
+.chart-legend-mark.s4 {
+  background: var(--rose-deep);
+}
+
+.chart-legend-mark.s5 {
+  background: var(--brand);
+}
+
+.chart-legend-mark.s6 {
+  background: var(--gap);
+}
+
+.chart-legend-mark.line {
+  height: 2px;
+  border-radius: 9999px;
+}
+
+.chart-legend-mark.dot {
+  border-radius: 50%;
+}

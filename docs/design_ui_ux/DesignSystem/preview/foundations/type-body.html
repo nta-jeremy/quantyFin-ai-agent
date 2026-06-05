@@ -1,0 +1,144 @@
+<!-- @dsCard group="Type" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: var(--bg);
+      padding: 40px 48px;
+      margin: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 24px 32px;
+      align-items: baseline;
+    }
+
+    .label {
+      font: 700 11px/1.3 var(--font-mono);
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+    }
+
+    .label strong {
+      color: var(--fg-1);
+      font-weight: 700;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .head {
+      font: 700 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      color: var(--brand);
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .head::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--brand);
+      opacity: 0.5;
+    }
+
+    .lede-intro {
+      font: 400 18px/1.6 var(--font-body);
+      color: var(--fg-2);
+      max-width: 760px;
+      margin-bottom: 32px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+  <span class="head">Body &amp; label scale</span>
+  <p class="lede-intro">Blog-portal sizing — <strong style="color: var(--fg-1); font-weight: 600;">body 19px</strong>
+    default, lede 23px, line-height 1.65–1.7 cho lean-back reading. 14px là sàn cho label, 13px cho caption.</p>
+
+  <div class="grid">
+    <span class="label"><strong>Lede · 23px</strong>Inter 400 · 1.65</span>
+    <p style="font: 400 23px/1.65 var(--font-body); color: var(--fg-2); max-width: 760px;">Portal phục vụ Business
+      Owners và CTO — visual storytelling là ưu tiên. Mỗi section mở bằng một câu dẫn dài như đoạn này, rồi đi sâu vào
+      evidence.</p>
+
+    <span class="label"><strong>Body · 19px</strong>Inter 400 · 1.7 · default</span>
+    <p style="font: 400 19px/1.7 var(--font-body); color: var(--fg-2); max-width: 760px;">Mỗi khả năng được gắn một
+      trạng thái LIVE / BUILD / GAP / PLAN, owner và đội phụ trách. Sizing đủ để đọc thoải mái trên laptop 14″ và
+      projector 1080p từ 3 mét — không cần zoom.</p>
+
+    <span class="label"><strong>Body sm · 16px</strong>Inter 400 · 1.6</span>
+    <p style="font: 400 16px/1.6 var(--font-body); color: var(--fg-2); max-width: 760px;">Dùng cho card description,
+      helper text, secondary content. Vẫn dễ đọc, nhưng signals "phụ" so với body chính.</p>
+
+    <span class="label"><strong>Label · 14px</strong>Inter 500 · uppercase</span>
+    <p
+      style="font: 500 14px/1.4 var(--font-body); color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.08em;">
+      Maturity Level · Owner Squad</p>
+
+    <span class="label"><strong>Caption · 13px</strong>Inter 400 · 1.5</span>
+    <p style="font: 400 13px/1.5 var(--font-body); color: var(--fg-3);">Tooltip · helper · footnote · timestamp ·
+      last-updated — sàn cuối của hierarchy.</p>
+  </div>
+</body>
+
+</html>

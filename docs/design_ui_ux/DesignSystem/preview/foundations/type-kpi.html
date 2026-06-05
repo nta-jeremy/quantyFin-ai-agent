@@ -1,0 +1,222 @@
+<!-- @dsCard group="Type" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: var(--bg);
+      padding: 40px 48px;
+      margin: 0;
+    }
+
+    .head {
+      font: 700 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      color: var(--brand);
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .head::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--brand);
+      opacity: 0.5;
+    }
+
+    .lede {
+      font: 400 18px/1.6 var(--font-body);
+      color: var(--fg-2);
+      max-width: 760px;
+      margin-bottom: 36px;
+    }
+
+    .row+.row {
+      margin-top: 36px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .row .label {
+      font: 700 11px/1.3 var(--font-mono);
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+    }
+
+    .row .label strong {
+      color: var(--fg-1);
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .row .group {
+      display: flex;
+      gap: 36px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+
+    .kpi-num {
+      font-family: var(--font-impact);
+      font-weight: 800;
+      line-height: 0.9;
+      letter-spacing: -0.025em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-num small {
+      font-weight: 500;
+      opacity: 0.55;
+      margin-left: 4px;
+    }
+
+    .roman {
+      font: italic 800 1em/0.85 var(--font-impact);
+      letter-spacing: -0.02em;
+    }
+
+    .big-num {
+      font-family: var(--font-impact);
+      font-weight: 800;
+      line-height: 0.85;
+      letter-spacing: -0.04em;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      display: inline-block;
+    }
+
+    .big-num.brand {
+      background-image: linear-gradient(180deg, #2a2b86 0%, #16175a 100%);
+    }
+
+    .big-num.iris {
+      background-image: linear-gradient(180deg, #7c6cf5 0%, #4a4bc8 100%);
+    }
+
+    .big-num.gold {
+      background-image: linear-gradient(180deg, #fcaf16 0%, #b07a00 100%);
+    }
+
+    .big-num.mint {
+      background-image: linear-gradient(180deg, #10b981 0%, #047857 100%);
+    }
+
+    .big-num.rose {
+      background-image: linear-gradient(180deg, #f472b6 0%, #be185d 100%);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+  <span class="head">KPI numerals</span>
+  <p class="lede">Montserrat 800 italic cho roman numerals (I–V), Montserrat 800 cho KPI và big-num gradient cho hero.
+    Tabular-nums xuyên suốt.</p>
+
+  <div class="row">
+    <div class="label"><strong>KPI · 64px</strong>Montserrat 800<br />tabular · -0.025em</div>
+    <div class="group">
+      <span class="kpi-num" style="font-size: 64px; color: var(--fg-1);">72<small
+          style="font-size: 28px;">/100</small></span>
+      <span class="kpi-num" style="font-size: 64px; color: var(--iris-deep);">3.2<small
+          style="font-size: 28px;">/5</small></span>
+      <span class="kpi-num" style="font-size: 64px; color: var(--gold-deep);">127<small style="font-size: 28px;">B
+          ₫</small></span>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="label"><strong>Big-num · 120px</strong>Montserrat 800<br />gradient (per-tone)</div>
+    <div class="group">
+      <span class="big-num brand" style="font-size: 120px;">2030</span>
+      <span class="big-num gold" style="font-size: 96px;">IPO</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="label"><strong>Roman · 96px</strong>Montserrat italic 800<br />(NOT Playfair)</div>
+    <div class="group">
+      <span class="roman" style="font-size: 88px; color: var(--brand);">I</span>
+      <span class="roman" style="font-size: 88px; color: var(--iris);">II</span>
+      <span class="roman" style="font-size: 88px; color: var(--gold-deep);">III</span>
+      <span class="roman" style="font-size: 88px; color: var(--mint-deep);">IV</span>
+      <span class="roman" style="font-size: 88px; color: var(--rose-deep);">V</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="label"><strong>Mid · 48px</strong>Montserrat 800<br />card KPI value</div>
+    <div class="group">
+      <span class="kpi-num" style="font-size: 48px; color: var(--fg-1);">65<small
+          style="font-size: 22px;">%</small></span>
+      <span class="kpi-num" style="font-size: 48px; color: var(--fg-1);">2,800<small
+          style="font-size: 22px;">tỷ</small></span>
+      <span class="kpi-num" style="font-size: 48px; color: var(--mint-deep);">+20<small
+          style="font-size: 22px;">%</small></span>
+    </div>
+  </div>
+
+</body>
+
+</html>

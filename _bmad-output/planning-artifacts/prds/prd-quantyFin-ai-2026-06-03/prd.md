@@ -16,7 +16,7 @@ updated: 2026-06-04
 
 ## 2. Đối tượng Người dùng (Target Audience)
 - **Nhóm người dùng chính:** Sử dụng nội bộ (Bạn và một số ít nhà đầu tư F1).
-- **Mức độ kỳ vọng:** Tập trung tối đa vào độ chính xác của luồng dữ liệu (data pipeline) và logic phân tích của AI. Không yêu cầu Giao diện người dùng (UI/UX) phức tạp hay hoàn hảo.
+- **Mức độ kỳ vọng:** Tập trung tối đa vào độ chính xác của luồng dữ liệu (data pipeline) và logic phân tích của AI. Yêu cầu trải nghiệm UI/UX cao cấp, chuyên nghiệp, phản ánh tính chất công nghệ cao (hightech, AI-native) và tuân thủ tuyệt đối cấu trúc của **QuantyFin Design System**.
 
 ## 3. Các tính năng cốt lõi (Core Capabilities)
 
@@ -45,12 +45,16 @@ updated: 2026-06-04
 - **FR-8: Tổng hợp & Cảnh báo Rủi ro:** Tự động phát hiện các chuỗi sự kiện rủi ro lây lan (thông qua Graph) hoặc các điểm bất thường, sau đó gửi cảnh báo.
   - `[ASSUMPTION: Cảnh báo sẽ được gửi qua Telegram Bot để nhóm F1 nhận được nhanh chóng và tiện lợi nhất]`
 - **FR-9: Trợ lý Truy vấn (Q&A Bot):** Giao diện chat cho phép người dùng hỏi trực tiếp (VD: "Có tin xấu nào ảnh hưởng tới dòng Thép hôm nay không?"). AI sẽ dùng Knowledge Graph để trả lời kèm trích dẫn nguồn.
+  - Tích hợp bộ UI kit `quantyFin-ai` cho luồng chat (hỗ trợ các hiệu ứng Prompt, halo, mức độ tự tin - confidence score, và diff view khi hiển thị dữ liệu tài chính).
 
 ### 3.4. Giao diện Web (Web Dashboard)
-- **FR-10: Giao diện cơ bản (MVP Web UI):** Cung cấp một Web Dashboard đơn giản (ví dụ: dùng Streamlit hoặc Next.js) để:
-  - Trực quan hóa Knowledge Graph.
-  - Hiển thị các biểu đồ kỹ thuật và tin tức tổng hợp cơ bản.
-  - Đóng vai trò là trung tâm theo dõi bên cạnh các cảnh báo nhanh qua Telegram.
+- **FR-10: Giao diện AI-Native:** Xây dựng hệ thống Frontend mạnh mẽ bằng React/Next.js kết hợp Tailwind v4, triển khai theo kiến trúc shadcn-compatible.
+  - **Tuân thủ Design System:** Triển khai cấu trúc 3 lớp (Foundation -> Surface adapters -> UI kits) dựa trên QuantyFin Design System.
+  - **Giao diện & Trải nghiệm:**
+    - Giao diện Dashboard chức năng dùng bề mặt `[data-surface="app"]` (tỉ lệ chữ 13.5px / 1.5). Các báo cáo tổng hợp dùng `[data-surface="portal"]`.
+    - Phông chữ mặc định: `Be Vietnam Pro` (thân bài), `JetBrains Mono` (mã cổ phiếu, trạng thái), `Montserrat` (tiêu đề lớn).
+    - Hệ màu chuẩn: `--brand` (navy #2a2b86), `--iris` (AI/tech default #7c6cf5), `--mint` (Tích cực), `--gap` (Tiêu cực/Cảnh báo).
+  - Trực quan hóa Knowledge Graph và dữ liệu thị trường bằng các Chart/Card UI chuyên nghiệp (`quantyFin-app` kit).
 
 ## 4. Yêu cầu Phi chức năng (Non-Functional Requirements)
 - **Chi phí (Cost-efficiency):** Tận dụng tối đa công cụ mã nguồn mở và API miễn phí.

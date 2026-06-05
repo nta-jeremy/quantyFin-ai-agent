@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!-- OUT OF SCOPE: ITDX/EA product specimen (TOGAF domain cards) — not part of the design system. Consumes DS tokens only. See examples/README.md. -->
+<html lang="vi"><head><meta charset="UTF-8"/><link rel="stylesheet" href="../../colors_and_type.css"/>
+<style>
+  body { background: var(--bg-2); padding: 32px; margin: 0; font-family: var(--font-body); }
+  .head {
+    font: 700 13px/1 var(--font-mono); text-transform: uppercase;
+    letter-spacing: 0.32em; color: var(--brand); margin-bottom: 8px;
+    display: inline-flex; align-items: center; gap: 14px;
+  }
+  .head::before { content: ''; width: 32px; height: 1px; background: var(--brand); opacity: 0.5; }
+  .lede { font: 400 18px/1.6 var(--font-body); color: var(--fg-2); max-width: 760px; margin-bottom: 24px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 980px; }
+  .card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 22px; box-shadow: var(--shadow-sm);
+    display: flex; gap: 16px; align-items: flex-start;
+    transition: all 0.2s var(--ease-out);
+  }
+  .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .badge {
+    width: 36px; height: 36px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font: 800 16px/1 var(--font-impact); letter-spacing: -0.02em; flex-shrink: 0;
+  }
+  .body { flex: 1; min-width: 0; }
+  .title { font: 700 19px/1.35 var(--font-brand); color: var(--fg-1); letter-spacing: -0.005em; margin-bottom: 4px; }
+  .sub { font: 500 12px/1.4 var(--font-mono); color: var(--fg-3); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 14px; }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .pill {
+    font: 700 10px/1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.18em;
+    padding: 4px 10px; border-radius: 9999px;
+  }
+  .live  { background: rgba(16,185,129,.10);  color: var(--mint-deep); border: 1px solid rgba(16,185,129,.22); }
+  .build { background: rgba(124,108,245,.10); color: var(--iris-deep); border: 1px solid rgba(124,108,245,.22); }
+  .platform {
+    font: 700 11px/1 var(--font-mono); padding: 4px 9px;
+    background: var(--bg-2); color: var(--fg-2); border-radius: 6px;
+    border: 1px solid var(--border-light); letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .bar { height: 5px; border-radius: 3px; background: var(--bg-muted); margin-top: 14px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; transition: width 0.6s var(--ease-out); }
+  .bar > i.live  { background: var(--mint); }
+  .bar > i.build { background: var(--iris); }
+</style></head><body data-surface="portal">
+  <span class="head">Domain cards</span>
+  <p class="lede">Card 22px padding · Be Vietnam Pro 700 19px title · mono uppercase sub · status pill + platform chip · 5px progress bar (iris/mint per status).</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="badge" style="background: #2a2b86;">A</div>
+      <div class="body">
+        <div class="title">PLM — Product Lifecycle</div>
+        <div class="sub">Application · Centric PLM</div>
+        <div class="row"><span class="pill build">Build</span><span class="platform">PLATFORM A</span></div>
+        <div class="bar"><i class="build" style="width: 64%;"></i></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="badge" style="background: #10b981;">C</div>
+      <div class="body">
+        <div class="title">POS / Omni Retail</div>
+        <div class="sub">Infrastructure · omni retail</div>
+        <div class="row"><span class="pill live">Live</span><span class="platform">PLATFORM B</span></div>
+        <div class="bar"><i class="live" style="width: 88%;"></i></div>
+      </div>
+    </div>
+  </div>
+</body></html>

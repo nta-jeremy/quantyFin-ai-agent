@@ -1,0 +1,13 @@
+/* ─────────────────────────────────────────────────────────
+   QuantyFin AI Kit · INDEX
+   ─────────────────────────────────────────────────────────
+   AI-vocabulary pattern library. Iris-glow halo + sparkle
+   glyph distinguish AI work from human work.
+
+   Load AFTER colors_and_type + the Tailwind component layer:
+     <link rel="stylesheet" href="colors_and_type.css" />
+     <link rel="stylesheet" href="tailwind/quantyfin.components.css (inline)" />
+     <link rel="stylesheet" href="ui_kits/quantyFin-ai/index.css" />
+   ───────────────────────────────────────────────────────── */
+
+@import url('./vocabulary.css');

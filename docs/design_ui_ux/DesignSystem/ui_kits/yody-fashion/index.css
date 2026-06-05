@@ -1,0 +1,21 @@
+/* ═══════════════════════════════════════════════════════════
+   SCOPE: SCOPED — fashion DOMAIN kit, not universal foundation.
+   Reusable only inside QuantyFin fashion products (PLM, lookbook,
+   vendor portal). Do not treat as a base primitive.
+   See README "Scope classification".
+   ═══════════════════════════════════════════════════════════ */
+/* ─────────────────────────────────────────────────────────
+   QuantyFin Fashion Kit · INDEX
+   ─────────────────────────────────────────────────────────
+   Fashion-aware composites for PLM, lookbook, vendor portal.
+
+   Load AFTER colors_and_type + the Tailwind component layer:
+     <link rel="stylesheet" href="colors_and_type.css" />
+     <link rel="stylesheet" href="tailwind/quantyfin.components.css (inline)" />
+     <link rel="stylesheet" href="ui_kits/quantyFin-fashion/index.css" />
+
+   Compatible with all surfaces; primarily used under
+   [data-surface="app"] for PLM screens.
+   ───────────────────────────────────────────────────────── */
+
+@import url('./atoms.css');

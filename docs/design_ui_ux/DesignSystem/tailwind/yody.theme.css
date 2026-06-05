@@ -1,0 +1,156 @@
+/* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);
+  --color-iris-deep: var(--iris-deep);
+  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
+  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);
+  --color-mint-deep: var(--mint-deep);
+  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);
+  --color-rose-deep: var(--rose-deep);
+  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);
+  --color-build: var(--build);
+  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);
+  --color-mist: var(--bg-2);
+  --color-lavender: var(--bg-muted);
+  --color-ink: var(--bg-ink);
+  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);
+  --color-line-light: var(--border-light);
+  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);
+  --font-brand: var(--font-brand);
+  --font-display: var(--font-impact);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-brand: var(--shadow-brand);
+  --shadow-gold: var(--shadow-gold);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   SHADCN-STANDARD LAYER — semantic role tokens + type scale.
+   Additive: maps onto QuantyFin tokens; quantyFin-named utilities still work.
+   Enables shadcn utilities: bg-background, text-foreground,
+   bg-primary/text-primary-foreground, bg-muted/text-muted-foreground,
+   bg-accent, bg-destructive, border-border, ring-ring, +
+   tokenized type scale text-h1/text-body/text-eyebrow… (no arbitrary).
+   ═══════════════════════════════════════════════════════════ */
+@theme inline {
+  /* Semantic colour roles (shadcn naming) */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg-1);
+  --color-card: var(--bg);
+  --color-card-foreground: var(--fg-1);
+  --color-popover: var(--bg);
+  --color-popover-foreground: var(--fg-1);
+  --color-primary: var(--brand);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--bg-2);
+  --color-secondary-foreground: var(--fg-1);
+  --color-muted: var(--bg-muted);
+  --color-muted-foreground: var(--fg-3);
+  --color-accent: var(--iris);
+  --color-accent-foreground: #ffffff;
+  --color-destructive: var(--gap);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--iris);
+
+  /* Type scale (DS canonical) — use instead of arbitrary text-[Npx] */
+  --text-eyebrow: 13px;
+  --text-eyebrow--line-height: 1;
+  --text-caption: 13px;
+  --text-caption--line-height: 1.5;
+  --text-label: 14px;
+  --text-label--line-height: 1.4;
+  --text-body-sm: 16px;
+  --text-body-sm--line-height: 1.6;
+  --text-body: 19px;
+  --text-body--line-height: 1.7;
+  --text-body-lg: 23px;
+  --text-body-lg--line-height: 1.65;
+  --text-card-title: 17px;
+  --text-card-title--line-height: 1.3;
+  --text-h3: 26px;
+  --text-h3--line-height: 1.3;
+  --text-h2: 32px;
+  --text-h2--line-height: 1.18;
+  --text-h1: 56px;
+  --text-h1--line-height: 1.08;
+  --text-display: 88px;
+  --text-display--line-height: 0.98;
+  --text-hero: 104px;
+  --text-hero--line-height: 0.94;
+
+  /* shadcn radius base (rounded → --radius); sm/md/lg/xl already mapped */
+  --radius: var(--radius-md);
+
+  /* Chart palette (shadcn chart-1..5) → QuantyFin accents */
+  --color-chart-1: var(--iris);
+  --color-chart-2: var(--mint);
+  --color-chart-3: var(--brand);
+  --color-chart-4: var(--gold);
+  --color-chart-5: var(--rose);
+
+  /* Sidebar tokens (shadcn) → QuantyFin surfaces */
+  --color-sidebar: var(--bg-2);
+  --color-sidebar-foreground: var(--fg-1);
+  --color-sidebar-primary: var(--brand);
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: var(--bg-muted);
+  --color-sidebar-accent-foreground: var(--fg-1);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--iris);
+
+  /* Extended radius (shadcn 2xl/3xl/4xl) derived from --radius; QuantyFin keeps explicit sm/md/lg/xl */
+  --radius-2xl: calc(var(--radius-md) * 1.8);
+  --radius-3xl: calc(var(--radius-md) * 2.2);
+  --radius-4xl: calc(var(--radius-md) * 2.6);
+}

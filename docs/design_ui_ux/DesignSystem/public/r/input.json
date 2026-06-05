@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "input",
+  "type": "registry:ui",
+  "title": "Input (React)",
+  "description": "Open-code React Input — role tokens (border-input, ring-ring, aria-invalid), rounded-lg. Demo: preview/components/react.html.",
+  "registryDependencies": [
+    "theme",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "ui/input.tsx",
+      "content": "import * as React from \"react\"\n\nimport { cn } from \"@/lib/utils\"\n\n/** Input — shadcn/ui open-code, quantyFin-branded via role tokens (rounded-lg). */\nfunction Input({ className, type, ...props }: React.ComponentProps<\"input\">) {\n  return (\n    <input\n      type={type}\n      data-slot=\"input\"\n      className={cn(\n        \"flex h-10 w-full min-w-0 rounded-lg border border-input bg-background px-3.5 py-1 text-sm shadow-sm transition-[color,box-shadow] outline-none\",\n        \"placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground\",\n        \"focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]\",\n        \"disabled:cursor-not-allowed disabled:opacity-50\",\n        \"aria-invalid:border-destructive aria-invalid:ring-destructive/30\",\n        className\n      )}\n      {...props}\n    />\n  )\n}\n\nexport { Input }\n",
+      "type": "registry:ui",
+      "target": "ui/input.tsx"
+    }
+  ]
+}

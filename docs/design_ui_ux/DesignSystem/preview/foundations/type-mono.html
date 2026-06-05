@@ -1,0 +1,217 @@
+<!-- @dsCard group="Type" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: var(--bg);
+      padding: 40px 48px;
+      margin: 0;
+    }
+
+    .head {
+      font: 700 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      color: var(--brand);
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .head::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--brand);
+      opacity: 0.5;
+    }
+
+    .lede {
+      font: 400 18px/1.6 var(--font-body);
+      color: var(--fg-2);
+      max-width: 760px;
+      margin-bottom: 28px;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .label {
+      font: 700 11px/1.3 var(--font-mono);
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      min-width: 160px;
+    }
+
+    .label strong {
+      display: block;
+      color: var(--fg-1);
+      margin-bottom: 4px;
+    }
+
+    .pill {
+      font: 700 11px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      padding: 5px 12px;
+      border-radius: 9999px;
+    }
+
+    .live {
+      background: rgba(16, 185, 129, .10);
+      color: var(--mint-deep);
+      border: 1px solid rgba(16, 185, 129, .22);
+    }
+
+    .build {
+      background: rgba(124, 108, 245, .10);
+      color: var(--iris-deep);
+      border: 1px solid rgba(124, 108, 245, .22);
+    }
+
+    .gap {
+      background: rgba(239, 68, 68, .08);
+      color: var(--gap);
+      border: 1px solid rgba(239, 68, 68, .20);
+    }
+
+    .plan {
+      background: rgba(245, 158, 11, .10);
+      color: var(--gold-deep);
+      border: 1px solid rgba(245, 158, 11, .22);
+    }
+
+    .platform {
+      font: 700 11px/1 var(--font-mono);
+      padding: 5px 12px;
+      background: var(--bg-2);
+      color: var(--fg-2);
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .id {
+      font: 600 14px/1.4 var(--font-mono);
+      color: var(--fg-1);
+      letter-spacing: 0.02em;
+    }
+
+    .eyebrow {
+      font: 700 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      color: var(--brand);
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .eyebrow::before,
+    .eyebrow::after {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.5;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+  <span class="head">Mono &amp; technical</span>
+  <p class="lede">JetBrains Mono · uppercase tracking · cho status pill, platform code, ID, version stamp, eyebrow.</p>
+
+  <div class="stack">
+    <div class="row">
+      <span class="label"><strong>Status pills · 11px</strong>JetBrains 700 · 0.18em</span>
+      <span class="pill live">Live</span>
+      <span class="pill build">Build</span>
+      <span class="pill gap">Gap</span>
+      <span class="pill plan">Plan</span>
+    </div>
+
+    <div class="row">
+      <span class="label"><strong>Platform code · 11px</strong>JetBrains 700 · 0.12em</span>
+      <span class="platform">ALPHA</span>
+      <span class="platform">BETA</span>
+      <span class="platform">GAMMA</span>
+      <span class="platform">ATLAS</span>
+    </div>
+
+    <div class="row">
+      <span class="label"><strong>Identifier · 14px</strong>JetBrains 600</span>
+      <span class="id">sys_order_mgt_v2.1.3</span>
+      <span class="id">cap.A1.PLM</span>
+    </div>
+
+    <div class="row">
+      <span class="label"><strong>Eyebrow · 13px</strong>JetBrains 700 · 0.32em<br />flanking dashes</span>
+      <span class="eyebrow">Chương 02 · Hiện trạng</span>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button",
+  "type": "registry:ui",
+  "title": "Button (React)",
+  "description": "Open-code React Button (Tier 3) — CVA variants default/secondary/outline/ghost/link/destructive/gold ×4 sizes, Radix Slot for asChild. quantyFin-branded via role tokens; pill radius. Demo: preview/components/react.html.",
+  "dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "theme",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\n/**\n * Button — shadcn/ui open-code component, quantyFin-branded via theme tokens.\n *\n * The variant classes reference the SEMANTIC ROLE tokens defined in\n * tailwind/globals.css (bg-primary, bg-destructive, bg-secondary,\n * hover:bg-accent, border, ring-ring…). Because those roles alias the\n * QuantyFin palette, this standard shadcn Button renders quantyFin-branded with\n * zero changes — primary = navy #2a2b86, ring = iris, etc.\n *\n * QuantyFin customization (open-code edit): radius is `rounded-full` (pill)\n * to match the QuantyFin button brand, instead of shadcn's default rounded-md.\n */\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"bg-primary text-primary-foreground shadow-sm hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 focus-visible:ring-destructive/30\",\n        outline:\n          \"border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-muted\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n        gold: \"bg-[var(--gold)] text-[var(--bg-ink)] font-bold shadow-sm hover:brightness-105\",\n      },\n      size: {\n        default: \"h-10 px-5 py-2\",\n        sm: \"h-8 px-3.5 text-[13px]\",\n        lg: \"h-12 px-7 text-base\",\n        icon: \"size-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  }\n)\n\nfunction Button({\n  className,\n  variant,\n  size,\n  asChild = false,\n  ...props\n}: React.ComponentProps<\"button\"> &\n  VariantProps<typeof buttonVariants> & {\n    asChild?: boolean\n  }) {\n  const Comp = asChild ? Slot : \"button\"\n  return (\n    <Comp\n      data-slot=\"button\"\n      className={cn(buttonVariants({ variant, size, className }))}\n      {...props}\n    />\n  )\n}\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": "ui/button.tsx"
+    }
+  ]
+}
