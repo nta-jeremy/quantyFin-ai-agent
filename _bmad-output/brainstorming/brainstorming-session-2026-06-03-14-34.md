@@ -99,12 +99,18 @@ Bây giờ, chúng ta sẽ chuyển sang kỹ thuật cuối cùng để lập l
 - [ ] Phát triển LLM Extractor: Viết prompt/schema để LLM đọc bài viết thô và trả về JSON chứa các liên kết vĩ mô - vi mô (VD: Event X tác động tích cực đến Ngành Y, các cổ phiếu liên quan là Z).
 - [ ] Tích hợp cơ sở dữ liệu đồ thị (dùng thư viện Python `networkx` cho file-based đồ thị gọn nhẹ hoặc `Neo4j` nếu cần chuyên nghiệp).
 
-#### Phase 3: Xây dựng MCP Server & Tích hợp vào AI Agent (Tuần 3)
+#### Phase 3: Xây dựng MCP Server & Tích hợp (Tuần 3)
 - [ ] Phát triển MCP Server bằng Python hỗ trợ các tools:
   - `query_stock_graph(ticker)`: Truy vấn các node vĩ mô/vi mô liên kết với cổ phiếu.
   - `add_macro_news(title, content, url)`: Thêm bài báo mới vào hệ thống tự động chạy extractor và cập nhật Graph.
   - `get_market_snapshot()`: Trả về trạng thái giá/khối lượng/thanh khoản hiện tại kết hợp tin tức nổi bật.
-- [ ] Cấu hình MCP Server vào Claude Desktop hoặc ứng dụng AI Agent của bạn để kiểm thử thực tế.
+- [ ] Tích hợp thử nghiệm MCP Server với Claude Desktop hoặc ứng dụng AI Agent cơ bản.
+
+#### Phase 4: Xây dựng Frontend AI-Native (Tuần 4)
+- [ ] Khởi tạo dự án Next.js (React) + Tailwind v4 theo cấu trúc shadcn-compatible registry được mô tả trong DESIGN.md.
+- [ ] Import và cấu hình `colors_and_type.css` cùng các Surface adapters (đặc biệt là bề mặt `app` và `portal`).
+- [ ] Cài đặt các UI Kits lõi: `quantyFin-app` (cho bố cục Dashboard) và `quantyFin-ai` (cho Q&A Bot, diff, confidence score).
+- [ ] Kết nối Frontend với MCP Server để render Knowledge Graph và luồng dữ liệu thị trường bằng giao diện chuẩn chỉnh, chuyên nghiệp.
 
 ---
-**Cập nhật trạng thái:** Hoàn thành toàn bộ phiên Brainstorming. Sẵn sàng tạo các file spec và tài liệu thực thi tiếp theo.
+**Cập nhật trạng thái:** Hoàn thành cập nhật phiên Brainstorming tích hợp UI/UX mới từ QuantyFin Design System. Sẵn sàng tạo các file spec và tài liệu thực thi tiếp theo.
