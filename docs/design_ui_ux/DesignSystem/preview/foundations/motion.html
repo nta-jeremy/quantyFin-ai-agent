@@ -1,0 +1,93 @@
+<!-- @dsCard group="Spacing" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Motion · Tailwind v4 · QuantyFin Design System</title>
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body class="text-fg font-sans m-0 p-10" style="background: var(--bg-2);">
+  <div class="max-w-[920px] mx-auto flex flex-col gap-8">
+    <header class="flex flex-col gap-3">
+      <span class="font-mono text-[13px] font-bold tracking-[0.32em] uppercase text-brand">Foundations · Motion</span>
+      <h1 class="font-display font-extrabold text-[38px] leading-none tracking-tight">Motion</h1>
+      <p class="text-[17px] leading-relaxed text-fg-2 max-w-[640px]">Easing + duration token. Di chuột vào ô vuông để
+        xem ease-overshoot.</p>
+    </header>
+    <section class="bg-paper border border-line rounded-xl shadow-sm p-7 flex flex-col gap-6">
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center justify-between gap-4 py-2 border-b border-line-light"><span
+            class="font-mono text-[12px] text-fg font-semibold">--ease-out</span><span
+            class="font-mono text-[11px] text-fg-3">cubic-bezier(.4,0,.2,1)</span><span
+            class="text-[13px] text-fg-2">chuẩn · in/out</span></div>
+        <div class="flex items-center justify-between gap-4 py-2 border-b border-line-light"><span
+            class="font-mono text-[12px] text-fg font-semibold">--ease-overshoot</span><span
+            class="font-mono text-[11px] text-fg-3">cubic-bezier(.34,1.56,.64,1)</span><span
+            class="text-[13px] text-fg-2">overshoot · panel/drawer</span></div>
+      </div>
+      <div class="flex flex-wrap gap-2"><span
+          class="font-mono text-[12px] text-fg-2 px-3 py-1.5 rounded-full bg-lavender"><b class="text-fg">150ms</b> ·
+          --dur-fast</span>
+        <span class="font-mono text-[12px] text-fg-2 px-3 py-1.5 rounded-full bg-lavender"><b class="text-fg">200ms</b>
+          · --dur</span>
+        <span class="font-mono text-[12px] text-fg-2 px-3 py-1.5 rounded-full bg-lavender"><b class="text-fg">300ms</b>
+          · --dur-slow</span>
+      </div>
+      <div class="group cursor-pointer pt-2">
+        <div class="w-14 h-14 rounded-lg bg-brand transition-transform duration-300 group-hover:translate-x-[200px]"
+          style="transition-timing-function:var(--ease-overshoot)"></div><span
+          class="font-mono text-[11px] text-fg-3 mt-2 inline-block">hover · translate · ease-overshoot 300ms</span>
+      </div>
+    </section>
+  </div>
+</body>
+
+</html>

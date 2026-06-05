@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "badge",
+  "type": "registry:ui",
+  "title": "Badge (React)",
+  "description": "Open-code React Badge (Tier 3) — CVA variants incl. QuantyFin status (live/build/plan/gap), Radix Slot for asChild. Demo: preview/components/react.html.",
+  "dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "theme",
+    "utils"
+  ],
+  "files": [
+    {
+      "path": "ui/badge.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\n/**\n * Badge — shadcn/ui open-code component, quantyFin-branded via theme tokens.\n * Adds QuantyFin status variants (live / build / plan / gap) on top of the\n * standard default/secondary/destructive/outline set. Pill radius matches\n * the QuantyFin tag/chip language.\n */\nconst badgeVariants = cva(\n  \"inline-flex items-center justify-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-mono font-bold uppercase tracking-wider w-fit whitespace-nowrap shrink-0 [&>svg]:size-3\",\n  {\n    variants: {\n      variant: {\n        default: \"border-transparent bg-primary text-primary-foreground\",\n        secondary: \"border-transparent bg-secondary text-secondary-foreground\",\n        destructive: \"border-transparent bg-destructive text-destructive-foreground\",\n        outline: \"text-foreground border-border\",\n        live: \"border-transparent bg-[var(--mint-tint)] text-[var(--mint-deep)]\",\n        build: \"border-transparent bg-[var(--iris-tint)] text-[var(--iris-deep)]\",\n        plan: \"border-transparent bg-[var(--gold-tint)] text-[var(--gold-deep)]\",\n        gap: \"border-transparent bg-[var(--gap-bg)] text-[var(--gap)]\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  }\n)\n\nfunction Badge({\n  className,\n  variant,\n  asChild = false,\n  ...props\n}: React.ComponentProps<\"span\"> &\n  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {\n  const Comp = asChild ? Slot : \"span\"\n  return (\n    <Comp\n      data-slot=\"badge\"\n      className={cn(badgeVariants({ variant }), className)}\n      {...props}\n    />\n  )\n}\n\nexport { Badge, badgeVariants }\n",
+      "type": "registry:ui",
+      "target": "ui/badge.tsx"
+    }
+  ]
+}

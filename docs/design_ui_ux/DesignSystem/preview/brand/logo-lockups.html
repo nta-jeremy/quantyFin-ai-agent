@@ -1,0 +1,414 @@
+<!-- @dsCard group="Brand" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: var(--bg);
+      padding: 40px;
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--fg-1);
+    }
+
+    .frame {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      max-width: 880px;
+      margin: 0 auto;
+    }
+
+    .head {
+      font: 700 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      color: var(--brand);
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .head::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--brand);
+      opacity: 0.5;
+    }
+
+    .lede {
+      font: 400 18px/1.6 var(--font-body);
+      color: var(--fg-2);
+      max-width: 680px;
+      margin: 14px 0 4px;
+    }
+
+    .lede b {
+      color: var(--fg-1);
+      font-weight: 600;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--bg);
+      box-shadow: var(--shadow-sm);
+      padding: 28px 30px;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .card-title {
+      font: 700 17px/1.2 var(--font-brand);
+      letter-spacing: -0.01em;
+    }
+
+    .card-tag {
+      font: 600 10.5px/1 var(--font-mono);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--fg-3);
+    }
+
+    .note {
+      font: 400 14px/1.55 var(--font-body);
+      color: var(--fg-2);
+      margin-top: 18px;
+    }
+
+    .note b {
+      color: var(--fg-1);
+      font-weight: 600;
+    }
+
+    /* Canonical mark — always the supplied asset */
+    .logo {
+      display: block;
+      height: auto;
+    }
+
+    /* Master */
+    .master {
+      display: flex;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    .master .logo {
+      width: 340px;
+      border-radius: 16px;
+    }
+
+    /* Clear space — dashed guide equals 1× cap-band of the mark */
+    .clearspace {
+      display: flex;
+      justify-content: center;
+    }
+
+    .clearspace .box {
+      position: relative;
+      padding: 40px;
+      border: 1px dashed var(--brand-light);
+      border-radius: 18px;
+      background: var(--bg-2);
+    }
+
+    .clearspace .logo {
+      width: 220px;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .clearspace .tick {
+      position: absolute;
+      font: 600 10px/1 var(--font-mono);
+      letter-spacing: 0.12em;
+      color: var(--fg-3);
+      text-transform: uppercase;
+    }
+
+    .clearspace .tick.t {
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .clearspace .tick.l {
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%) rotate(-90deg);
+    }
+
+    /* Size ladder */
+    .sizes {
+      display: flex;
+      align-items: flex-end;
+      gap: 36px;
+      flex-wrap: wrap;
+    }
+
+    .size {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .size .logo {
+      border-radius: 10px;
+    }
+
+    .size .s-xl {
+      width: 200px;
+    }
+
+    .size .s-lg {
+      width: 132px;
+    }
+
+    .size .s-md {
+      width: 84px;
+    }
+
+    .size .s-sm {
+      width: 48px;
+      border-radius: 7px;
+    }
+
+    .size .lbl {
+      font: 500 11.5px/1.3 var(--font-mono);
+      color: var(--fg-3);
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+
+    .size .lbl b {
+      color: var(--fg-2);
+      font-weight: 600;
+    }
+
+    /* Surfaces */
+    .surfaces {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .surf {
+      border-radius: var(--radius);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .surf.paper {
+      background: var(--bg);
+    }
+
+    .surf.mist {
+      background: var(--bg-2);
+    }
+
+    .surf.ink {
+      background: var(--bg-ink);
+      border-color: transparent;
+    }
+
+    .surf .logo {
+      width: 120px;
+      border-radius: 10px;
+    }
+
+    .surf .s-lbl {
+      font: 600 10.5px/1 var(--font-mono);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--fg-3);
+    }
+
+    .surf.ink .s-lbl {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* App icon / favicon crops */
+    .icons {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+
+    .icon-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-wrap .logo {
+      display: block;
+    }
+
+    .ico-app {
+      width: 96px;
+      height: 96px;
+      border-radius: 22px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .ico-sq {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+    }
+
+    .ico-fav {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    .icon-wrap .lbl {
+      font: 500 11px/1.3 var(--font-mono);
+      color: var(--fg-3);
+    }
+
+    /* Don'ts */
+    .donts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .dont {
+      border: 1px solid var(--gap-tint, #fdecec);
+      background: var(--gap-tint, #fdecec);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+
+    .dont .x {
+      font: 700 12px/1 var(--font-mono);
+      color: var(--gap-deep, #b91c1c);
+      letter-spacing: 0.1em;
+    }
+
+    .dont p {
+      font: 400 13.5px/1.5 var(--font-body);
+      color: var(--fg-2);
+      margin: 8px 0 0;
+    }
+  </style>
+</head>
+
+<body data-surface="portal">
+  <div class="frame">
+
+    <div>
+      <span class="head">Logo · master mark</span>
+      <p class="lede">Logo QuantyFin là một <b>wordmark hình học custom</b> — chữ "yo" navy + "dy" trắng trên nền vàng,
+        hai counter o–d nối nhau. Luôn dùng đúng file <b>assets/quantyFin-logo.png</b>; <b>không</b> tái tạo bằng
+        Quicksand hay bất kỳ font nào khác.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Master logo</span><span class="card-tag">assets/quantyFin-logo.png
+          · 1200×1029</span></div>
+      <div class="master"><img class="logo" src="../../assets/quantyFin-logo.png" alt="QuantyFin logo" /></div>
+      <p class="note"><b>Primary mark.</b> Nền vàng là một phần của logo — đây là phiên bản chuẩn dùng cho hầu hết ngữ
+        cảnh. Không recolor nền, không tách chữ khỏi nền.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Clear space</span><span class="card-tag">min padding</span></div>
+      <div class="clearspace">
+        <div class="box">
+          <span class="tick t">clear space</span>
+          <span class="tick l">clear space</span>
+          <img class="logo" src="../../assets/quantyFin-logo.png" alt="QuantyFin logo with clear space" />
+        </div>
+      </div>
+      <p class="note">Giữ vùng trống tối thiểu quanh logo bằng <b>~40% chiều cao mark</b>. Không để text, icon hay viền
+        lọt vào vùng này.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Size ladder</span><span class="card-tag">responsive</span></div>
+      <div class="sizes">
+        <div class="size"><img class="logo s-xl" src="../../assets/quantyFin-logo.png" alt="" /><span
+            class="lbl"><b>Hero</b><br />≥ 160px</span></div>
+        <div class="size"><img class="logo s-lg" src="../../assets/quantyFin-logo.png" alt="" /><span
+            class="lbl"><b>Header</b><br />96–140px</span></div>
+        <div class="size"><img class="logo s-md" src="../../assets/quantyFin-logo.png" alt="" /><span
+            class="lbl"><b>Compact</b><br />72–88px</span></div>
+        <div class="size"><img class="logo s-sm" src="../../assets/quantyFin-logo.png" alt="" /><span
+            class="lbl"><b>Min</b><br />48px</span></div>
+      </div>
+      <p class="note">Dưới <b>48px</b> wordmark khó đọc — dùng bản crop hình vuông (xem App icon) cho favicon / avatar.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">On surfaces</span><span class="card-tag">light · mist ·
+          dark</span></div>
+      <div class="surfaces">
+        <div class="surf paper"><img class="logo" src="../../assets/quantyFin-logo.png" alt="" /><span
+            class="s-lbl">Paper</span></div>
+        <div class="surf mist"><img class="logo" src="../../assets/quantyFin-logo.png" alt="" /><span
+            class="s-lbl">Mist</span></div>
+        <div class="surf ink"><img class="logo" src="../../assets/quantyFin-logo.png" alt="" /><span
+            class="s-lbl">Dark</span></div>
+      </div>
+      <p class="note">Nền vàng của logo tự tạo tương phản, nên mark giữ nguyên trên mọi surface — không cần biến thể
+        mono. Bo góc nhẹ khi đặt như một tile.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">App icon · favicon</span><span class="card-tag">square crop</span>
+      </div>
+      <div class="icons">
+        <div class="icon-wrap"><img class="logo ico-app" src="../../assets/quantyFin-logo-icon.png" alt="" /><span
+            class="lbl">App icon · 96px</span></div>
+        <div class="icon-wrap"><img class="logo ico-sq" src="../../assets/quantyFin-logo-icon.png" alt="" /><span
+            class="lbl">Tile · 64px</span></div>
+        <div class="icon-wrap"><img class="logo ico-fav" src="../../assets/quantyFin-logo-icon.png" alt="" /><span
+            class="lbl">Favicon · 32px</span></div>
+      </div>
+      <p class="note">Dùng asset vuông riêng <b>assets/quantyFin-logo-icon.png</b> — chữ "quantyfin" trọn vẹn, canh giữa
+        trên
+        nền vàng với padding trái/phải cân đối (không cắt cụt, không thừa nền trên/dưới). Bo góc theo bậc radius của ngữ
+        cảnh.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Don't</span><span class="card-tag">misuse</span></div>
+      <div class="donts">
+        <div class="dont"><span class="x">✕ NO</span>
+          <p>Tái tạo wordmark bằng Quicksand / font khác.</p>
+        </div>
+        <div class="dont"><span class="x">✕ NO</span>
+          <p>Đổi màu nền vàng hoặc màu chữ navy/trắng.</p>
+        </div>
+        <div class="dont"><span class="x">✕ NO</span>
+          <p>Kéo giãn, nghiêng, hay thêm đổ bóng / hiệu ứng.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+
+</html>

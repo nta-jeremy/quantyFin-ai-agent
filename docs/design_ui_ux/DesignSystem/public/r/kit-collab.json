@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "kit-collab",
+  "type": "registry:component",
+  "title": "Collab Kit",
+  "description": "Multiplayer layer: comment thread · mention · annotation pin · approval card/stack · activity feed · version row · presence cursor · role badges.",
+  "registryDependencies": [
+    "theme",
+    "components"
+  ],
+  "files": [
+    {
+      "path": "ui_kits/quantyFin-collab/index.css",
+      "content": "/* ─────────────────────────────────────────────────────────\n   QuantyFin Collab Kit · INDEX\n   ─────────────────────────────────────────────────────────\n   Multiplayer surface components for PLM.\n   Load AFTER colors_and_type + the Tailwind component layer:\n     <link rel=\"stylesheet\" href=\"colors_and_type.css\" />\n     <link rel=\"stylesheet\" href=\"tailwind/quantyfin.components.css (inline)\" />\n     <link rel=\"stylesheet\" href=\"ui_kits/quantyFin-collab/index.css\" />\n   ───────────────────────────────────────────────────────── */\n\n@import url('./components.css');\n",
+      "type": "registry:component",
+      "target": "ui_kits/quantyFin-collab/index.css"
+    }
+  ]
+}

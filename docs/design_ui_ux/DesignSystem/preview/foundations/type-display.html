@@ -1,0 +1,171 @@
+<!-- @dsCard group="Type" -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: var(--bg);
+      padding: 40px 48px;
+      margin: 0;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .row {
+      display: flex;
+      align-items: baseline;
+      gap: 24px;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 22px;
+    }
+
+    .label {
+      width: 160px;
+      flex-shrink: 0;
+      font: 700 11px/1.3 var(--font-mono);
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+    }
+
+    .label strong {
+      color: var(--fg-1);
+      font-weight: 700;
+    }
+
+    .sample {
+      color: var(--fg-1);
+    }
+
+    .sample em {
+      font: italic 800 1em/1 var(--font-impact);
+      color: var(--iris);
+      letter-spacing: -0.015em;
+    }
+
+    .sample .art {
+      font: italic 400 1em/1 var(--font-serif);
+      color: var(--brand);
+      letter-spacing: -0.005em;
+    }
+
+    .head {
+      font: 700 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      color: var(--brand);
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .head::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--brand);
+      opacity: 0.5;
+    }
+
+    .lede {
+      font: 400 18px/1.6 var(--font-body);
+      color: var(--fg-2);
+      max-width: 720px;
+      margin-bottom: 24px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+  <span class="head">Display &amp; headings</span>
+  <p class="lede">Hero là <strong>1 art moment / portal</strong> với Playfair Display Italic. Tất cả heading khác dùng
+    Montserrat 800 với em-accent italic 800 (geometric, không Playfair).</p>
+
+  <div class="stack">
+    <div class="row">
+      <span class="label"><strong>Hero · 96px</strong>Montserrat 800<br />+ Playfair italic</span>
+      <span class="sample" style="font: 800 80px/0.94 var(--font-impact); letter-spacing: -0.028em;">Tiêu đề lớn <span
+          class="art">nổi bật</span></span>
+    </div>
+    <div class="row">
+      <span class="label"><strong>Display · 72px</strong>Montserrat 800</span>
+      <span class="sample" style="font: 800 64px/0.98 var(--font-impact); letter-spacing: -0.025em;">Kiến trúc Dữ
+        liệu</span>
+    </div>
+    <div class="row">
+      <span class="label"><strong>H1 · 56px</strong>Montserrat 800<br />+ em-accent</span>
+      <span class="sample" style="font: 800 48px/1.08 var(--font-impact); letter-spacing: -0.022em;">Năm bước dẫn lối
+        tới <em>mục tiêu</em></span>
+    </div>
+    <div class="row">
+      <span class="label"><strong>H2 · 36px</strong>Montserrat 700</span>
+      <span class="sample" style="font: 700 36px/1.18 var(--font-impact); letter-spacing: -0.018em;">Tiêu đề mục cấp
+        hai</span>
+    </div>
+    <div class="row">
+      <span class="label"><strong>H3 · 26px</strong>Montserrat 700</span>
+      <span class="sample" style="font: 700 26px/1.3 var(--font-impact); letter-spacing: -0.01em;">Hạ tầng vận hành
+        24/7</span>
+    </div>
+    <div class="row">
+      <span class="label"><strong>Card title · 20px</strong>Be Vietnam Pro 700</span>
+      <span class="sample" style="font: 700 20px/1.35 var(--font-brand); letter-spacing: -0.005em;">PLM — Product
+        Lifecycle Management</span>
+    </div>
+  </div>
+</body>
+
+</html>

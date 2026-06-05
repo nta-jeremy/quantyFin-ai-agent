@@ -1,0 +1,231 @@
+/* ─────────────────────────────────────────────────────────
+   QuantyFin App Kit · FILTER BAR + SAVED VIEWS
+   ─────────────────────────────────────────────────────────
+   Sticky filter strip with active-chip display + saved view
+   tabs. Sits above .dt-wrap, paired with .dt-toolbar.
+
+   Primary classes:
+     .view-tabs           — saved-view tabs (All · Mine · Pending …)
+     .filter-bar          — chip strip with add/clear
+     .filter-chip         — active filter (label + value + remove)
+     .filter-add          — "+ Add filter" trigger
+     .filter-clear        — "Clear all" link
+   ───────────────────────────────────────────────────────── */
+
+
+/* ═══ SAVED VIEW TABS ════════════════════════════════════ */
+.view-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 0 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font: var(--type-body-sm);
+  font-weight: 500;
+  color: var(--fg-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color var(--dur-fast), border-color var(--dur-fast);
+}
+
+.view-tab:hover {
+  color: var(--fg-1);
+}
+
+.view-tab[aria-selected="true"],
+.view-tab[data-active="true"] {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+  font-weight: 600;
+}
+
+.view-tab .count {
+  font: 600 10px/1 var(--font-mono);
+  background: var(--bg-muted);
+  color: var(--fg-3);
+  padding: 2px 6px;
+  border-radius: 9999px;
+}
+
+.view-tab[aria-selected="true"] .count,
+.view-tab[data-active="true"] .count {
+  background: var(--brand);
+  color: #fff;
+}
+
+.view-tab .dirty-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.view-tabs-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  font: var(--type-body-sm);
+  color: var(--fg-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.view-tabs-action:hover {
+  color: var(--brand);
+}
+
+
+/* ═══ FILTER BAR ═════════════════════════════════════════ */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg);
+  flex-wrap: wrap;
+  min-height: 48px;
+}
+
+.filter-bar-label {
+  font: var(--type-label-sm, var(--type-label));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+/* Filter chip (active filter applied) */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px 0 10px;
+  background: var(--brand-tint);
+  border: 1px solid rgba(42, 43, 134, 0.18);
+  border-radius: 9999px;
+  color: var(--brand);
+  font: 500 12.5px/1 var(--font-body);
+  white-space: nowrap;
+}
+
+.filter-chip .key {
+  color: var(--fg-3);
+  font-weight: 500;
+}
+
+.filter-chip .key::after {
+  content: ':';
+  margin-right: 4px;
+}
+
+.filter-chip .val {
+  font-weight: 600;
+}
+
+.filter-chip-close {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  color: var(--brand);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 500 14px/1 var(--font-body);
+  margin-left: 2px;
+}
+
+.filter-chip-close:hover {
+  background: rgba(42, 43, 134, 0.18);
+}
+
+/* Tones */
+.filter-chip.iris {
+  background: var(--iris-tint);
+  border-color: rgba(124, 108, 245, 0.22);
+  color: var(--iris-deep);
+}
+
+.filter-chip.mint {
+  background: var(--mint-tint);
+  border-color: rgba(16, 185, 129, 0.22);
+  color: var(--mint-deep);
+}
+
+.filter-chip.gold {
+  background: var(--gold-tint);
+  border-color: rgba(252, 175, 22, 0.30);
+  color: var(--gold-deep);
+}
+
+.filter-chip.gap {
+  background: var(--gap-bg);
+  border-color: rgba(239, 68, 68, 0.22);
+  color: var(--gap);
+}
+
+/* Add filter button */
+.filter-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px dashed var(--border-hover);
+  border-radius: 9999px;
+  color: var(--fg-3);
+  font: 500 12.5px/1 var(--font-body);
+  cursor: pointer;
+}
+
+.filter-add:hover {
+  border-style: solid;
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.filter-clear {
+  font: 500 12.5px/1 var(--font-body);
+  color: var(--fg-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.filter-clear:hover {
+  background: var(--bg-muted);
+  color: var(--gap);
+}
+
+.filter-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+}

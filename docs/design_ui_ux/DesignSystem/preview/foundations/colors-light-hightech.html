@@ -1,0 +1,540 @@
+<!-- @dsCard group="Colors" -->
+<!DOCTYPE html>
+<!-- SCOPE: portal-only specimen — "Light Hightech" color direction for the briefing surface, not universal. See README "Scope classification". -->
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: var(--bg);
+      padding: 40px 48px;
+      margin: 0;
+      font-family: var(--font-body);
+    }
+
+    .frame {
+      max-width: 1080px;
+    }
+
+    .head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .h-title {
+      font: 700 13px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      color: var(--brand);
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .h-title::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--brand);
+      opacity: 0.5;
+    }
+
+    .h-title.gold {
+      color: var(--gold-deep);
+    }
+
+    .h-title.gold::before {
+      background: var(--gold);
+    }
+
+    .h-title.iris {
+      color: var(--iris-deep);
+    }
+
+    .h-title.iris::before {
+      background: var(--iris);
+    }
+
+    .h-sub {
+      font: 500 13px/1 var(--font-mono);
+      color: var(--fg-3);
+      letter-spacing: 0.06em;
+    }
+
+    .block+.block {
+      margin-top: 48px;
+    }
+
+    .lede {
+      font: 400 19px/1.55 var(--font-body);
+      color: var(--fg-2);
+      max-width: 720px;
+      margin-bottom: 24px;
+    }
+
+    .lede strong {
+      color: var(--fg-1);
+      font-weight: 600;
+    }
+
+    /* ── Brand anchor (2 colors only) ── */
+    .anchor-row {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .anchor {
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      min-height: 168px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid var(--border);
+    }
+
+    .anchor .name {
+      font: 800 28px/1.05 var(--font-impact);
+      letter-spacing: -0.02em;
+    }
+
+    .anchor .role {
+      font: 700 11px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+    }
+
+    .anchor .hex {
+      font: 600 14px/1 var(--font-mono);
+      letter-spacing: 0.06em;
+    }
+
+    .anchor.navy {
+      background: var(--brand);
+      color: #fff;
+    }
+
+    .anchor.navy .role {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .anchor.navy .hex {
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .anchor.gold {
+      background: var(--gold);
+      color: #4a3300;
+    }
+
+    .anchor.gold .role {
+      color: rgba(74, 51, 0, 0.65);
+    }
+
+    .anchor.gold .hex {
+      color: rgba(74, 51, 0, 0.7);
+    }
+
+    /* ── Light Hightech accents ── */
+    .accent-row {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .accent-card {
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .accent-swab {
+      height: 80px;
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .accent-swab .deep {
+      position: absolute;
+      right: 12px;
+      bottom: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 2px solid #fff;
+    }
+
+    .accent-name {
+      font: 700 16px/1 var(--font-impact);
+      letter-spacing: -0.005em;
+      color: var(--fg-1);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .accent-role {
+      font: 500 13px/1.45 var(--font-body);
+      color: var(--fg-2);
+    }
+
+    .accent-hex {
+      font: 600 12px/1 var(--font-mono);
+      color: var(--fg-3);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Neutrals · surface scale ── */
+    .neutral-row {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .swatch {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .swatch .swab {
+      height: 88px;
+    }
+
+    .swatch .meta {
+      padding: 12px 14px;
+    }
+
+    .swatch .name {
+      font: 700 13px/1 var(--font-impact);
+      color: var(--fg-1);
+    }
+
+    .swatch .hex {
+      font: 500 11px/1 var(--font-mono);
+      color: var(--fg-3);
+      margin-top: 4px;
+      letter-spacing: 0.06em;
+    }
+
+    .swatch .use {
+      font: 400 12px/1.45 var(--font-body);
+      color: var(--fg-2);
+      margin-top: 6px;
+    }
+
+    /* ── Status (LIVE / BUILD / GAP / PLAN) ── */
+    .status-row {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .stat {
+      border-radius: var(--radius);
+      padding: 18px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .pill {
+      align-self: flex-start;
+      font: 700 10px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      padding: 5px 12px;
+      border-radius: 9999px;
+    }
+
+    .pill.live {
+      background: rgba(16, 185, 129, .10);
+      color: var(--mint-deep);
+      border: 1px solid rgba(16, 185, 129, .22);
+    }
+
+    .pill.build {
+      background: rgba(124, 108, 245, .10);
+      color: var(--iris-deep);
+      border: 1px solid rgba(124, 108, 245, .22);
+    }
+
+    .pill.gap {
+      background: rgba(239, 68, 68, .08);
+      color: var(--gap);
+      border: 1px solid rgba(239, 68, 68, .20);
+    }
+
+    .pill.plan {
+      background: rgba(245, 158, 11, .10);
+      color: var(--gold-deep);
+      border: 1px solid rgba(245, 158, 11, .22);
+    }
+
+    .stat-swab {
+      height: 6px;
+      border-radius: 4px;
+    }
+
+    .stat .hex {
+      font: 600 12px/1 var(--font-mono);
+      color: var(--fg-2);
+      letter-spacing: 0.06em;
+    }
+
+    .stat .use {
+      font: 400 12px/1.4 var(--font-body);
+      color: var(--fg-3);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+
+  <div class="frame">
+
+    <!-- 1 · Brand anchors (2 only) -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title gold">Brand · 2 anchors</span>
+        <span class="h-sub">logo only · sparingly</span>
+      </div>
+      <p class="lede">
+        Hai màu brand duy nhất, lấy từ logo. <strong>Navy</strong> cho primary CTA và header brand;
+        <strong>Gold</strong> cho 1 climax / page (achievement, IPO, hero accent). Mọi thứ khác chạy Light Hightech.
+      </p>
+      <div class="anchor-row">
+        <div class="anchor navy">
+          <div>
+            <div class="role">Brand · Primary</div>
+            <div class="name">QuantyFin Navy</div>
+          </div>
+          <div class="hex">#2A2B86 · header · primary CTA</div>
+        </div>
+        <div class="anchor gold">
+          <div>
+            <div class="role">Brand · Climax</div>
+            <div class="name">QuantyFin Gold</div>
+          </div>
+          <div class="hex">#FCAF16 · 1/page max · achievement</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 · Light Hightech accents -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title iris">Light Hightech · accents</span>
+        <span class="h-sub">3 roles · semantic discipline</span>
+      </div>
+      <p class="lede">
+        <strong>Iris</strong> là default cho AI/tech, link, focus, in-progress (90% accent surface).
+        <strong>Mint</strong> = growth · LIVE · success. <strong>Rose</strong> = human · ESG · warm.
+        Mỗi accent đi kèm <code
+          style="font-family: var(--font-mono); font-size: 0.85em; background: var(--bg-muted); padding: 2px 6px; border-radius: 4px;">-deep</code>
+        variant cho gradient + text contrast.
+      </p>
+      <div class="accent-row">
+        <div class="accent-card">
+          <div class="accent-swab" style="background: var(--iris);">
+            <div class="deep" style="background: var(--iris-deep);"></div>
+          </div>
+          <div class="accent-name">Iris<span class="accent-hex">#7C6CF5</span></div>
+          <div class="accent-role">AI / tech · default accent · in-progress · build</div>
+        </div>
+        <div class="accent-card">
+          <div class="accent-swab" style="background: var(--mint);">
+            <div class="deep" style="background: var(--mint-deep);"></div>
+          </div>
+          <div class="accent-name">Mint<span class="accent-hex">#10B981</span></div>
+          <div class="accent-role">Growth · LIVE · success · prosperity</div>
+        </div>
+        <div class="accent-card">
+          <div class="accent-swab" style="background: var(--rose);">
+            <div class="deep" style="background: var(--rose-deep);"></div>
+          </div>
+          <div class="accent-name">Rose<span class="accent-hex">#F472B6</span></div>
+          <div class="accent-role">Human · ESG · warm care · people</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 · Surfaces & ink -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title">Surfaces &amp; ink</span>
+        <span class="h-sub">paper · mist · lavender</span>
+      </div>
+      <p class="lede">White-dominant · subtle blue undertone · navy-tinted hairlines. Ink là soft navy, không phải pure
+        black.</p>
+      <div class="neutral-row">
+        <div class="swatch">
+          <div class="swab" style="background: var(--bg); border-bottom: 1px solid var(--border);"></div>
+          <div class="meta">
+            <div class="name">Paper</div>
+            <div class="hex">#FCFCFF</div>
+            <div class="use">Default page bg</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swab" style="background: var(--bg-2);"></div>
+          <div class="meta">
+            <div class="name">Mist</div>
+            <div class="hex">#F4F5FB</div>
+            <div class="use">Alt section · hero wash</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swab" style="background: var(--bg-muted);"></div>
+          <div class="meta">
+            <div class="name">Lavender</div>
+            <div class="hex">#ECEDF8</div>
+            <div class="use">Chip · hover surface</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swab" style="background: var(--bg-ink);"></div>
+          <div class="meta">
+            <div class="name">Ink (dark)</div>
+            <div class="hex">#0E0F24</div>
+            <div class="use">Hero dark · footer</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swab" style="background: var(--fg-1);"></div>
+          <div class="meta">
+            <div class="name">Text · primary</div>
+            <div class="hex">#1A1B3A</div>
+            <div class="use">Body emphasis · headings</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swab" style="background: var(--fg-2);"></div>
+          <div class="meta">
+            <div class="name">Text · secondary</div>
+            <div class="hex">#5A5C7E</div>
+            <div class="use">Body · descriptions</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swab" style="background: var(--fg-3);"></div>
+          <div class="meta">
+            <div class="name">Text · tertiary</div>
+            <div class="hex">#6B6D8C</div>
+            <div class="use">Label · metadata</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swab" style="background: var(--border); border: 1px solid var(--border-hover);"></div>
+          <div class="meta">
+            <div class="name">Border</div>
+            <div class="hex">#E6E7F2</div>
+            <div class="use">Hairline · iris-tinted</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 · Status -->
+    <div class="block">
+      <div class="head">
+        <span class="h-title">Status pills</span>
+        <span class="h-sub">discipline · alert reserve</span>
+      </div>
+      <p class="lede">
+        <strong>BUILD</strong> = iris (in-progress, tech) · <strong>LIVE</strong> = mint (growth) ·
+        <strong>PLAN</strong> = gold-tinted amber (scheduled, IPO chuẩn). <strong>GAP</strong> (crimson)
+        <em>chỉ dùng cho ALERT</em> — không bao giờ cho governance hay compliance.
+      </p>
+      <div class="status-row">
+        <div class="stat">
+          <span class="pill live">LIVE</span>
+          <div class="stat-swab" style="background: var(--mint);"></div>
+          <div class="hex">#10B981</div>
+          <div class="use">Operational · success</div>
+        </div>
+        <div class="stat">
+          <span class="pill build">BUILD</span>
+          <div class="stat-swab" style="background: var(--iris);"></div>
+          <div class="hex">#7C6CF5</div>
+          <div class="use">In progress · iris default</div>
+        </div>
+        <div class="stat">
+          <span class="pill gap">GAP</span>
+          <div class="stat-swab" style="background: var(--gap);"></div>
+          <div class="hex">#EF4444</div>
+          <div class="use">ALERT only · không cho governance</div>
+        </div>
+        <div class="stat">
+          <span class="pill plan">PLAN</span>
+          <div class="stat-swab" style="background: var(--plan);"></div>
+          <div class="hex">#F59E0B</div>
+          <div class="use">Scheduled · pre-IPO</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+
+</html>

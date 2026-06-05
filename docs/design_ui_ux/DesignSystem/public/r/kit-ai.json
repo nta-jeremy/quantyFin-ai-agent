@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "kit-ai",
+  "type": "registry:component",
+  "title": "AI Kit",
+  "description": "AI vocabulary blocks: prompt · suggestion chip · halo · confidence chip · generation states · review/diff · disclosure. Marks AI vs human work (iris + ✦ glyph + halo).",
+  "registryDependencies": [
+    "theme",
+    "components"
+  ],
+  "files": [
+    {
+      "path": "ui_kits/quantyFin-ai/index.css",
+      "content": "/* ─────────────────────────────────────────────────────────\n   QuantyFin AI Kit · INDEX\n   ─────────────────────────────────────────────────────────\n   AI-vocabulary pattern library. Iris-glow halo + sparkle\n   glyph distinguish AI work from human work.\n\n   Load AFTER colors_and_type + the Tailwind component layer:\n     <link rel=\"stylesheet\" href=\"colors_and_type.css\" />\n     <link rel=\"stylesheet\" href=\"tailwind/quantyfin.components.css (inline)\" />\n     <link rel=\"stylesheet\" href=\"ui_kits/quantyFin-ai/index.css\" />\n   ───────────────────────────────────────────────────────── */\n\n@import url('./vocabulary.css');\n",
+      "type": "registry:component",
+      "target": "ui_kits/quantyFin-ai/index.css"
+    }
+  ]
+}

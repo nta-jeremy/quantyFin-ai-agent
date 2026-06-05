@@ -1,0 +1,366 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "quantyfin",
+  "homepage": "https://quantyfin.vn",
+  "items": [
+    {
+      "name": "theme",
+      "type": "registry:theme",
+      "title": "QuantyFin theme",
+      "description": "Canonical theme (shadcn shape): semantic role tokens aliased onto the QuantyFin palette + tokenized type scale. Source of raw values: colors_and_type.css (:root + 4 surface adapters). Roles mapped to utilities via @theme inline in tailwind/globals.css.",
+      "files": [
+        {
+          "path": "colors_and_type.css",
+          "type": "registry:file",
+          "target": "colors_and_type.css"
+        },
+        {
+          "path": "tailwind/globals.css",
+          "type": "registry:style",
+          "target": "tailwind/globals.css"
+        }
+      ],
+      "cssVars": {
+        "theme": {
+          "radius": "14px",
+          "font-sans": "Be Vietnam Pro",
+          "font-display": "Montserrat",
+          "font-mono": "JetBrains Mono",
+          "font-serif": "Playfair Display"
+        },
+        "light": {
+          "background": "#fcfcff",
+          "foreground": "#1a1b3a",
+          "card": "#fcfcff",
+          "card-foreground": "#1a1b3a",
+          "popover": "#fcfcff",
+          "popover-foreground": "#1a1b3a",
+          "primary": "#2a2b86",
+          "primary-foreground": "#ffffff",
+          "secondary": "#f4f5fb",
+          "secondary-foreground": "#1a1b3a",
+          "muted": "#ecedf8",
+          "muted-foreground": "#5a5c7e",
+          "accent": "#7c6cf5",
+          "accent-foreground": "#ffffff",
+          "destructive": "#ef4444",
+          "destructive-foreground": "#ffffff",
+          "border": "#e6e7f2",
+          "input": "#e6e7f2",
+          "ring": "#7c6cf5",
+          "chart-1": "#7c6cf5",
+          "chart-2": "#10b981",
+          "chart-3": "#2a2b86",
+          "chart-4": "#fcaf16",
+          "chart-5": "#f472b6",
+          "sidebar": "#f4f5fb",
+          "sidebar-foreground": "#1a1b3a",
+          "sidebar-primary": "#2a2b86",
+          "sidebar-primary-foreground": "#ffffff",
+          "sidebar-accent": "#ecedf8",
+          "sidebar-accent-foreground": "#1a1b3a",
+          "sidebar-border": "#e6e7f2",
+          "sidebar-ring": "#7c6cf5"
+        },
+        "dark": {
+          "background": "#0e0f24",
+          "foreground": "#f4f5fb",
+          "card": "#16183a",
+          "card-foreground": "#f4f5fb",
+          "popover": "#16183a",
+          "popover-foreground": "#f4f5fb",
+          "primary": "#4a4bc8",
+          "primary-foreground": "#0e0f24",
+          "secondary": "#1d2046",
+          "secondary-foreground": "#f4f5fb",
+          "muted": "#1d2046",
+          "muted-foreground": "#9aa0c4",
+          "accent": "#7c6cf5",
+          "accent-foreground": "#ffffff",
+          "destructive": "#f87171",
+          "destructive-foreground": "#0e0f24",
+          "border": "rgba(255,255,255,0.10)",
+          "input": "rgba(255,255,255,0.14)",
+          "ring": "#7c6cf5",
+          "chart-1": "#7c6cf5",
+          "chart-2": "#10b981",
+          "chart-3": "#4a4bc8",
+          "chart-4": "#fcaf16",
+          "chart-5": "#f472b6",
+          "sidebar": "#16183a",
+          "sidebar-foreground": "#f4f5fb",
+          "sidebar-primary": "#4a4bc8",
+          "sidebar-primary-foreground": "#0e0f24",
+          "sidebar-accent": "#1d2046",
+          "sidebar-accent-foreground": "#f4f5fb",
+          "sidebar-border": "rgba(255,255,255,0.10)",
+          "sidebar-ring": "#7c6cf5"
+        }
+      }
+    },
+    {
+      "name": "components",
+      "type": "registry:style",
+      "title": "QuantyFin components",
+      "description": "The universal component layer (@apply + tokens): buttons, typography, forms, overlays, identity, data-viz, state. No-Preflight bundle to inline under the no-build CDN; build mode uses tailwind/quantyfin.tailwind.css as the entry.",
+      "registryDependencies": [
+        "theme"
+      ],
+      "files": [
+        {
+          "path": "tailwind/quantyfin.components.css",
+          "type": "registry:style",
+          "target": "tailwind/quantyfin.components.css"
+        },
+        {
+          "path": "tailwind/quantyfin.tailwind.css",
+          "type": "registry:style",
+          "target": "tailwind/quantyfin.tailwind.css"
+        }
+      ],
+      "docs": "Component classes: .btn (+7 variants ×3 sizes) · .field/.input/.select/.checkbox/.radio/.toggle · .modal/.drawer/.toast/.tip/.popover · .avatar/.badge/.chip/.tag · KPI/sparkline/progress/charts · skeleton/empty/error/banner · .type-* utilities. Sizes resolve from [data-surface]."
+    },
+    {
+      "name": "kit-app",
+      "type": "registry:component",
+      "title": "App Kit",
+      "description": "Composite back-office/PLM blocks: app shell · top-bar · side-rail · tabs · data-table · filter-bar · command palette · chart engine. Token-driven, Tailwind-enabled.",
+      "registryDependencies": [
+        "theme",
+        "components"
+      ],
+      "files": [
+        {
+          "path": "ui_kits/quantyFin-app/index.css",
+          "type": "registry:component",
+          "target": "ui_kits/quantyFin-app/index.css"
+        }
+      ]
+    },
+    {
+      "name": "kit-ai",
+      "type": "registry:component",
+      "title": "AI Kit",
+      "description": "AI vocabulary blocks: prompt · suggestion chip · halo · confidence chip · generation states · review/diff · disclosure. Marks AI vs human work (iris + ✦ glyph + halo).",
+      "registryDependencies": [
+        "theme",
+        "components"
+      ],
+      "files": [
+        {
+          "path": "ui_kits/quantyFin-ai/index.css",
+          "type": "registry:component",
+          "target": "ui_kits/quantyFin-ai/index.css"
+        }
+      ]
+    },
+    {
+      "name": "kit-collab",
+      "type": "registry:component",
+      "title": "Collab Kit",
+      "description": "Multiplayer layer: comment thread · mention · annotation pin · approval card/stack · activity feed · version row · presence cursor · role badges.",
+      "registryDependencies": [
+        "theme",
+        "components"
+      ],
+      "files": [
+        {
+          "path": "ui_kits/quantyFin-collab/index.css",
+          "type": "registry:component",
+          "target": "ui_kits/quantyFin-collab/index.css"
+        }
+      ]
+    },
+    {
+      "name": "kit-fashion",
+      "type": "registry:component",
+      "title": "Fashion Kit (scoped)",
+      "description": "Fashion-domain blocks: color/material swatch · pantone chip · season tag · size matrix · measurement diagram · BOM table · style card · lookbook tile · tech-pack A4. Domain-scoped, not universal.",
+      "registryDependencies": [
+        "theme",
+        "components"
+      ],
+      "files": [
+        {
+          "path": "ui_kits/quantyFin-fashion/index.css",
+          "type": "registry:component",
+          "target": "ui_kits/quantyFin-fashion/index.css"
+        }
+      ]
+    },
+    {
+      "name": "utils",
+      "type": "registry:lib",
+      "title": "cn() utility",
+      "description": "Tailwind-aware className merge (clsx + tailwind-merge). Required by all React components.",
+      "dependencies": [
+        "clsx",
+        "tailwind-merge"
+      ],
+      "files": [
+        {
+          "path": "registry/lib/utils.ts",
+          "type": "registry:lib",
+          "target": "lib/utils.ts"
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "type": "registry:ui",
+      "title": "Button (React)",
+      "description": "Open-code React Button (Tier 3) — CVA variants default/secondary/outline/ghost/link/destructive/gold ×4 sizes, Radix Slot for asChild. quantyFin-branded via role tokens; pill radius. Demo: preview/components/react.html.",
+      "dependencies": [
+        "@radix-ui/react-slot",
+        "class-variance-authority"
+      ],
+      "registryDependencies": [
+        "theme",
+        "utils"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/button.tsx",
+          "type": "registry:ui",
+          "target": "ui/button.tsx"
+        }
+      ]
+    },
+    {
+      "name": "badge",
+      "type": "registry:ui",
+      "title": "Badge (React)",
+      "description": "Open-code React Badge (Tier 3) — CVA variants incl. QuantyFin status (live/build/plan/gap), Radix Slot for asChild. Demo: preview/components/react.html.",
+      "dependencies": [
+        "@radix-ui/react-slot",
+        "class-variance-authority"
+      ],
+      "registryDependencies": [
+        "theme",
+        "utils"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/badge.tsx",
+          "type": "registry:ui",
+          "target": "ui/badge.tsx"
+        }
+      ]
+    },
+    {
+      "name": "input",
+      "type": "registry:ui",
+      "title": "Input (React)",
+      "description": "Open-code React Input — role tokens (border-input, ring-ring, aria-invalid), rounded-lg. Demo: preview/components/react.html.",
+      "registryDependencies": [
+        "theme",
+        "utils"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/input.tsx",
+          "type": "registry:ui",
+          "target": "ui/input.tsx"
+        }
+      ]
+    },
+    {
+      "name": "label",
+      "type": "registry:ui",
+      "title": "Label (React)",
+      "description": "Open-code React Label on Radix Label primitive.",
+      "dependencies": [
+        "@radix-ui/react-label"
+      ],
+      "registryDependencies": [
+        "theme",
+        "utils"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/label.tsx",
+          "type": "registry:ui",
+          "target": "ui/label.tsx"
+        }
+      ]
+    },
+    {
+      "name": "card",
+      "type": "registry:ui",
+      "title": "Card (React)",
+      "description": "Open-code React Card composition (Card/Header/Title/Description/Content/Footer) — bg-card + border-border surface. Demo: preview/components/react-radix.html.",
+      "registryDependencies": [
+        "theme",
+        "utils"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/card.tsx",
+          "type": "registry:ui",
+          "target": "ui/card.tsx"
+        }
+      ]
+    },
+    {
+      "name": "switch",
+      "type": "registry:ui",
+      "title": "Switch (React)",
+      "description": "Open-code React Switch on Radix Switch primitive — checked = bg-primary. Interactive demo: preview/components/react-radix.html.",
+      "dependencies": [
+        "@radix-ui/react-switch"
+      ],
+      "registryDependencies": [
+        "theme",
+        "utils"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/switch.tsx",
+          "type": "registry:ui",
+          "target": "ui/switch.tsx"
+        }
+      ]
+    },
+    {
+      "name": "dialog",
+      "type": "registry:ui",
+      "title": "Dialog (React)",
+      "description": "Open-code React Dialog on Radix Dialog primitive — overlay, content, header/footer/title/description, close. Interactive demo: preview/components/react-radix.html.",
+      "dependencies": [
+        "@radix-ui/react-dialog",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "theme",
+        "utils"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/dialog.tsx",
+          "type": "registry:ui",
+          "target": "ui/dialog.tsx"
+        }
+      ]
+    },
+    {
+      "name": "tabs",
+      "type": "registry:ui",
+      "title": "Tabs (React)",
+      "description": "Open-code React Tabs on Radix Tabs primitive — list/trigger/content, active = bg-background. Interactive demo: preview/components/react-radix.html.",
+      "dependencies": [
+        "@radix-ui/react-tabs"
+      ],
+      "registryDependencies": [
+        "theme",
+        "utils"
+      ],
+      "files": [
+        {
+          "path": "registry/ui/tabs.tsx",
+          "type": "registry:ui",
+          "target": "ui/tabs.tsx"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!-- OUT OF SCOPE: ITDX/EA product specimen (TOGAF domain badges) — not part of the design system. Consumes DS tokens only. See examples/README.md. -->
+<html lang="vi"><head><meta charset="UTF-8"/><link rel="stylesheet" href="../../colors_and_type.css"/>
+<style>
+  body { background: var(--bg); padding: 40px 48px; margin: 0; }
+  .head {
+    font: 700 13px/1 var(--font-mono); text-transform: uppercase;
+    letter-spacing: 0.32em; color: var(--brand); margin-bottom: 8px;
+    display: inline-flex; align-items: center; gap: 14px;
+  }
+  .head::before { content: ''; width: 32px; height: 1px; background: var(--brand); opacity: 0.5; }
+  .lede { font: 400 18px/1.6 var(--font-body); color: var(--fg-2); max-width: 760px; margin-bottom: 28px; }
+  .lede strong { color: var(--fg-1); font-weight: 600; }
+
+  .grid { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  .badge {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font: 800 18px/1 var(--font-impact); letter-spacing: -0.02em;
+    box-shadow: var(--shadow-sm);
+  }
+  .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 24px; max-width: 760px; }
+  .legend span {
+    font: 500 14px/1.4 var(--font-body); color: var(--fg-2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .legend i { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+  .legend b { color: var(--fg-1); font-weight: 700; font-family: var(--font-impact); }
+</style></head><body data-surface="portal">
+  <span class="head">TOGAF domain badges</span>
+  <p class="lede">9 domain badges · single-letter Montserrat 800. <strong>A</strong> (navy) và <strong>E</strong> (gold) là brand anchor; còn lại dùng Light Hightech palette.</p>
+
+  <div class="grid">
+    <div class="badge" style="background: #2a2b86;">A</div>
+    <div class="badge" style="background: #7c6cf5;">B</div>
+    <div class="badge" style="background: #10b981;">C</div>
+    <div class="badge" style="background: #f472b6;">D</div>
+    <div class="badge" style="background: #fcaf16; color: #4a3300;">E</div>
+    <div class="badge" style="background: #4a4bc8;">F</div>
+    <div class="badge" style="background: #6b6f8c;">G</div>
+    <div class="badge" style="background: #fb923c;">H</div>
+    <div class="badge" style="background: #047857;">I</div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:#2a2b86;"></i><b>A</b> · Strategy (brand navy)</span>
+    <span><i style="background:#7c6cf5;"></i><b>B</b> · Business (iris)</span>
+    <span><i style="background:#10b981;"></i><b>C</b> · Data (mint)</span>
+    <span><i style="background:#f472b6;"></i><b>D</b> · Application (rose)</span>
+    <span><i style="background:#fcaf16;"></i><b>E</b> · Technology (gold)</span>
+    <span><i style="background:#4a4bc8;"></i><b>F</b> · Migration (lifted navy)</span>
+    <span><i style="background:#6b6f8c;"></i><b>G</b> · Implementation (slate)</span>
+    <span><i style="background:#fb923c;"></i><b>H</b> · Vision (coral)</span>
+    <span><i style="background:#047857;"></i><b>I</b> · Governance (mint-deep)</span>
+  </div>
+</body></html>

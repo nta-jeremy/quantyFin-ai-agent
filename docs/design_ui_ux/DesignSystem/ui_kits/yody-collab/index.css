@@ -1,0 +1,11 @@
+/* ─────────────────────────────────────────────────────────
+   QuantyFin Collab Kit · INDEX
+   ─────────────────────────────────────────────────────────
+   Multiplayer surface components for PLM.
+   Load AFTER colors_and_type + the Tailwind component layer:
+     <link rel="stylesheet" href="colors_and_type.css" />
+     <link rel="stylesheet" href="tailwind/quantyfin.components.css (inline)" />
+     <link rel="stylesheet" href="ui_kits/quantyFin-collab/index.css" />
+   ───────────────────────────────────────────────────────── */
+
+@import url('./components.css');

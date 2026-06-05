@@ -1,0 +1,813 @@
+<!-- @dsCard group="Components" -->
+<!DOCTYPE html>
+<!-- SCOPE: portal-only specimen — KPI variants (Aurora/hero dark) are briefing-surface flavored, not universal. See README "Scope classification". -->
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    body {
+      background: var(--bg-2);
+      padding: 24px;
+      margin: 0;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    .row-3 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .row-2 {
+      grid-template-columns: 1.5fr 1fr 1fr;
+    }
+
+    .variant-label {
+      font: 600 9px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--fg-3);
+      margin-bottom: -8px;
+    }
+
+    /* shared numerals */
+    .num {
+      font: 700 30px/1.05 var(--font-brand);
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .num small {
+      font-size: 16px;
+      opacity: 0.55;
+      font-weight: 500;
+      margin-left: 2px;
+    }
+
+    .lbl {
+      font: 600 10px/1 var(--font-sans);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .delta {
+      font: 500 11px/1 var(--font-mono);
+    }
+
+    .pill {
+      font: 700 9px/1 var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 8px;
+      border-radius: 9999px;
+    }
+
+    /* ── A · Aurora gradient (flagship) ──────────────────────── */
+    .a {
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(124, 108, 245, 0.22);
+      min-height: 130px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .a::before {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .a .lbl {
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .a .num {
+      color: #fff;
+    }
+
+    .a .delta {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .a-iris {
+      background: linear-gradient(135deg, #4a4bc8 0%, #7c6cf5 50%, #9aa0ff 100%);
+    }
+
+    .a-mint {
+      background: linear-gradient(135deg, #2a2b86 0%, #4a4bc8 45%, #4fd1c5 100%);
+    }
+
+    .a-rose {
+      background: linear-gradient(135deg, #7c6cf5 0%, #b974f0 55%, #f472b6 100%);
+    }
+
+    .a-sunset {
+      background: linear-gradient(135deg, #2a2b86 0%, #6b3fb5 50%, #fcaf16 100%);
+    }
+
+    /* ── B · Glass tint (soft gradient on light surface) ─────── */
+    .b {
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .b::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 100% 0%, var(--bg-glow, rgba(124, 108, 245, 0.16)) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .b>* {
+      position: relative;
+      z-index: 1;
+    }
+
+    .b .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .b .num {
+      color: var(--fg-1);
+    }
+
+    .b .lbl {
+      color: var(--fg-3);
+    }
+
+    .b-iris {
+      background: linear-gradient(180deg, #ffffff 0%, #f4f3ff 100%);
+      --bg-glow: rgba(124, 108, 245, 0.20);
+    }
+
+    .b-mint {
+      background: linear-gradient(180deg, #ffffff 0%, #effaf8 100%);
+      --bg-glow: rgba(79, 209, 197, 0.22);
+    }
+
+    .b-rose {
+      background: linear-gradient(180deg, #ffffff 0%, #fcf1f7 100%);
+      --bg-glow: rgba(244, 114, 182, 0.20);
+    }
+
+    .b-gold {
+      background: linear-gradient(180deg, #ffffff 0%, #fff7e6 100%);
+      --bg-glow: rgba(252, 175, 22, 0.22);
+    }
+
+    /* ── C · Mesh gradient with sparkline ────────────────────── */
+    .c {
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      background:
+        radial-gradient(circle at 0% 100%, rgba(79, 209, 197, 0.18) 0%, transparent 50%),
+        radial-gradient(circle at 100% 0%, rgba(124, 108, 245, 0.18) 0%, transparent 50%),
+        linear-gradient(180deg, #ffffff 0%, #f7f7ff 100%);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      min-height: 132px;
+    }
+
+    .c .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+
+    .c .num {
+      color: var(--fg-1);
+      margin: 4px 0 4px;
+    }
+
+    .c .lbl {
+      color: var(--fg-2);
+    }
+
+    .c svg {
+      display: block;
+      width: 100%;
+      height: 32px;
+      margin-top: 2px;
+    }
+
+    /* ── D · Hero dark (brand anchor) ───────────────────────── */
+    .d {
+      border-radius: var(--radius-lg);
+      padding: 24px 26px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 90% 10%, rgba(124, 108, 245, 0.28) 0%, transparent 55%),
+        radial-gradient(circle at 5% 95%, rgba(252, 175, 22, 0.18) 0%, transparent 50%),
+        linear-gradient(135deg, #1a1b3a 0%, #2a2b86 100%);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 36px rgba(26, 27, 58, 0.32);
+      min-height: 150px;
+    }
+
+    .d::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(252, 175, 22, 0.6), rgba(124, 108, 245, 0.6), transparent);
+    }
+
+    .d .lbl {
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 14px;
+    }
+
+    .d .num {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .d .num small {
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    .d .row-meta {
+      display: flex;
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    .d .meta {
+      font: 500 11px/1.4 var(--font-mono);
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .d .meta b {
+      display: block;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 2px;
+      font-family: var(--font-brand);
+      letter-spacing: -0.01em;
+    }
+
+    .d .meta b.gold {
+      color: var(--brand-gold);
+    }
+
+    .d .meta b.iris {
+      color: #b6abff;
+    }
+
+    .d .meta b.mint {
+      color: #7fe2d8;
+    }
+
+    /* ── E · Donut on tinted gradient surface ────────────────── */
+    .e {
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, #ffffff 0%, #ecedf8 100%);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 96px;
+    }
+
+    .e .ring {
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .e .ring svg {
+      transform: rotate(-90deg);
+    }
+
+    .e .ring .center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font: 800 14px/1 var(--font-brand);
+      letter-spacing: -0.02em;
+      color: var(--fg-1);
+    }
+
+    .e .body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .e .body .lbl {
+      color: var(--fg-3);
+      margin-bottom: 4px;
+    }
+
+    .e .body .title {
+      font: 700 14px/1.3 var(--font-brand);
+      color: var(--fg-1);
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+
+    .e .body .delta {
+      font-size: 10px;
+      color: var(--fg-2);
+    }
+
+    /* ── F · Composition bar (gradient segments) ─────────────── */
+    .f {
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f4f5fb 100%);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .f .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .f .top .num {
+      font-size: 24px;
+      color: var(--fg-1);
+    }
+
+    .f .top .lbl {
+      color: var(--fg-3);
+    }
+
+    .f .bar {
+      display: flex;
+      height: 8px;
+      border-radius: 9999px;
+      overflow: hidden;
+      background: var(--bg-muted);
+      margin-bottom: 8px;
+    }
+
+    .f .seg {
+      height: 100%;
+    }
+
+    .f .seg.live {
+      background: linear-gradient(90deg, #10b981, #34d399);
+    }
+
+    .f .seg.iris {
+      background: linear-gradient(90deg, #4a4bc8, #7c6cf5);
+    }
+
+    .f .seg.mint {
+      background: linear-gradient(90deg, #4fd1c5, #7fe2d8);
+    }
+
+    .f .seg.rose {
+      background: linear-gradient(90deg, #f472b6, #f9a8d4);
+    }
+
+    .f .seg.gold {
+      background: linear-gradient(90deg, #fcaf16, #fbcd5b);
+    }
+
+    .f .seg.gap {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+    }
+
+    .f .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font: 500 10px/1 var(--font-mono);
+      color: var(--fg-2);
+    }
+
+    .f .legend i {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      margin-right: 5px;
+      vertical-align: -1px;
+    }
+
+    /* status pill bg/colors */
+    .pill.live {
+      background: var(--live-bg);
+      color: var(--live);
+    }
+
+    .pill.build {
+      background: var(--build-bg);
+      color: var(--build);
+    }
+
+    .pill.gap {
+      background: var(--gap-bg);
+      color: var(--gap);
+    }
+
+    .pill.plan {
+      background: var(--plan-bg);
+      color: var(--plan);
+    }
+
+    .pill.glass {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    /* ─────────────────────────────────────────────────────────
+   QuantyFin DS · Tailwind theme bridge (tokens + utilities, NO preflight)
+   ─────────────────────────────────────────────────────────
+   Map DS CSS vars → Tailwind theme via @theme inline, and load
+   ONLY theme + utilities (NOT Preflight) so this can be injected
+   into existing specimens WITHOUT resetting their component CSS.
+
+   Requires colors_and_type.css to be loaded (vars live there).
+   Full component layer (@apply): tailwind/quantyfin.tailwind.css
+   ───────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  /* Accents */
+  --color-iris: var(--iris);  --color-iris-deep: var(--iris-deep);  --color-iris-tint: var(--iris-tint);
+  --color-gold: var(--gold);  --color-gold-deep: var(--gold-deep);  --color-gold-tint: var(--gold-tint);
+  --color-mint: var(--mint);  --color-mint-deep: var(--mint-deep);  --color-mint-tint: var(--mint-tint);
+  --color-rose: var(--rose);  --color-rose-deep: var(--rose-deep);  --color-rose-tint: var(--rose-tint);
+  --color-gap: var(--gap);
+  /* Status */
+  --color-live: var(--live);  --color-build: var(--build);  --color-plan: var(--plan);
+  /* Text */
+  --color-fg: var(--fg-1);  --color-fg-2: var(--fg-2);  --color-fg-3: var(--fg-3);  --color-fg-on-brand: var(--fg-on-brand);
+  /* Surfaces */
+  --color-paper: var(--bg);  --color-mist: var(--bg-2);  --color-lavender: var(--bg-muted);  --color-ink: var(--bg-ink);  --color-warm: var(--bg-warm);
+  /* Borders */
+  --color-line: var(--border);  --color-line-light: var(--border-light);  --color-line-hover: var(--border-hover);
+  /* Fonts */
+  --font-sans: var(--font-body);  --font-brand: var(--font-brand);  --font-display: var(--font-impact);  --font-serif: var(--font-serif);  --font-mono: var(--font-mono);
+  /* Radius */
+  --radius-xs: var(--radius-xs);  --radius-sm: var(--radius-sm);  --radius-md: var(--radius-md);  --radius-lg: var(--radius-lg);  --radius-xl: var(--radius-xl);
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);  --shadow-md: var(--shadow-md);  --shadow-lg: var(--shadow-lg);  --shadow-xl: var(--shadow-xl);  --shadow-brand: var(--shadow-brand);  --shadow-gold: var(--shadow-gold);
+}
+
+</style>
+</head>
+
+<body data-surface="portal">
+
+  <div class="stack">
+
+    <!-- A · aurora gradient (flagship) -->
+    <div class="variant-label">A · Aurora gradient — flagship dashboard cards (recommended default)</div>
+    <div class="row">
+      <div class="a a-iris">
+        <span class="pill glass" style="align-self: flex-start;">LIVE</span>
+        <div>
+          <div class="lbl">Health Score</div>
+          <div class="num">72<small>/100</small></div>
+          <div class="delta">↗ +8 pts QoQ</div>
+        </div>
+      </div>
+      <div class="a a-mint">
+        <span class="pill glass" style="align-self: flex-start;">MATURITY</span>
+        <div>
+          <div class="lbl">CMMI Score</div>
+          <div class="num">3.2<small>/5.0</small></div>
+          <div class="delta">↗ target 4.0 by 2027</div>
+        </div>
+      </div>
+      <div class="a a-rose">
+        <span class="pill glass" style="align-self: flex-start;">RISK</span>
+        <div>
+          <div class="lbl">Critical Gaps</div>
+          <div class="num">4</div>
+          <div class="delta">↘ −2 vs Q1</div>
+        </div>
+      </div>
+      <div class="a a-sunset">
+        <span class="pill glass" style="align-self: flex-start;">PLAN</span>
+        <div>
+          <div class="lbl">Investment 2026</div>
+          <div class="num">127<small>B ₫</small></div>
+          <div class="delta">approved · brand anchor</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B · soft glass tint -->
+    <div class="variant-label">B · Soft glass — tinted gradient on white, lighter weight</div>
+    <div class="row">
+      <div class="b b-iris">
+        <div class="top">
+          <span class="lbl">Systems</span>
+          <span class="pill" style="background: rgba(124,108,245,0.14); color: #4a4bc8;">+5%</span>
+        </div>
+        <div class="num">65<small>%</small></div>
+        <div class="delta" style="color: var(--fg-2);">modernized · 12 mo</div>
+      </div>
+      <div class="b b-mint">
+        <div class="top">
+          <span class="lbl">API</span>
+          <span class="pill" style="background: rgba(79,209,197,0.18); color: #0d8a82;">live</span>
+        </div>
+        <div class="num">48<small>%</small></div>
+        <div class="delta" style="color: var(--fg-2);">coverage · build</div>
+      </div>
+      <div class="b b-rose">
+        <div class="top">
+          <span class="lbl">Risks</span>
+          <span class="pill" style="background: rgba(244,114,182,0.18); color: #b8377a;">−2</span>
+        </div>
+        <div class="num">9</div>
+        <div class="delta" style="color: var(--fg-2);">open · QoQ</div>
+      </div>
+      <div class="b b-gold">
+        <div class="top">
+          <span class="lbl">Roadmap</span>
+          <span class="pill" style="background: rgba(252,175,22,0.20); color: #8a5a00;">FY26</span>
+        </div>
+        <div class="num">82<small>%</small></div>
+        <div class="delta" style="color: var(--fg-2);">on plan · brand</div>
+      </div>
+    </div>
+
+    <!-- C · mesh + sparkline -->
+    <div class="variant-label">C · Mesh + sparkline — data-led, "AI dashboard" feel</div>
+    <div class="row row-3">
+      <div class="c">
+        <div class="top">
+          <span class="lbl">Modernization</span>
+          <span class="pill" style="background: rgba(124,108,245,0.14); color: #4a4bc8;">↗ 12 mo</span>
+        </div>
+        <div class="num">65<small>%</small></div>
+        <svg viewBox="0 0 100 32" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#7c6cf5" stop-opacity="0.35" />
+              <stop offset="1" stop-color="#7c6cf5" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <polyline fill="url(#g1)" stroke="none"
+            points="0,24 12,22 24,20 36,17 48,18 60,14 72,11 84,8 100,6 100,32 0,32" />
+          <polyline fill="none" stroke="#7c6cf5" stroke-width="1.6"
+            points="0,24 12,22 24,20 36,17 48,18 60,14 72,11 84,8 100,6" />
+        </svg>
+      </div>
+      <div class="c">
+        <div class="top">
+          <span class="lbl">API Coverage</span>
+          <span class="pill" style="background: rgba(79,209,197,0.18); color: #0d8a82;">↗ build</span>
+        </div>
+        <div class="num">48<small>%</small></div>
+        <svg viewBox="0 0 100 32" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="g2" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#4fd1c5" stop-opacity="0.40" />
+              <stop offset="1" stop-color="#4fd1c5" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <polyline fill="url(#g2)" stroke="none"
+            points="0,26 12,24 24,22 36,21 48,18 60,16 72,14 84,12 100,9 100,32 0,32" />
+          <polyline fill="none" stroke="#4fd1c5" stroke-width="1.6"
+            points="0,26 12,24 24,22 36,21 48,18 60,16 72,14 84,12 100,9" />
+        </svg>
+      </div>
+      <div class="c">
+        <div class="top">
+          <span class="lbl">Roadmap Coverage</span>
+          <span class="pill" style="background: rgba(252,175,22,0.20); color: #8a5a00;">FY26</span>
+        </div>
+        <div class="num">82<small>%</small></div>
+        <svg viewBox="0 0 100 32" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="g3" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#fcaf16" stop-opacity="0.40" />
+              <stop offset="1" stop-color="#fcaf16" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <polyline fill="url(#g3)" stroke="none" points="0,20 14,18 28,15 42,13 56,11 70,9 84,6 100,4 100,32 0,32" />
+          <polyline fill="none" stroke="#fcaf16" stroke-width="1.6"
+            points="0,20 14,18 28,15 42,13 56,11 70,9 84,6 100,4" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- D · hero dark (brand anchor) -->
+    <div class="variant-label">D · Hero dark — brand anchor cover (use sparingly, navy + gold DNA)</div>
+    <div class="row row-2">
+      <div class="d">
+        <div class="lbl">System health · Q2</div>
+        <div class="num">72<small>/100</small></div>
+        <div class="row-meta">
+          <span class="meta">People<b class="iris">78</b></span>
+          <span class="meta">Process<b class="mint">69</b></span>
+          <span class="meta">Tech<b class="gold">71</b></span>
+        </div>
+      </div>
+      <div class="b b-iris" style="min-height: 150px;">
+        <div class="top">
+          <span class="lbl">Active</span>
+          <span class="pill" style="background: rgba(124,108,245,0.14); color: #4a4bc8;">+6 vs Q1</span>
+        </div>
+        <div class="num" style="font-size: 38px;">42</div>
+        <div class="delta" style="color: var(--fg-2);">initiatives · in flight</div>
+      </div>
+      <div class="b b-mint" style="min-height: 150px;">
+        <div class="top">
+          <span class="lbl">On‑Time</span>
+          <span class="pill" style="background: rgba(79,209,197,0.18); color: #0d8a82;">+12 pts</span>
+        </div>
+        <div class="num" style="font-size: 38px;">87<small>%</small></div>
+        <div class="delta" style="color: var(--fg-2);">delivery · YoY</div>
+      </div>
+    </div>
+
+    <!-- E · radial -->
+    <div class="variant-label">E · Radial — at-a-glance progress</div>
+    <div class="row row-3">
+      <div class="e">
+        <div class="ring">
+          <svg width="60" height="60" viewBox="0 0 60 60">
+            <defs>
+              <linearGradient id="r1" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#4a4bc8" />
+                <stop offset="1" stop-color="#7c6cf5" />
+              </linearGradient>
+            </defs>
+            <circle cx="30" cy="30" r="24" fill="none" stroke="#e6e7f2" stroke-width="6" />
+            <circle cx="30" cy="30" r="24" fill="none" stroke="url(#r1)" stroke-width="6" stroke-dasharray="150.8"
+              stroke-dashoffset="53" stroke-linecap="round" />
+          </svg>
+          <div class="center">65%</div>
+        </div>
+        <div class="body">
+          <div class="lbl">Modernization</div>
+          <div class="title">Systems Migrated</div>
+          <div class="delta">↗ +5% YoY</div>
+        </div>
+      </div>
+      <div class="e">
+        <div class="ring">
+          <svg width="60" height="60" viewBox="0 0 60 60">
+            <defs>
+              <linearGradient id="r2" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#4fd1c5" />
+                <stop offset="1" stop-color="#7fe2d8" />
+              </linearGradient>
+            </defs>
+            <circle cx="30" cy="30" r="24" fill="none" stroke="#e6e7f2" stroke-width="6" />
+            <circle cx="30" cy="30" r="24" fill="none" stroke="url(#r2)" stroke-width="6" stroke-dasharray="150.8"
+              stroke-dashoffset="58" stroke-linecap="round" />
+          </svg>
+          <div class="center">3.2</div>
+        </div>
+        <div class="body">
+          <div class="lbl">CMMI</div>
+          <div class="title">Maturity Score</div>
+          <div class="delta">↗ target 4.0 by 2027</div>
+        </div>
+      </div>
+      <div class="e">
+        <div class="ring">
+          <svg width="60" height="60" viewBox="0 0 60 60">
+            <defs>
+              <linearGradient id="r3" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#fcaf16" />
+                <stop offset="1" stop-color="#fbcd5b" />
+              </linearGradient>
+            </defs>
+            <circle cx="30" cy="30" r="24" fill="none" stroke="#e6e7f2" stroke-width="6" />
+            <circle cx="30" cy="30" r="24" fill="none" stroke="url(#r3)" stroke-width="6" stroke-dasharray="150.8"
+              stroke-dashoffset="27" stroke-linecap="round" />
+          </svg>
+          <div class="center">82%</div>
+        </div>
+        <div class="body">
+          <div class="lbl">Roadmap</div>
+          <div class="title">2026 Coverage</div>
+          <div class="delta">on plan · brand anchor</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- F · composition bar -->
+    <div class="variant-label">F · Composition — gradient-segment bars for split metrics</div>
+    <div class="row row-3">
+      <div class="f">
+        <div class="top">
+          <div class="lbl">Systems by Status</div>
+          <div class="num">82</div>
+        </div>
+        <div class="bar">
+          <span class="seg live" style="width:46%"></span>
+          <span class="seg iris" style="width:18%"></span>
+          <span class="seg gap" style="width:11%"></span>
+          <span class="seg gold" style="width:25%"></span>
+        </div>
+        <div class="legend">
+          <span><i style="background:#10b981"></i>38 LIVE</span>
+          <span><i style="background:#7c6cf5"></i>14 BUILD</span>
+          <span><i style="background:#ef4444"></i>9 GAP</span>
+          <span><i style="background:#fcaf16"></i>21 PLAN</span>
+        </div>
+      </div>
+      <div class="f">
+        <div class="top">
+          <div class="lbl">Investment Mix</div>
+          <div class="num">127B ₫</div>
+        </div>
+        <div class="bar">
+          <span class="seg iris" style="width:35%"></span>
+          <span class="seg mint" style="width:30%"></span>
+          <span class="seg gold" style="width:25%"></span>
+          <span class="seg rose" style="width:10%"></span>
+        </div>
+        <div class="legend">
+          <span><i style="background:#7c6cf5"></i>Infra</span>
+          <span><i style="background:#4fd1c5"></i>People</span>
+          <span><i style="background:#fcaf16"></i>SW</span>
+          <span><i style="background:#f472b6"></i>Svc</span>
+        </div>
+      </div>
+      <div class="f">
+        <div class="top">
+          <div class="lbl">Capability Maturity</div>
+          <div class="num">120</div>
+        </div>
+        <div class="bar">
+          <span class="seg live" style="width:28%"></span>
+          <span class="seg iris" style="width:34%"></span>
+          <span class="seg gold" style="width:24%"></span>
+          <span class="seg gap" style="width:14%"></span>
+        </div>
+        <div class="legend">
+          <span><i style="background:#10b981"></i>L4-5</span>
+          <span><i style="background:#7c6cf5"></i>L3</span>
+          <span><i style="background:#fcaf16"></i>L2</span>
+          <span><i style="background:#ef4444"></i>L1</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+
+</html>

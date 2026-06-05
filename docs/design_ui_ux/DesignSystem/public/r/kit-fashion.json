@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "kit-fashion",
+  "type": "registry:component",
+  "title": "Fashion Kit (scoped)",
+  "description": "Fashion-domain blocks: color/material swatch · pantone chip · season tag · size matrix · measurement diagram · BOM table · style card · lookbook tile · tech-pack A4. Domain-scoped, not universal.",
+  "registryDependencies": [
+    "theme",
+    "components"
+  ],
+  "files": [
+    {
+      "path": "ui_kits/quantyFin-fashion/index.css",
+      "content": "/* ═══════════════════════════════════════════════════════════\n   SCOPE: SCOPED — fashion DOMAIN kit, not universal foundation.\n   Reusable only inside QuantyFin fashion products (PLM, lookbook,\n   vendor portal). Do not treat as a base primitive.\n   See README \"Scope classification\".\n   ═══════════════════════════════════════════════════════════ */\n/* ─────────────────────────────────────────────────────────\n   QuantyFin Fashion Kit · INDEX\n   ─────────────────────────────────────────────────────────\n   Fashion-aware composites for PLM, lookbook, vendor portal.\n\n   Load AFTER colors_and_type + the Tailwind component layer:\n     <link rel=\"stylesheet\" href=\"colors_and_type.css\" />\n     <link rel=\"stylesheet\" href=\"tailwind/quantyfin.components.css (inline)\" />\n     <link rel=\"stylesheet\" href=\"ui_kits/quantyFin-fashion/index.css\" />\n\n   Compatible with all surfaces; primarily used under\n   [data-surface=\"app\"] for PLM screens.\n   ───────────────────────────────────────────────────────── */\n\n@import url('./atoms.css');\n",
+      "type": "registry:component",
+      "target": "ui_kits/quantyFin-fashion/index.css"
+    }
+  ]
+}

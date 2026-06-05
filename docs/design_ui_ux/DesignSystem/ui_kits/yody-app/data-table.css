@@ -1,0 +1,631 @@
+/* ─────────────────────────────────────────────────────────
+   QuantyFin App Kit · DATA TABLE
+   ─────────────────────────────────────────────────────────
+   The workhorse of any admin/PLM app. Surface-aware sizing
+   via --row-compact|cozy|spacious from the app adapter.
+
+   Primary classes:
+     .dt-wrap            — scroll container with sticky head
+     .dt                 — the table itself
+     .dt-row-actions     — hover-revealed action cluster
+     .dt-cell-edit       — inline-editable cell wrapper
+     .dt-toolbar         — top toolbar (search/filter/actions)
+     .dt-bulk-bar        — bottom bar shown when rows selected
+     .dt-pagination      — bottom pagination
+     .dt-density-btns    — compact/cozy/spacious switch
+     .dt-empty           — empty state inside table
+
+   Modifiers:
+     .dt[data-density="compact|cozy|spacious"]  — row height
+     .dt th[data-sortable="true"]                — clickable header
+     .dt th[data-sort="asc|desc"]                — current sort
+     .dt th.freeze, .dt td.freeze                — frozen left column
+     .dt tr[data-selected="true"]                — selected row
+     .dt td.num                                  — right-align tabular num
+
+   Used inside [data-surface="app"]. Inherits typography auto.
+   ───────────────────────────────────────────────────────── */
+
+
+/* ═══ WRAPPER ════════════════════════════════════════════ */
+.dt-wrap {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.dt-scroll {
+  overflow: auto;
+  max-width: 100%;
+  scrollbar-width: thin;
+  position: relative;
+}
+
+
+/* ═══ TOOLBAR ════════════════════════════════════════════ */
+.dt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg);
+  flex-wrap: wrap;
+  min-height: 48px;
+}
+
+.dt-toolbar-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.dt-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.dt-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 28px;
+  background: var(--bg-2);
+  border: 1px solid transparent;
+  border-radius: var(--input-radius, 6px);
+  font: var(--type-body-sm);
+  color: var(--fg-3);
+  min-width: 240px;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.dt-search:focus-within {
+  border-color: var(--brand);
+  background: var(--bg);
+  color: var(--fg-1);
+  box-shadow: var(--focus-ring);
+}
+
+.dt-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+}
+
+.dt-search svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--fg-3);
+}
+
+.dt-count {
+  font: var(--type-caption);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.dt-count strong {
+  color: var(--fg-1);
+  font-weight: 600;
+}
+
+
+/* ═══ DENSITY SWITCH ═════════════════════════════════════ */
+.dt-density-btns {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  background: var(--bg-2);
+}
+
+.dt-density-btn {
+  width: 26px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--fg-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.dt-density-btn:hover {
+  color: var(--fg-1);
+}
+
+.dt-density-btn[data-active="true"] {
+  background: var(--bg);
+  color: var(--brand);
+  box-shadow: var(--shadow-sm);
+}
+
+.dt-density-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+
+/* ═══ TABLE ══════════════════════════════════════════════ */
+.dt {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font: var(--type-body);
+  color: var(--fg-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Head */
+.dt thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-2);
+  font: var(--type-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.dt thead th.num {
+  text-align: right;
+}
+
+.dt thead th.center {
+  text-align: center;
+}
+
+/* Sortable header */
+.dt thead th[data-sortable="true"] {
+  cursor: pointer;
+  padding-right: 24px;
+  position: relative;
+}
+
+.dt thead th[data-sortable="true"]::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border: 4px solid transparent;
+  border-top-color: var(--border-hover);
+  transform: translateY(-2px);
+  opacity: 0;
+  transition: opacity var(--dur-fast);
+}
+
+.dt thead th[data-sortable="true"]:hover::after {
+  opacity: 1;
+}
+
+.dt thead th[data-sort="asc"]::after,
+.dt thead th[data-sort="desc"]::after {
+  opacity: 1;
+  border-top-color: var(--brand);
+}
+
+.dt thead th[data-sort="asc"]::after {
+  transform: translateY(-2px) rotate(180deg);
+}
+
+.dt thead th[data-sortable="true"]:hover {
+  color: var(--fg-1);
+}
+
+/* Body cells */
+.dt tbody td {
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+  height: var(--row-h, 44px);
+  background: var(--bg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.dt tbody td.num {
+  text-align: right;
+}
+
+.dt tbody td.center {
+  text-align: center;
+}
+
+.dt tbody td.wrap {
+  white-space: normal;
+  max-width: none;
+}
+
+.dt tbody tr:hover td {
+  background: var(--bg-2);
+}
+
+.dt tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Selected row */
+.dt tbody tr[data-selected="true"] td {
+  background: var(--iris-tint);
+}
+
+.dt tbody tr[data-selected="true"]:hover td {
+  background: rgba(124, 108, 245, 0.16);
+}
+
+/* Density tiers */
+.dt[data-density="compact"] {
+  --row-h: var(--row-compact, 32px);
+}
+
+.dt[data-density="cozy"] {
+  --row-h: var(--row-cozy, 44px);
+}
+
+.dt[data-density="spacious"] {
+  --row-h: var(--row-spacious, 56px);
+}
+
+.dt[data-density="compact"] tbody td {
+  font: var(--type-body-sm);
+  padding: 0 10px;
+}
+
+.dt[data-density="spacious"] tbody td {
+  padding: 0 14px;
+}
+
+/* Frozen left column (e.g., checkbox + name) */
+.dt .freeze {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--bg);
+}
+
+.dt thead .freeze {
+  z-index: 3;
+  background: var(--bg-2);
+}
+
+.dt tbody tr:hover .freeze {
+  background: var(--bg-2);
+}
+
+.dt tbody tr[data-selected="true"] .freeze {
+  background: var(--iris-tint);
+}
+
+/* Two frozen cols, second shifted right of first (set --freeze-2-left manually) */
+.dt .freeze-2 {
+  position: sticky;
+  left: var(--freeze-2-left, 40px);
+  z-index: 1;
+  background: var(--bg);
+}
+
+.dt thead .freeze-2 {
+  z-index: 3;
+  background: var(--bg-2);
+}
+
+.dt tbody tr:hover .freeze-2 {
+  background: var(--bg-2);
+}
+
+/* Subtle right border on last frozen col when scrolled */
+.dt .freeze-last {
+  box-shadow: inset -1px 0 0 var(--border);
+}
+
+
+/* ═══ CHECKBOX CELL ══════════════════════════════════════ */
+.dt .dt-check {
+  width: 40px;
+  padding: 0 0 0 14px;
+  text-align: left;
+}
+
+.dt .dt-check .checkbox {
+  gap: 0;
+  min-height: 0;
+}
+
+.dt .dt-check .checkbox-box {
+  margin-top: 0;
+}
+
+
+/* ═══ ROW ACTIONS (hover reveal) ═════════════════════════ */
+.dt-actions {
+  display: inline-flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+}
+
+.dt tbody tr:hover .dt-actions,
+.dt tbody tr:focus-within .dt-actions {
+  opacity: 1;
+}
+
+.dt-actions .btn {
+  height: 24px;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.dt-actions .btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+
+/* ═══ INLINE-EDIT CELL ═══════════════════════════════════ */
+.dt-edit-cell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  cursor: text;
+}
+
+.dt-edit-cell .value {
+  display: block;
+  width: 100%;
+}
+
+.dt-edit-cell .pencil {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  color: var(--fg-3);
+  font-size: 11px;
+}
+
+.dt tbody tr:hover .dt-edit-cell .pencil {
+  opacity: 1;
+}
+
+.dt-edit-cell input.dt-edit-input {
+  position: absolute;
+  inset: -1px -8px;
+  width: calc(100% + 16px);
+  height: calc(100% + 2px);
+  padding: 0 8px;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  background: var(--bg);
+  color: var(--fg-1);
+  outline: none;
+  box-shadow: var(--focus-ring);
+  z-index: 4;
+}
+
+/* Dirty indicator (cell is unsaved) */
+.dt-edit-cell[data-dirty="true"]::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+
+/* ═══ BULK-ACTION BAR ════════════════════════════════════ */
+.dt-bulk-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--brand);
+  color: #fff;
+  border-radius: var(--radius);
+  margin: 0;
+  box-shadow: var(--shadow-md);
+  font: var(--type-body-sm);
+}
+
+.dt-bulk-bar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dt-bulk-bar-info .count {
+  font: 700 14px/1 var(--font-brand);
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dt-bulk-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dt-bulk-bar .btn {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: transparent;
+  color: #fff;
+}
+
+.dt-bulk-bar .btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.dt-bulk-bar .btn-danger {
+  background: var(--gap);
+  border-color: transparent;
+}
+
+
+/* ═══ PAGINATION ═════════════════════════════════════════ */
+.dt-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg);
+  font: var(--type-body-sm);
+  color: var(--fg-3);
+  flex-wrap: wrap;
+}
+
+.dt-foot .info {
+  font-variant-numeric: tabular-nums;
+}
+
+.dt-foot .info strong {
+  color: var(--fg-1);
+  font-weight: 600;
+}
+
+.dt-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dt-page {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--fg-2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 12px/1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.dt-page:hover {
+  background: var(--bg-2);
+  color: var(--fg-1);
+}
+
+.dt-page[aria-current="page"],
+.dt-page[data-active="true"] {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.dt-page:disabled,
+.dt-page[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dt-page svg {
+  width: 12px;
+  height: 12px;
+}
+
+.dt-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--type-body-sm);
+  color: var(--fg-3);
+}
+
+.dt-page-size .select {
+  height: 26px;
+  font-size: 12.5px;
+  padding-inline: 8px;
+  padding-right: 24px;
+  min-width: 0;
+  width: auto;
+}
+
+
+/* ═══ TABLE-EMPTY STATE ══════════════════════════════════ */
+.dt-empty {
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--bg);
+  font: var(--type-body-sm);
+  color: var(--fg-3);
+}
+
+.dt-empty h4 {
+  font: var(--type-h4, var(--type-h3));
+  margin: 8px 0 4px;
+  color: var(--fg-1);
+}
+
+.dt-empty p {
+  margin: 0;
+}
+
+
+/* ═══ COMPACT ROW VARIANT (no padding wrappers) ══════════ */
+.dt-row-compact .meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dt-row-compact .meta .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dt-row-compact .sub {
+  display: block;
+  font: var(--type-caption);
+  color: var(--fg-3);
+  margin-top: -2px;
+}
