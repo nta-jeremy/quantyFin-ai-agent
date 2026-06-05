@@ -22,8 +22,15 @@ updated: 2026-06-04
 
 ### 3.1. Pipeline Thu thập Dữ liệu (Data Ingestion)
 - **FR-1: Thu thập Dữ liệu Giá & Chỉ số:** Tự động lấy dữ liệu giao dịch hàng ngày (OHLCV), chỉ báo kỹ thuật cơ bản từ thư viện `vn-stock` và các API miễn phí khác.
-- **FR-2: Thu thập Tin tức (News Scraping):** Tự động "cào" và làm sạch tin tức từ các báo tài chính chính thống.
-  - `[ASSUMPTION: Ban đầu sẽ giới hạn ở 3-5 nguồn uy tín như CafeF, Vietstock, NDH, v.v để đảm bảo chất lượng]`
+- **FR-2: Thu thập Tin tức (News Scraping):** Tự động "cào" và làm sạch tin tức từ các báo tài chính và tin tức chính thống có hỗ trợ RSS hoặc cào trực tiếp:
+  - Các nguồn cào trực tiếp hoặc RSS bổ sung:
+    1. **CafeF** (Cào trực tiếp chuyên mục chứng khoán/tài chính vĩ mô)
+    2. **NDH** (Cào trực tiếp)
+    3. **VnEconomy** (Hỗ trợ RSS: `https://vneconomy.vn/rss/chung-khoan.rss`)
+    4. **Vietstock** (Hỗ trợ RSS: `https://vietstock.vn/rss/chung-khoan.rss`)
+    5. **Báo Tuổi Trẻ** (Hỗ trợ RSS Kinh doanh: `https://tuoitre.vn/rss/kinh-doanh.rss`)
+    6. **Báo Thanh Niên** (Hỗ trợ RSS Kinh tế: `https://thanhnien.vn/rss/kinh-te.rss`)
+    7. **VnBusiness** (Hỗ trợ RSS Chứng khoán: `https://vnbusiness.vn/rss/chung-khoan.rss`)
 - **FR-3: Lập lịch chạy tự động (Scheduling):** Pipeline thu thập tự động kích hoạt.
   - `[ASSUMPTION: Chạy batch 1 hoặc 2 lần/ngày (ví dụ sau giờ giao dịch 15:30) để tiết kiệm chi phí, thay vì chạy liên tục real-time]`
 

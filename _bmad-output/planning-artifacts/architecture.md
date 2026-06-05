@@ -370,7 +370,12 @@ quantyFin-ai/
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── base.py    # Lớp Base Scraper (mặc định timeout = 300s, log HTML lỗi)
 │   │   │   │   ├── vnexpress.py
-│   │   │   │   └── cafef.py
+│   │   │   │   ├── cafef.py
+│   │   │   │   ├── vneconomy.py
+│   │   │   │   ├── vietstock.py
+│   │   │   │   ├── tuoitre.py
+│   │   │   │   ├── thanhnien.py
+│   │   │   │   └── vnbusiness.py
 │   │   │   ├── stock_data.py  # vn-stock API wrapper
 │   │   │   ├── jobs.py        # Quản lý trạng thái phân tích ngầm (Background Tasks)
 │   │   │   └── neo4j_sync.py  # Sync rels & nodes từ Postgres sang Neo4j
