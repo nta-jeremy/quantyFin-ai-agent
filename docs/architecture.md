@@ -1,29 +1,132 @@
 # Tài liệu Kiến trúc Hệ thống (System Architecture)
 
-QuantyFin Frontend là giao diện ứng dụng web tương tác dành cho trợ lý đầu tư AI (QuantyFin AI Agent). Hệ thống cho phép nhà đầu tư theo dõi điểm cảm nhận thị trường vĩ mô (AI sentiment analysis), khám phá mối quan hệ liên đới giữa các sự kiện và mã cổ phiếu thông qua Đồ thị Tri thức (Knowledge Graph), giám sát tiến độ thu thập tin tức của các AI Agents (RSS, Playwright), và tương tác trực tiếp với Trợ lý ảo qua khung Chat.
+QuantyFin là hệ thống trợ lý ảo thông minh hỗ trợ đầu tư tài chính, kết hợp phân tích cảm nhận tin tức bằng AI và mô hình hóa Đồ thị Tri thức (Knowledge Graph). Hệ thống gồm Backend API (FastAPI + PostgreSQL + Neo4j) và Frontend SPA (React 19 + TypeScript).
+
+---
 
 ## 1. Tổng quan Kiến trúc (Executive Summary)
 
-* **Loại kiến trúc:** Single Page Application (SPA) phát triển trên nền tảng React 19.
-* **Mô hình kiến trúc:** Component-based Architecture (Kiến trúc hướng thành phần) kết hợp mô hình luồng dữ liệu một chiều (Unidirectional Data Flow) của React.
-* **Cơ chế trạng thái:** Trạng thái giao diện, định tuyến màn hình, và kịch bản dữ liệu được quản lý tập trung ở Root Component (`App.tsx`), truyền xuống các Component con qua `props` hoặc lưu trữ phiên ở `localStorage`.
-* **Cơ chế mô phỏng dữ liệu (Data Engine):** Sử dụng công cụ mô phỏng toán học cục bộ để tạo biến động giá và tin tức theo 4 kịch bản thị trường chính (`up`, `down`, `volatile`, `crisis`).
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (React 19 SPA)                   │
+│              Vite + TypeScript (strict mode)                 │
+│              Port: 3000 (Docker) / 5173 (dev)               │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ HTTP/REST (JSON)
+                           │ CORS: specific origins only
+                           │ Security headers on all responses
+┌──────────────────────────▼──────────────────────────────────┐
+│                  Backend (FastAPI)                            │
+│              Rate limiting (slowapi)                          │
+│              Secret validation at startup                     │
+│              Port: 8000                                      │
+├─────────────────┬───────────────────────────────────────────┤
+│  PostgreSQL 15  │  Neo4j 5 Community                        │
+│  (port 5432)    │  (ports 7474, 7687)                       │
+└─────────────────┴───────────────────────────────────────────┘
+```
 
-## 2. Công nghệ Sử dụng (Technology Stack)
+* **Kiến trúc:** Client-Server với REST API
+* **Frontend:** Single Page Application (SPA) — Component-based, unidirectional data flow
+* **Backend:** FastAPI (async Python) với structured exception handling và security middleware
+* **Databases:** PostgreSQL (dữ liệu quan hệ) + Neo4j (Knowledge Graph)
 
-Hệ thống sử dụng các công nghệ hiện đại, tối giản và hiệu năng cao:
+---
+
+## 2. Backend Architecture
+
+### 2.1 Công nghệ
 
 | Thành phần | Công nghệ | Phiên bản | Vai trò |
-| :--- | :--- | :---: | :--- |
-| **Ngôn ngữ** | TypeScript | ~6.0.2 | Đảm bảo an toàn kiểu dữ liệu và nâng cao trải nghiệm lập trình |
-| **Thư viện chính** | React | ^19.2.6 | Xây dựng giao diện hướng thành phần, cập nhật DOM hiệu quả |
-| **Công cụ Build** | Vite | ^8.0.12 | Trình đóng gói (bundler) siêu tốc phục vụ phát triển và build |
-| **CSS Styling** | Vanilla CSS | N/A | Thiết kế giao diện đặc thù không dùng framework cồng kềnh |
-| **Mã nguồn Linter**| ESLint | ^10.3.0 | Đảm bảo tính đồng nhất và chất lượng mã nguồn |
+|:---|:---|:---:|:---|
+| **Framework** | FastAPI | >=0.136.3 | REST API server (async) |
+| **ORM** | SQLModel | >=0.0.38 | PostgreSQL interaction |
+| **Graph DB Driver** | neo4j | >=6.2.0 | Neo4j Bolt connection |
+| **Validation** | pydantic-settings | >=2.14.1 | Environment config validation |
+| **Rate Limiting** | slowapi | >=0.1.9 | Request rate limiting |
+| **Server** | uvicorn | >=0.49.0 | ASGI server |
 
-## 3. Kiến trúc Luồng Giao diện & Định tuyến (UI Layout & Routing)
+### 2.2 Cấu trúc thư mục Backend
 
-Kiến trúc vỏ ứng dụng (App Shell) bao gồm các khối chính:
+```
+backend/
+├── app/
+│   ├── main.py              # App entry, middleware, routes
+│   ├── core/
+│   │   ├── config.py        # Settings + secret validation
+│   │   ├── db.py            # PostgreSQL session
+│   │   ├── neo4j.py         # Neo4j driver manager
+│   │   ├── exceptions.py    # Exception hierarchy
+│   │   └── logging.py       # Structured logging + trace IDs
+│   └── api/v1/              # API route modules
+├── tests/
+│   ├── test_main.py         # Endpoint tests
+│   └── test_security.py     # Security configuration tests
+└── pyproject.toml           # Dependencies (uv)
+```
+
+### 2.3 Security Architecture
+
+**Startup Validation** (`config.py`):
+- `model_validator` kiểm tra `POSTGRES_PASSWORD`, `NEO4J_PASSWORD`, `SECRET_KEY`
+- Raise `ValueError` nếu bất kỳ biến nào trống → app từ chối khởi động
+
+**Middleware Stack** (thứ tự thực thi):
+1. **Security Headers** — Inject 6 headers bảo mật vào mọi response
+2. **Trace ID** — Gán `X-Trace-Id` cho request tracking/logging
+3. **CORS** — Chỉ định origin cụ thể (không wildcard)
+
+**Exception Handling**:
+- `BaseAppException` → Structured error response (code, message, details)
+- Generic `Exception` → Generic message, **không để lộ** internal details
+- Tất cả exceptions kèm `trace_id` trong response metadata
+
+**Rate Limiting** (slowapi):
+- Key: `get_remote_address` (IP-based)
+- `GET /`: 60/minute
+- `GET /health`: 30/minute
+
+### 2.4 API Endpoints
+
+| Method | Path | Rate Limit | Mô tả |
+|:---:|:---|:---|:---|
+| GET | `/` | 60/min | Welcome message + version |
+| GET | `/health` | 30/min | Health check (PostgreSQL + Neo4j connectivity) |
+| GET | `/api/v1/docs` | — | Swagger UI |
+| GET | `/api/v1/redoc` | — | ReDoc |
+| GET | `/api/v1/openapi.json` | — | OpenAPI schema |
+
+---
+
+## 3. Frontend Architecture
+
+### 3.1 Công nghệ
+
+| Thành phần | Công nghệ | Phiên bản | Vai trò |
+|:---|:---|:---:|:---|
+| **Ngôn ngữ** | TypeScript | ~6.0 | `strict: true` — an toàn kiểu tối đa |
+| **Thư viện UI** | React | ^19.2.6 | Component-based, unidirectional data flow |
+| **Build Tool** | Vite | ^8.0.12 | Dev server + bundler |
+| **UI Components** | shadcn/ui | — | Component library (tại `src/components/ui/`) |
+| **Linter** | ESLint | ^10.3.0 | Code quality |
+
+### 3.2 Cấu trúc thư mục Frontend
+
+```
+frontend/
+├── src/
+│   ├── main.tsx              # Entry point
+│   ├── App.tsx               # Root component + routing
+│   ├── components/
+│   │   └── ui/               # shadcn/ui components
+│   ├── lib/
+│   │   └── mockData.ts       # Data simulation engine
+│   └── screens/              # Screen components
+├── tsconfig.json             # TypeScript strict mode
+└── package.json
+```
+
+### 3.3 UI Layout & Routing
 
 ```
 +-------------------------------------------------------------+
@@ -32,39 +135,52 @@ Kiến trúc vỏ ứng dụng (App Shell) bao gồm các khối chính:
 |                   | App Main (Vùng nội dung thay đổi)        |
 |                   |                                         |
 | SideRail          | * Dashboard: Tổng quan thị trường       |
-| (Thanh điều hướng | * KG: Trình xem Đồ thị Tri thức         |
+| (Thanh điều hướng | * KG: Đồ thị Tri thức                   |
 |  trái)            | * Stock: Chi tiết mã cổ phiếu           |
 |                   | * News: Tin tức tổng hợp                |
-|                   | * Chat: Khung tương tác AI Agent        |
-|                   | * Alerts: Nhật ký cảnh báo bất thường    |
-|                   | * Jobs: Quản lý crawler thu thập tin    |
-|                   | * Settings: Cài đặt hệ thống            |
+|                   | * Chat: Tương tác AI Agent              |
+|                   | * Alerts: Cảnh báo bất thường            |
+|                   | * Jobs: Quản lý crawler                 |
+|                   | * Settings: Cài đặt                     |
 +-------------------+-----------------------------------------+
-| TweaksPanel (Bảng cấu hình giả lập kịch bản chạy ẩn góc dưới)|
-+-------------------------------------------------------------+
 ```
 
-* **Cơ chế chuyển trang (Client-side Routing):** Thay vì sử dụng thư viện ngoài, hệ thống dùng biến trạng thái `screen` trong `App.tsx` làm bộ định tuyến nội bộ giúp tối giản kích thước gói bundle.
-* **Bảng điều khiển chạy thử (Tweaks Panel):** Đóng vai trò là công cụ kiểm thử nhanh giao diện bằng cách cho phép thay đổi tức thì chủ đề (`theme: light/dark`), bật tắt các chỉ số tin cậy AI, hoặc chuyển đổi kịch bản thị trường để kiểm tra phản ứng của đồ thị tri thức và tin tức.
+* **Routing:** Client-side qua biến trạng thái `screen` trong `App.tsx` (không dùng react-router)
+* **Data Engine:** `buildData(scenario)` sinh dữ liệu giả lập với 4 kịch bản: `up`, `down`, `volatile`, `crisis`
 
-## 4. Kiến trúc Dữ liệu & Đồ thị Tri thức (Data & Knowledge Graph Architecture)
+### 3.4 Knowledge Graph
 
-* **Bộ sinh dữ liệu (Generator):** Hàm `buildData(scenario)` khởi tạo toàn bộ trạng thái Dashboard dựa vào cơ chế sinh ngẫu nhiên có hạt giống (`seedRand`) tương ứng với từng mã cổ phiếu, đảm bảo tính nhất quán của chuỗi giá lịch sử qua mỗi phiên chạy.
-* **Cơ chế Đồ thị Tri thức (Knowledge Graph):** 
-  * Định nghĩa cấu trúc nút (`KGNode`) bao gồm các loại: `Event`, `Sector`, `Stock`, `Leader`, `Macro`, `Company`.
-  * Liên kết giữa các thực thể thông qua cạnh (`KGEdge`) với các mối quan hệ ngữ nghĩa như: `BELONGS_TO`, `IMPACTS_POS`, `IMPACTS_NEG`, `REDUCES`, `MANAGES`.
-  * Giao diện `KGViewer.tsx` chịu trách nhiệm diễn giải cấu trúc này thành đồ thị tương tác dạng lực hướng tâm (Force-directed graph) hoặc sơ đồ mạng lưới trực quan.
+* **Node types:** `Event`, `Sector`, `Stock`, `Leader`, `Macro`, `Company`
+* **Edge types:** `BELONGS_TO`, `IMPACTS_POS`, `IMPACTS_NEG`, `REDUCES`, `MANAGES`
+* **Visualization:** Force-directed graph (KGViewer)
 
-## 5. Quản lý Giao diện (UI Components & Design System)
+---
 
-Hệ thống giao diện sử dụng thiết kế tinh tế với bảng màu độc quyền HSL dark-mode và typography từ font **Be Vietnam Pro** (được lưu trữ tại [DesignSystem](file:///Users/tunganh252/Desktop/Projects/Finance/quantyFin-ai-agent/docs/design_ui_ux/DesignSystem)):
+## 4. Infrastructure
 
-* **SharedUI.tsx:** Định nghĩa `<SideRail />` và `<Topbar />`.
-* **ScreenComponents.tsx:** Gói tất cả các màn hình chức năng dưới dạng không gian tên `<Screens />` nâng cao khả năng quản lý và import mã nguồn.
-* **Hệ thống CSS Modular:** Phân tách rõ ràng giữa cấu hình cốt lõi (`colors_and_type.css`), định kiểu ứng dụng chung (`app_kit.css`), các thành phần AI đặc thù (`ai_kit.css`), và phong cách riêng dự án (`project_styles.css`).
+### 4.1 Docker Compose
 
-## 6. Chiến lược Kiểm thử & Đảm bảo Chất lượng (Testing Strategy)
+4 services trong network `quantyfin-net`:
 
-* **Phân tích Tĩnh (Static Analysis):** Sử dụng ESLint kết hợp kiểm tra kiểu TypeScript (`tsc -b`) để bắt lỗi ngay trong quá trình viết mã.
-* **Kiểm thử Thủ công (Manual Testing Verification):** Sử dụng thanh cấu hình `QuantyFin Tweaks` để kiểm tra trực quan các trạng thái giao diện khi thay đổi kịch bản dữ liệu (ví dụ: màn hình sẽ hiển thị cảnh báo nghiêm trọng màu đỏ khi chọn kịch bản `crisis`).
-* **Handoff kiểm thử tự động:** Các thuộc tính HTML class/id được thiết kế rõ ràng giúp dễ dàng cấu hình bộ công cụ kiểm thử E2E (như Playwright hoặc Cypress) trong tương lai.
+| Service | Image | Health Check |
+|:---|:---|:---|
+| `db` | `postgres:15-alpine` | `pg_isready` (5s interval) |
+| `neo4j` | `neo4j:5-community` | `cypher-shell RETURN 1` (10s interval) |
+| `backend` | Custom (backend.Dockerfile) | Depends on db + neo4j healthy |
+| `frontend` | Custom (frontend.Dockerfile) | Depends on backend |
+
+### 4.2 Environment Configuration
+
+Secrets quản lý qua `.env` file (không commit lên git):
+- `POSTGRES_PASSWORD`, `NEO4J_PASSWORD`, `SECRET_KEY`: Bắt buộc, validated at startup
+- `CORS_ORIGINS`: JSON array của allowed origins
+- Xem đầy đủ tại [.env.example](../.env.example)
+
+### 4.3 Testing
+
+| Loại | Framework | Location |
+|:---|:---|:---|
+| Unit + Integration | pytest + httpx | `backend/tests/` |
+| Security tests | pytest | `backend/tests/test_security.py` |
+| TypeScript check | `tsc -b` | Frontend build step |
+| Linting | ESLint | Frontend `npm run lint` |

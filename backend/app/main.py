@@ -1,16 +1,109 @@
 import uuid
+import asyncio
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from sqlmodel import Session, text
+from contextlib import asynccontextmanager
+from sqlmodel import Session, text, select, SQLModel
+from datetime import datetime, time, timedelta
 
 from app.core.config import settings
 from app.core.logging import trace_id_var, logger
 from app.core.exceptions import BaseAppException
-from app.core.db import get_session
+from app.core.db import get_session, engine
+from app.models.stock import StockTicker, StockPrice
+from app.services.stock_data import ingest_all_active_tickers
+
+
+def init_db():
+    try:
+        SQLModel.metadata.create_all(engine)
+        with Session(engine) as session:
+            initial_tickers = [
+                {"ticker": "VNINDEX", "name": "Chỉ số VN-Index", "market": "HOSE"},
+                {"ticker": "VIC", "name": "Tập đoàn Vingroup - CTCP", "market": "HOSE"},
+                {"ticker": "VNM", "name": "Công ty Cổ phần Sữa Việt Nam", "market": "HOSE"},
+                {"ticker": "FPT", "name": "Công ty Cổ phần FPT", "market": "HOSE"},
+            ]
+            for ticker_data in initial_tickers:
+                try:
+                    statement = select(StockTicker).where(StockTicker.ticker == ticker_data["ticker"])
+                    existing = session.exec(statement).first()
+                    if not existing:
+                        new_ticker = StockTicker(
+                            ticker=ticker_data["ticker"],
+                            name=ticker_data["name"],
+                            market=ticker_data["market"],
+                            is_active=True
+                        )
+                        session.add(new_ticker)
+                        session.commit()
+                except Exception as seed_err:
+                    session.rollback()
+                    logger.warning(f"Error seeding ticker {ticker_data['ticker']} (might already exist): {str(seed_err)}")
+            logger.info("Database initialized and initial stock tickers seeded successfully.")
+    except Exception as e:
+        logger.critical(f"Database initialization failed: {str(e)}")
+        raise e
+
+
+async def scheduled_crawler_task():
+    """
+    Background task that runs the crawler every day at 22:00 (AC 1).
+    """
+    logger.info("Starting background scheduled crawler task.")
+    while True:
+        try:
+            now = datetime.now()
+            # Target time is 22:00 today
+            target_time = datetime.combine(now.date(), time(22, 0, 0))
+            if now >= target_time:
+                # If 22:00 has passed today, target tomorrow
+                target_time += timedelta(days=1)
+                
+            sleep_seconds = (target_time - now).total_seconds()
+            logger.info(f"Scheduled crawler: next run at {target_time.isoformat()} (sleeping for {sleep_seconds:.1f}s)")
+            await asyncio.sleep(sleep_seconds)
+            
+            # Trigger ingestion
+            logger.info("Triggering automatic daily stock data ingestion...")
+            with Session(engine) as session:
+                ingest_all_active_tickers(session)
+            logger.info("Automatic daily stock data ingestion completed successfully.")
+            
+            # Wait at least 60 seconds before next loop to avoid double-triggering
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            logger.info("Background scheduled crawler task cancelled.")
+            break
+        except Exception as e:
+            logger.error(f"Error in background scheduled crawler task: {str(e)}")
+            # Sleep 5 minutes before retrying on general errors
+            await asyncio.sleep(300)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    # Start background scheduler task
+    scheduler_task = asyncio.create_task(scheduled_crawler_task())
+    yield
+    # Shutdown / clean up
+    scheduler_task.cancel()
+    try:
+        await scheduler_task
+    except asyncio.CancelledError:
+        pass
+        
+    try:
+        from app.core.neo4j import neo4j_manager
+        neo4j_manager.close()
+        logger.info("Neo4j driver closed successfully on shutdown.")
+    except Exception as e:
+        logger.error(f"Error closing Neo4j driver on shutdown: {str(e)}")
 
 
 limiter = Limiter(key_func=get_remote_address)
@@ -19,8 +112,12 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url="/api/v1/openapi.json",
     docs_url="/api/v1/docs",
-    redoc_url="/api/v1/redoc"
+    redoc_url="/api/v1/redoc",
+    lifespan=lifespan
 )
+
+from app.api.v1.stocks import router as stocks_router
+app.include_router(stocks_router, prefix="/api/v1/stocks", tags=["stocks"])
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -41,7 +138,9 @@ async def security_headers_middleware(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    # Allow Swagger UI/ReDoc to load assets by exempting their paths from default-src 'self'
+    if not any(request.url.path.startswith(p) for p in ["/api/v1/docs", "/api/v1/redoc", "/api/v1/openapi.json"]):
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
     response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -115,7 +214,7 @@ async def root(request: Request):
 
 @app.get("/health")
 @limiter.limit("30/minute")
-async def health_check(request: Request, session: Session = Depends(get_session)):
+def health_check(request: Request, session: Session = Depends(get_session)):
     health_status = {
         "status": "healthy",
         "postgres": "unknown",

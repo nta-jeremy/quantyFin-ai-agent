@@ -10,6 +10,21 @@ dist/
 logs/
 *.log
 
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.python-version
+
+# Node
+node_modules/
+dist/
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+
 # Editor
 .vscode/
 .idea/
@@ -26,5 +41,7 @@ Thumbs.db
 .claude
 .opencode
 
+plans/*
 
-# sample codes
+
+_bmad-output/

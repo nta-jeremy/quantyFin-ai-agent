@@ -1,43 +1,120 @@
 # Hướng dẫn Phát triển và Vận hành (Development & Operations Guide)
 
-Tài liệu này cung cấp các hướng dẫn chi tiết để thiết lập môi trường phát triển cục bộ (local development), biên dịch và kiểm tra chất lượng mã nguồn cho dự án QuantyFin Frontend.
+Tài liệu này cung cấp các hướng dẫn chi tiết để thiết lập môi trường phát triển cục bộ (local development), biên dịch và kiểm tra chất lượng mã nguồn cho dự án QuantyFin.
 
-## 1. Yêu cầu Hệ thống (Prerequisites)
+---
 
-* **Node.js:** Phiên bản LTS mới nhất (khuyến nghị v18 hoặc v20+).
-* **Nền tảng quản lý gói:** `npm` (đi kèm Node.js) hoặc `pnpm`/`yarn`.
-* **Trình duyệt Web:** Chrome, Edge, Safari hoặc Firefox phiên bản hiện đại hỗ trợ SVG Sprites và hiệu ứng CSS nâng cao.
+## 1. Backend (FastAPI)
 
-## 2. Thiết lập Môi trường cục bộ (Setup Instructions)
+### 1.1 Yêu cầu hệ thống
 
-Thực hiện các bước sau tại thư mục [docs/sample_src/frontend](file:///Users/tunganh252/Desktop/Projects/Finance/quantyFin-ai-agent/docs/sample_src/frontend):
+* **Python:** >= 3.11
+* **Trình quản lý gói:** [uv](https://github.com/astral-sh/uv) (khuyến nghị) hoặc pip
+* **Docker & Docker Compose:** Để chạy PostgreSQL và Neo4j
+
+### 1.2 Thiết lập môi trường
 
 ```bash
-# 1. Di chuyển vào thư mục mã nguồn frontend
-cd docs/sample_src/frontend
+# 1. Sao chép tệp cấu hình môi trường
+cp .env.example .env
+
+# 2. Chỉnh sửa .env — BẮT BUỘC đặt giá trị thực cho 3 biến secrets
+#    POSTGRES_PASSWORD, NEO4J_PASSWORD, SECRET_KEY
+#    Ứng dụng sẽ KHÔNG khởi động nếu bất kỳ biến nào ở trên bị bỏ trống.
+
+# 3. Khởi chạy cơ sở dữ liệu
+docker compose up -d db neo4j
+
+# 4. Cài đặt dependencies và chạy backend
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+### 1.3 Biến môi trường bắt buộc
+
+| Biến | Mô tả | Ví dụ |
+|:---|:---|:---|
+| `POSTGRES_PASSWORD` | Mật khẩu PostgreSQL | `my-secure-pg-password` |
+| `NEO4J_PASSWORD` | Mật khẩu Neo4j | `my-secure-neo4j-password` |
+| `SECRET_KEY` | Khóa bí mật ứng dụng (JWT, mã hóa) | `openssl rand -hex 32` |
+
+> **Lưu ý:** Các biến này có giá trị mặc định `changeme` trong `.env.example` và `docker-compose.yml` chỉ để phát triển cục bộ. **Không bao giờ** sử dụng giá trị mặc định trong production.
+
+Xem đầy đủ các biến tại [.env.example](../.env.example).
+
+### 1.4 Các lệnh phát triển Backend
+
+| Tác vụ | Câu lệnh | Mô tả |
+|:---|:---|:---|
+| Chạy dev server | `uv run uvicorn app.main:app --reload` | Khởi chạy tại `http://localhost:8000` với hot-reload |
+| API docs (Swagger) | `http://localhost:8000/api/v1/docs` | Tài liệu API tương tác |
+| API docs (ReDoc) | `http://localhost:8000/api/v1/redoc` | Tài liệu API dạng ReDoc |
+| Chạy tests | `uv run pytest` | Chạy toàn bộ test suite |
+| Chạy security tests | `uv run pytest tests/test_security.py` | Kiểm tra cấu hình bảo mật |
+
+### 1.5 Bảo mật Backend
+
+Các biện pháp bảo mật đã được triển khai:
+
+**Secret Validation:** Ứng dụng kiểm tra lúc khởi động — nếu `POSTGRES_PASSWORD`, `NEO4J_PASSWORD`, hoặc `SECRET_KEY` trống, ứng dụng sẽ raise lỗi và từ chối khởi động.
+
+**CORS:** Chỉ định origin cụ thể (`http://localhost:5173`), không sử dụng wildcard `*`. Cấu hình qua biến `CORS_ORIGINS`.
+
+**Security Headers:** Tất cả responses đều bao gồm:
+| Header | Giá trị |
+|:---|:---|
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `X-XSS-Protection` | `1; mode=block` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Content-Security-Policy` | `default-src 'self'` |
+| `Cache-Control` | `no-store` |
+
+**Rate Limiting** (qua `slowapi`):
+| Endpoint | Giới hạn |
+|:---|:---|
+| `GET /` | 60 requests/phút |
+| `GET /health` | 30 requests/phút |
+
+**Exception Handling:** Ngoại lệ không được xử lý trả về message chung chung, không để lộ thông tin nội bộ (stack trace, chi tiết database, v.v.).
+
+---
+
+## 2. Frontend (React + TypeScript)
+
+### 2.1 Yêu cầu hệ thống
+
+* **Node.js:** Phiên bản LTS (v18 hoặc v20+)
+* **Nền tảng quản lý gói:** `npm` (hoặc `pnpm`/`yarn`)
+
+### 2.2 Thiết lập môi trường
+
+```bash
+# 1. Di chuyển vào thư mục frontend
+cd frontend
 
 # 2. Cài đặt các gói thư viện phụ thuộc
 npm install
+
+# 3. Khởi chạy dev server
+npm run dev
 ```
 
-## 3. Các lệnh phát triển chính (Development Commands)
+### 2.3 Các lệnh phát triển Frontend
 
 | Tác vụ | Câu lệnh | Công cụ | Mô tả |
 | :--- | :--- | :---: | :--- |
-| **Chạy Local Dev Server** | `npm run dev` | Vite 8 | Khởi chạy máy chủ phát triển tại `http://localhost:5173/` với HMR (Hot Module Replacement) |
-| **Kiểm tra mã nguồn (Linter)** | `npm run lint` | ESLint 10 | Kiểm tra các quy chuẩn viết mã (coding conventions) và phát hiện lỗi cú pháp tĩnh |
-| **Biên dịch dự án (Build)** | `npm run build` | TSC + Vite | Kiểm tra kiểu dữ liệu TypeScript tĩnh (`tsc -b`) và đóng gói mã nguồn cho Production (`vite build`) |
-| **Xem trước bản Build** | `npm run preview` | Vite 8 | Chạy máy chủ cục bộ để xem trước bản build đã tối ưu hóa tại cổng `http://localhost:4173/` |
+| **Chạy Local Dev Server** | `npm run dev` | Vite | Khởi chạy tại `http://localhost:5173/` với HMR |
+| **Kiểm tra mã nguồn** | `npm run lint` | ESLint | Kiểm tra coding conventions và phát hiện lỗi |
+| **Biên dịch dự án** | `npm run build` | TSC + Vite | Kiểm tra kiểu dữ liệu (`tsc -b`) và đóng gói (`vite build`) |
+| **Xem trước bản Build** | `npm run preview` | Vite | Chạy server xem trước tại `http://localhost:4173/` |
 
-## 4. Cấu hình Môi trường (Environment Configuration)
+> **TypeScript:** Dự án sử dụng `strict: true` trong tsconfig để đảm bảo an toàn kiểu dữ liệu tối đa.
 
-Dự án hiện tại hoạt động độc lập ở phía Client với dữ liệu giả lập động và không yêu cầu tệp cấu hình `.env` cho môi trường cục bộ. 
+### 2.4 Cấu hình môi trường Frontend
 
-Khi kết nối với API Backend trong tương lai, cần bổ sung tệp `.env` tại thư mục gốc của frontend với biến cấu hình:
+Khi kết nối với API Backend, tạo tệp `.env` tại thư mục `frontend/`:
 ```env
-VITE_API_BASE_URL=http://localhost:8080/api/v1
+VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
-
-## 5. Quy trình Đóng gói & Vận hành (CI/CD & Deployment)
-
-Hiện tại dự án chưa cấu hình các đường ống tích hợp và triển khai tự động (CI/CD pipelines) như GitHub Workflows hay GitLab CI trong thư mục cục bộ này. Bản build đầu ra nằm tại thư mục `dist/` có thể được triển khai tĩnh lên các nền tảng Hostings tĩnh như Vercel, Netlify hoặc Cloudflare Pages bằng cách trỏ đường dẫn tới thư mục `docs/sample_src/frontend/dist`.

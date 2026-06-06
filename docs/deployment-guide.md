@@ -1,54 +1,135 @@
 # Hướng dẫn Triển khai (Deployment Guide)
 
-Tài liệu này hướng dẫn cách đóng gói và triển khai ứng dụng QuantyFin Frontend lên các môi trường lưu trữ sản xuất (production hosting). Vì đây là một ứng dụng Single Page Application (SPA) xây dựng bằng Vite, sản phẩm đầu ra sau khi biên dịch là các tệp tĩnh (HTML, JS, CSS) hoàn toàn có thể chạy độc lập.
+Tài liệu này hướng dẫn đóng gói và triển khai ứng dụng QuantyFin (Backend + Frontend + Databases) lên môi trường production.
 
-## 1. Biên dịch và Đóng gói (Build Package)
+---
 
-Trước khi triển khai, bạn cần chạy lệnh biên dịch trên môi trường phát triển hoặc trong máy chủ CI:
+## 1. Triển khai Full-stack với Docker Compose
+
+### 1.1 Cấu hình môi trường (BẮT BUỘC)
+
+Trước khi deploy, tạo file `.env` từ template và **đặt giá trị thực** cho các biến secrets:
 
 ```bash
-# Di chuyển vào thư mục dự án
-cd docs/sample_src/frontend
+cp .env.example .env
+```
 
-# Thực hiện biên dịch tối ưu hóa
+| Biến | Bắt buộc | Mô tả | Cách tạo giá trị |
+|:---|:---:|:---|:---|
+| `POSTGRES_PASSWORD` | ✅ | Mật khẩu PostgreSQL | `openssl rand -base64 32` |
+| `NEO4J_PASSWORD` | ✅ | Mật khẩu Neo4j | `openssl rand -base64 32` |
+| `SECRET_KEY` | ✅ | Khóa bí mật ứng dụng | `openssl rand -hex 32` |
+| `CORS_ORIGINS` | Production | Danh sách origin được phép (JSON array) | `["https://yourdomain.com"]` |
+
+> **Cảnh báo:** `docker-compose.yml` sử dụng giá trị mặc định `changeme` cho passwords chỉ để phát triển cục bộ. Trong production, **bắt buộc** override qua `.env` hoặc environment variables.
+
+### 1.2 Khởi chạy
+
+```bash
+# Build và start toàn bộ services
+docker compose up -d
+
+# Kiểm tra trạng thái
+docker compose ps
+
+# Xem logs
+docker compose logs -f backend
+```
+
+### 1.3 Ports
+
+| Service | Port | Mô tả |
+|:---|:---|:---|
+| Frontend | `3000` | Giao diện người dùng |
+| Backend API | `8000` | API server (FastAPI) |
+| PostgreSQL | `5432` | Database (chỉ expose trong dev) |
+| Neo4j HTTP | `7474` | Neo4j Browser |
+| Neo4j Bolt | `7687` | Neo4j connection |
+
+---
+
+## 2. Cấu hình Bảo mật (Security Configuration)
+
+### 2.1 Secret Validation
+
+Backend **từ chối khởi động** nếu bất kỳ biến nào sau đây trống:
+- `POSTGRES_PASSWORD`
+- `NEO4J_PASSWORD`
+- `SECRET_KEY`
+
+Kiểm tra tại: `backend/app/core/config.py` — `validate_secrets()` model validator.
+
+### 2.2 Security Headers
+
+Tất cả HTTP responses bao gồm các headers bảo mật:
+
+| Header | Giá trị | Mục đích |
+|:---|:---|:---|
+| `X-Content-Type-Options` | `nosniff` | Ngăn browser MIME-sniffing |
+| `X-Frame-Options` | `DENY` | Ngăn clickjacking |
+| `X-XSS-Protection` | `1; mode=block` | Kích hoạt XSS filter |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Kiểm soát referrer leakage |
+| `Content-Security-Policy` | `default-src 'self'` | Ngăn tải tài nguyên ngoài |
+| `Cache-Control` | `no-store` | Ngăn cache responses nhạy cảm |
+
+### 2.3 CORS
+
+CORS được cấu hình chỉ định origin cụ thể (không dùng wildcard `*`):
+- **Mặc định:** `["http://localhost:5173"]` (dev only)
+- **Production:** Đặt qua biến `CORS_ORIGINS` trong `.env`
+
+### 2.4 Rate Limiting
+
+Sử dụng `slowapi` để giới hạn request rate:
+
+| Endpoint | Limit |
+|:---|:---|
+| `GET /` | 60 requests/phút |
+| `GET /health` | 30 requests/phút |
+
+Khi vượt giới hạn, API trả về `429 Too Many Requests`.
+
+### 2.5 Exception Handling
+
+- **Application exceptions** (`BaseAppException`): Trả về message + error code có cấu trúc
+- **Unhandled exceptions**: Trả về message chung chung, **không để lộ** stack trace hoặc thông tin nội bộ
+
+---
+
+## 3. Triển khai Frontend riêng lẻ
+
+Vì Frontend là SPA (Single Page Application) xây dựng bằng Vite, có thể triển khai tĩnh riêng:
+
+### 3.1 Build
+
+```bash
+cd frontend
+npm install
 npm run build
 ```
 
-* **Kết quả đầu ra:** Toàn bộ mã nguồn đã được tối ưu hóa sẽ được xuất ra thư mục `docs/sample_src/frontend/dist/`.
-* **Cấu trúc bản build:**
-  * `index.html`: Điểm nhập ứng dụng đã được liên kết các bundle JS/CSS.
-  * `assets/`: Chứa các file javascript và css đã nén và chia nhỏ (code splitting).
-  * `favicon.svg` & `icons.svg`: Các tài nguyên tĩnh được sao chép trực tiếp.
+Output: `frontend/dist/`
 
-## 2. Các phương án triển khai chính (Deployment Options)
+### 3.2 Triển khai lên Vercel (Khuyến nghị)
 
-### Phương án A: Triển khai lên Vercel (Khuyến nghị)
-Vercel hỗ trợ cấu hình tự động rất tốt cho các dự án Vite.
+1. Tạo dự án trên [Vercel Dashboard](https://vercel.com)
+2. Cấu hình:
+   - **Framework Preset:** `Vite`
+   - **Root Directory:** `frontend`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
 
-1. Đăng nhập vào [Vercel Dashboard](https://vercel.com).
-2. Tạo dự án mới và liên kết với kho lưu trữ Git của bạn.
-3. Cấu hình cài đặt dự án (Project Settings):
-   * **Framework Preset:** Chọn `Vite`.
-   * **Root Directory:** Chọn `docs/sample_src/frontend`.
-   * **Build Command:** `npm run build`
-   * **Output Directory:** `dist`
-4. Bấm **Deploy**. Vercel sẽ tự động tải các gói phụ thuộc, biên dịch và cấp tên miền công khai.
+### 3.3 Triển khai lên Netlify
 
-### Phương án B: Triển khai lên Netlify
-1. Đăng nhập vào [Netlify](https://netlify.com).
-2. Tạo trang web mới từ kho Git.
-3. Thiết lập thông số build:
-   * **Base directory:** `docs/sample_src/frontend`
-   * **Build command:** `npm run build`
-   * **Publish directory:** `docs/sample_src/frontend/dist`
-4. Bấm **Deploy site**.
+1. Tạo site mới trên [Netlify](https://netlify.com)
+2. Cấu hình:
+   - **Base directory:** `frontend`
+   - **Build command:** `npm run build`
+   - **Publish directory:** `frontend/dist`
 
-### Phương án C: Triển khai lên Docker (Containerization)
-Nếu dự án cần được chạy trong môi trường Container của Kubernetes hoặc Docker Compose:
+### 3.4 Docker Container riêng
 
-1. Sử dụng tệp `Dockerfile` mẫu sau tại thư mục `docs/sample_src/frontend/`:
 ```dockerfile
-# Stage 1: Build ứng dụng
 FROM node:20-alpine AS build-stage
 WORKDIR /app
 COPY package*.json ./
@@ -56,30 +137,17 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Stage 2: Cấu hình Web Server Nginx để phục vụ file tĩnh
-FROM nginx:stable-alpine AS production-stage
+FROM nginx:stable-alpine
 COPY --from=build-stage /app/dist /usr/share/nginx/html
-# Bổ sung cấu hình Nginx để định tuyến SPA hoạt động bình thường
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-2. Tệp cấu hình Nginx tối thiểu (`nginx.conf`) để hỗ trợ React SPA Routing:
-```nginx
-server {
-    listen 80;
-    server_name localhost;
+---
 
-    location / {
-        root /usr/share/nginx/html;
-        index index.html index.htm;
-        try_files $uri $uri/ /index.html;
-    }
-}
-```
+## 4. SSL/TLS & DNS
 
-## 3. Cấu hình DNS và SSL
-Sau khi triển khai thành công lên các dịch vụ máy chủ tĩnh, cần:
-1. Trỏ bản ghi CNAME hoặc A của tên miền tùy chỉnh của bạn tới địa chỉ IP của nhà cung cấp dịch vụ Host.
-2. Kích hoạt chứng chỉ SSL/TLS miễn phí (thường được tự động cấp bởi Vercel/Netlify qua Let's Encrypt) để bảo vệ kết nối người dùng qua HTTPS.
+1. Trỏ bản ghi DNS (CNAME/A) tới server
+2. Kích hoạt SSL/TLS (Let's Encrypt tự động qua Vercel/Netlify, hoặc Certbot cho VPS)
+3. Trong production, đặt `CORS_ORIGINS` với `https://` origins

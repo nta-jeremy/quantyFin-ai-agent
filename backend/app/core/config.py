@@ -38,12 +38,26 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def DATABASE_URL(self) -> str:
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        import urllib.parse
+        password = urllib.parse.quote_plus(self.POSTGRES_PASSWORD)
+        return f"postgresql://{self.POSTGRES_USER}:{password}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         
     model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
+        env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )
 
-settings = Settings()
+try:
+    settings = Settings()
+except Exception as e:
+    import sys
+    is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "true" or os.getenv("GITHUB_ACTIONS") == "true"
+    if is_testing:
+        settings = Settings(
+            POSTGRES_PASSWORD="dummy_postgres_password",
+            NEO4J_PASSWORD="dummy_neo4j_password",
+            SECRET_KEY="dummy_secret_key"
+        )
+    else:
+        raise e

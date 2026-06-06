@@ -12,8 +12,21 @@ from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.core.db import get_session
 
+from sqlalchemy.pool import StaticPool
 # SQLite in-memory database engine for testing
-test_engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+test_engine = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
+)
+
+@pytest.fixture(autouse=True, scope="session")
+def mock_db_init_for_tests():
+    import app.main
+    def mock_init():
+        SQLModel.metadata.create_all(test_engine)
+    app.main.init_db = mock_init
+    yield
 
 @pytest.fixture(name="session", scope="function")
 def session_fixture() -> Generator[Session, None, None]:
