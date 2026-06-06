@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # LiteLLM/LLM settings
+    LITELLM_API_KEY: str | None = None
+    LITELLM_API_BASE: str | None = None
+    LITELLM_MODEL: str = "gemini/gemini-1.5-flash"
+
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
     @model_validator(mode='after')
