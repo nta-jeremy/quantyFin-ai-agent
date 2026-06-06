@@ -1,0 +1,1234 @@
+/* ─────────────────────────────────────────────────────────
+   QuantyFin Design System — Color & Type Tokens
+   v2026.06 · Pha 01 multi-surface architecture
+   Canonical reference: Replan.md (this project)
+   ─────────────────────────────────────────────────────────
+   Architecture (v3):
+     · Foundation tokens (brand, accent, status, font families,
+       motion, a11y) live in :root — universal across surfaces.
+     · Surface scale (type-size, gutter, container-max,
+       motion-budget, accent-freq) resolves through one of:
+         [data-surface="portal"]     ← default if omitted
+         [data-surface="marketing"]
+         [data-surface="app"]
+         [data-surface="store"]      ← scoped for v3.1
+     · Set the attribute on <body> or any container.
+
+   Color discipline:
+     · Iris  → AI/tech default · 90% of accent surface
+     · Gold  → climax · 1 moment / page max · achievement
+     · Mint  → growth · LIVE · prosperity
+     · Rose  → human · warm · ESG / people
+     · Brand → primary anchor · headlines · navy ink
+     · Crimson (--gap) → ALERT ONLY · not for governance
+
+   Type discipline (4 families — canonical, no others):
+     · Be Vietnam Pro → body default · brand chrome · VN-first (self-hosted)
+     · Montserrat     → impact display · headlines · numerals
+     · Playfair Italic → Hero ONLY (1 art moment / portal)
+     · JetBrains Mono → tags · code · technical metadata
+     · Motion tokens (semantic --motion-* aliases) are aliased
+       below so legacy preview files keep working.
+   ───────────────────────────────────────────────────────── */
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bfb12385-8d9a-42c2-9380-55a67122f64c") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("b2640e46-3ab2-431d-9bf9-8f0da1fb29f4") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6a1fc40f-4921-416e-a0c5-29e4833636ac") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("361aacf9-41c7-414b-9102-7384e7e15c3a") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("a395c8b6-89d1-4009-9157-0824cd63787e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("b808b844-29c0-4391-811e-fcddb087f1b1") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("bfb12385-8d9a-42c2-9380-55a67122f64c") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("b2640e46-3ab2-431d-9bf9-8f0da1fb29f4") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("6a1fc40f-4921-416e-a0c5-29e4833636ac") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("361aacf9-41c7-414b-9102-7384e7e15c3a") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("a395c8b6-89d1-4009-9157-0824cd63787e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("b808b844-29c0-4391-811e-fcddb087f1b1") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("bfb12385-8d9a-42c2-9380-55a67122f64c") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("b2640e46-3ab2-431d-9bf9-8f0da1fb29f4") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("6a1fc40f-4921-416e-a0c5-29e4833636ac") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("361aacf9-41c7-414b-9102-7384e7e15c3a") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("a395c8b6-89d1-4009-9157-0824cd63787e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("b808b844-29c0-4391-811e-fcddb087f1b1") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("bfb12385-8d9a-42c2-9380-55a67122f64c") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("b2640e46-3ab2-431d-9bf9-8f0da1fb29f4") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("6a1fc40f-4921-416e-a0c5-29e4833636ac") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("361aacf9-41c7-414b-9102-7384e7e15c3a") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("a395c8b6-89d1-4009-9157-0824cd63787e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("b808b844-29c0-4391-811e-fcddb087f1b1") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("85826aef-24b1-4549-8d59-0b9c5145d065") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("873ad66a-3b72-4f6f-b7d6-9a7da55a9f13") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("eb189553-e65d-4799-ab41-b9033d27fb06") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d352338c-2b28-4bea-8fc5-1422e5f457f2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("1eaef2b0-5e02-4e9b-9660-02990564ebce") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("85826aef-24b1-4549-8d59-0b9c5145d065") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("873ad66a-3b72-4f6f-b7d6-9a7da55a9f13") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("eb189553-e65d-4799-ab41-b9033d27fb06") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("d352338c-2b28-4bea-8fc5-1422e5f457f2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("1eaef2b0-5e02-4e9b-9660-02990564ebce") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("85826aef-24b1-4549-8d59-0b9c5145d065") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("873ad66a-3b72-4f6f-b7d6-9a7da55a9f13") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("eb189553-e65d-4799-ab41-b9033d27fb06") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("d352338c-2b28-4bea-8fc5-1422e5f457f2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("1eaef2b0-5e02-4e9b-9660-02990564ebce") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("85826aef-24b1-4549-8d59-0b9c5145d065") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("873ad66a-3b72-4f6f-b7d6-9a7da55a9f13") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("eb189553-e65d-4799-ab41-b9033d27fb06") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("d352338c-2b28-4bea-8fc5-1422e5f457f2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("1eaef2b0-5e02-4e9b-9660-02990564ebce") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("85826aef-24b1-4549-8d59-0b9c5145d065") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("873ad66a-3b72-4f6f-b7d6-9a7da55a9f13") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("eb189553-e65d-4799-ab41-b9033d27fb06") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("d352338c-2b28-4bea-8fc5-1422e5f457f2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("1eaef2b0-5e02-4e9b-9660-02990564ebce") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("85826aef-24b1-4549-8d59-0b9c5145d065") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("873ad66a-3b72-4f6f-b7d6-9a7da55a9f13") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("eb189553-e65d-4799-ab41-b9033d27fb06") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("d352338c-2b28-4bea-8fc5-1422e5f457f2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("1eaef2b0-5e02-4e9b-9660-02990564ebce") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("0c3b7027-f5b1-40ba-825e-d2ef359dd40b") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("a26473ed-5da0-4a74-be7a-fb40f1e478c8") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("9fad7055-b3a8-4190-b861-042047ca35d6") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("499fc501-e12d-4b2a-b051-1a0463fbaa9c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("0c3b7027-f5b1-40ba-825e-d2ef359dd40b") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("a26473ed-5da0-4a74-be7a-fb40f1e478c8") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("9fad7055-b3a8-4190-b861-042047ca35d6") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("499fc501-e12d-4b2a-b051-1a0463fbaa9c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("0c3b7027-f5b1-40ba-825e-d2ef359dd40b") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("a26473ed-5da0-4a74-be7a-fb40f1e478c8") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("9fad7055-b3a8-4190-b861-042047ca35d6") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("499fc501-e12d-4b2a-b051-1a0463fbaa9c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("0c3b7027-f5b1-40ba-825e-d2ef359dd40b") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("a26473ed-5da0-4a74-be7a-fb40f1e478c8") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("9fad7055-b3a8-4190-b861-042047ca35d6") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("499fc501-e12d-4b2a-b051-1a0463fbaa9c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url("0c3b7027-f5b1-40ba-825e-d2ef359dd40b") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url("a26473ed-5da0-4a74-be7a-fb40f1e478c8") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url("9fad7055-b3a8-4190-b861-042047ca35d6") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url("499fc501-e12d-4b2a-b051-1a0463fbaa9c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 900;
+  font-display: swap;
+  src: url("0c3b7027-f5b1-40ba-825e-d2ef359dd40b") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 900;
+  font-display: swap;
+  src: url("a26473ed-5da0-4a74-be7a-fb40f1e478c8") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 900;
+  font-display: swap;
+  src: url("9fad7055-b3a8-4190-b861-042047ca35d6") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 900;
+  font-display: swap;
+  src: url("499fc501-e12d-4b2a-b051-1a0463fbaa9c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+
+/* ── Be Vietnam Pro — brand font (self-hosted, full weight range) ── */
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 100; font-style: normal; font-display: swap; src: url("5aa9fd57-11df-492c-806c-b46f71ff8f86") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 100; font-style: italic; font-display: swap; src: url("af184add-7767-498d-8185-933f0d040df7") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 200; font-style: normal; font-display: swap; src: url("884b51f4-a1f7-49c8-89ce-cb16285e7255") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 200; font-style: italic; font-display: swap; src: url("c0564e34-504c-40f9-8c13-5521c36eddde") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 300; font-style: normal; font-display: swap; src: url("c41d78f8-5b44-4041-b9c1-2811937bd5b9") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 300; font-style: italic; font-display: swap; src: url("56faabca-c32f-47ba-8f13-c0d82b9fb6b6") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 400; font-style: normal; font-display: swap; src: url("87b4ff0c-fde1-4f16-a94c-93313dd752a4") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 400; font-style: italic; font-display: swap; src: url("5cf67287-7b87-46d9-9485-df54b371507e") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 500; font-style: normal; font-display: swap; src: url("ec906a59-edee-4efa-8f4b-cb9006562a0a") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 500; font-style: italic; font-display: swap; src: url("9cd9a864-43cc-4bf4-9dff-89651dccc807") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 600; font-style: normal; font-display: swap; src: url("02621ffa-19ee-44b8-8efc-29df8a6496dd") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 600; font-style: italic; font-display: swap; src: url("a052b707-2e06-41ab-84a1-03ae6d72dcd9") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 700; font-style: normal; font-display: swap; src: url("97a555ed-38ca-4313-8c24-e8f880793a64") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 700; font-style: italic; font-display: swap; src: url("d8a05bb2-1750-4690-af66-101da05d98f9") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 800; font-style: normal; font-display: swap; src: url("dd3a7554-45f7-478a-b83e-c518aaca52ea") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 800; font-style: italic; font-display: swap; src: url("abff18ce-63e6-427c-8aea-0520779464e6") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 900; font-style: normal; font-display: swap; src: url("32a90901-d15a-4b49-be88-e6de31c14082") format('truetype'); }
+@font-face { font-family: 'Be Vietnam Pro'; font-weight: 900; font-style: italic; font-display: swap; src: url("63f7f07c-147e-4052-9309-cd5c6dad2a03") format('truetype'); }
+
+:root {
+  /* ═══ BRAND (anchor) ═══ */
+  --brand:        #2a2b86;   /* QuantyFin Navy — primary */
+  --brand-light:  #4a4bc8;   /* gradient pair */
+  --brand-deep:   #16175a;   /* deep variant for big-num gradient */
+  --brand-tint:   #eeeefb;
+  --brand-gold:   #fcaf16;   /* alias */
+
+  /* ═══ ACCENTS · semantic ═══ */
+  --iris:        #7c6cf5;   /* AI/tech · default accent */
+  --iris-deep:   #4a4bc8;
+  --iris-tint:   #eeeefb;
+
+  --gold:        #fcaf16;   /* climax · 1/page */
+  --gold-deep:   #b07a00;
+  --gold-tint:   #fff4d8;
+
+  --mint:        #10b981;   /* growth · live */
+  --mint-deep:   #047857;
+  --mint-tint:   #d1fae5;
+
+  --rose:        #f472b6;   /* human · warm */
+  --rose-deep:   #be185d;
+  --rose-tint:   #fde7f1;
+
+  /* Legacy aliases — keep compatibility with older previews */
+  --accent:       var(--iris);
+  --accent-tint:  var(--iris-tint);
+
+  /* ═══ STATUS ═══ */
+  --live:    var(--mint);     --live-bg:  rgba(16,185,129,.10);
+  --build:   var(--iris);     --build-bg: rgba(124,108,245,.10);
+  --gap:     #ef4444;         --gap-bg:   rgba(239,68,68,.08);     /* ALERT only */
+  --plan:    #f59e0b;         --plan-bg:  rgba(245,158,11,.10);
+  --plan-deep: #7a5400;
+
+  /* ═══ TEXT ═══ */
+  --fg-1: #1a1b3a;   /* primary ink — navy-tinted, NOT pure black */
+  --fg-2: #5a5c7e;   /* secondary — body, descriptions */
+  --fg-3: #6b6d8c;   /* tertiary — labels, metadata (lifted from 9a9cb8 for projector legibility) */
+  --fg-brand: var(--brand);
+  --fg-on-brand: #ffffff;
+
+  /* Legacy aliases */
+  --text-1: var(--fg-1);
+  --text-2: var(--fg-2);
+  --text-3: var(--fg-3);
+
+  /* ═══ SURFACES ═══ */
+  --bg:        #fcfcff;   /* Paper */
+  --bg-2:      #f4f5fb;   /* Mist — section alt bands */
+  --bg-muted:  #ecedf8;   /* Lavender — chip / hover */
+  --bg-ink:    #0e0f24;   /* Dark surface — hero / footer */
+  --bg-warm:   #fbfaf6;   /* Hero warm wash */
+
+  --border:        #e6e7f2;
+  --border-light:  #f0f1f8;
+  --border-hover:  #d0d2e8;
+
+  /* ═══ SHADOWS (iris-tinted, weightless) ═══ */
+  --shadow-sm: 0 1px 2px  rgba(74,75,200,0.05);
+  --shadow:    0 2px 6px  rgba(74,75,200,0.06);
+  --shadow-md: 0 4px 16px rgba(74,75,200,0.08);
+  --shadow-lg: 0 12px 32px rgba(74,75,200,0.12);
+  --shadow-xl: 0 16px 40px rgba(74,75,200,0.14);
+  --shadow-gold: 0 12px 32px rgba(252,175,22,0.32);
+  --shadow-brand: 0 12px 32px rgba(42,43,134,0.32);
+
+  /* ═══ RADIUS ═══ */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius:      12px;
+  --radius-md:   14px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-pill: 9999px;
+
+  /* ═══ SPACING (4px base) ═══ */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+  --s-12: 48px; --s-14: 56px; --s-16: 64px; --s-18: 72px;
+  --s-20: 80px; --s-24: 96px; --s-28: 112px;
+
+  /* ═══ TYPOGRAPHY ═══ */
+  --font-body:    'Be Vietnam Pro', 'Helvetica Neue', Arial, sans-serif;
+  --font-ui:      'Be Vietnam Pro', 'Helvetica Neue', Arial, sans-serif;  /* alias */
+  --font-sans:    'Be Vietnam Pro', 'Helvetica Neue', Arial, sans-serif;  /* alias */
+  --font-brand:   'Be Vietnam Pro', 'Helvetica Neue', Arial, sans-serif;
+  --font-impact:  'Montserrat', 'Be Vietnam Pro', sans-serif;        /* impact display */
+  --font-display: 'Montserrat', 'Be Vietnam Pro', sans-serif;        /* alias */
+  --font-serif:   'Playfair Display', Georgia, serif;                /* Hero ONLY */
+  --font-numeric: 'Montserrat', 'Be Vietnam Pro', sans-serif;        /* tabular */
+  --font-mono:    'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+
+  /* Type scale — blog-portal sizing · generous, lean-back readable */
+  --type-hero:        800 clamp(80px, 8.4vw, 120px)/0.94 var(--font-impact);
+  --type-display:     800 clamp(64px, 6.4vw, 96px)/0.98 var(--font-impact);
+  --type-h1:          800 clamp(48px, 5.2vw, 64px)/1.08 var(--font-impact);
+  --type-h2:          700 clamp(32px, 3.4vw, 40px)/1.18 var(--font-impact);
+  --type-h3:          700 26px/1.3 var(--font-impact);
+  --type-card-title:  700 20px/1.35 var(--font-brand);
+  --type-kpi:         800 clamp(48px, 4.6vw, 64px)/0.9 var(--font-numeric);
+
+  /* Numeral rhythm — Montserrat italic 800 (NOT Playfair) — geometric not ornamental */
+  --type-roman:       italic 800 clamp(64px, 6.4vw, 96px)/0.85 var(--font-impact);
+
+  /* Hero artistic accent — Playfair italic — RESERVE FOR HERO ONLY */
+  --type-art-italic:  italic 800 clamp(80px, 8.4vw, 120px)/0.94 var(--font-serif);
+
+  --type-body-lg:     400 23px/1.65 var(--font-body);   /* section lede */
+  --type-body:        400 19px/1.7  var(--font-body);   /* default body — blog readable */
+  --type-body-sm:     400 16px/1.6  var(--font-body);
+  --type-label:       500 14px/1.4  var(--font-body);
+  --type-caption:     400 13px/1.5  var(--font-body);
+
+  --type-mono:        500 13px/1.5  var(--font-mono);
+  --type-tag:         700 12px/1    var(--font-mono);
+  --type-eyebrow:     700 13px/1    var(--font-mono);  /* 0.32em tracking — set inline */
+
+  /* ═══ MOTION ═══ */
+  --ease-out:        cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-overshoot:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 150ms; --dur: 200ms; --dur-slow: 300ms;
+
+  /* ═══ A11Y FLOOR (v3 · universal) ═══ */
+  --focus-ring:        0 0 0 3px rgba(124,108,245,0.40);
+  --focus-ring-gold:   0 0 0 3px rgba(252,175,22,0.45);
+  --focus-ring-gap:    0 0 0 3px rgba(239,68,68,0.40);
+  --tap-min:           44px;     /* override per-surface: 56px store, 72px primary CTA */
+
+  /* MOTION semantic aliases (compat for legacy previews using motion.css names) */
+  --motion-enter:   250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-exit:    180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-hover:   150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-press:   80ms  ease-out;
+  --motion-page:    300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-count:   600ms cubic-bezier(0.2, 0.6, 0.2, 1);
+
+  /* ═══ SURFACE DEFAULTS — portal scale (v3 adapter contract) ═══ */
+  /* These are PORTAL defaults so existing previews keep working without `data-surface`.
+     The marketing / app / store adapter blocks below override only what differs. */
+  --gutter:        20px;
+  --gutter-tight:  12px;
+  --gutter-wide:   32px;
+  --section-pad:   clamp(48px, 8vw, 96px) clamp(24px, 4vw, 56px);
+  --container-max: 1280px;
+  --motion-budget: ambient;       /* 1 ambient/page · respect reduce-motion */
+  --accent-freq:   narrative;     /* 1 gold climax · ≤2 accent / section */
+  --shadow-rest:   var(--shadow-sm);
+
+  /* Button scale (portal default) — see foundation/buttons.css */
+  --btn-h-sm:   40px;  --btn-px-sm: 18px; --btn-fs-sm: 15px;
+  --btn-h:      52px;  --btn-px:    28px; --btn-fs:    17px;
+  --btn-h-lg:   64px;  --btn-px-lg: 36px; --btn-fs-lg: 19px;
+  --btn-radius: var(--radius-pill);
+
+  /* Form scale (portal default) — see foundation/forms.css */
+  --input-h-sm:    36px;
+  --input-h:       44px;
+  --input-h-lg:    52px;
+  --input-fs:      16px;
+  --input-px:      14px;
+  --input-radius:  10px;
+  --check-size:    18px;
+  --radio-size:    18px;
+  --toggle-w:      40px;
+  --toggle-h:      22px;
+  --toggle-pad:    3px;
+
+  /* Admin-grade type roles (portal defaults; app overrides for density) */
+  --type-h4:        600 18px/1.3   var(--font-brand);
+  --type-label-sm:  600 11px/1     var(--font-body);
+  --type-num-lg:    700 36px/1.05  var(--font-numeric);
+  --type-num:       600 22px/1.1   var(--font-numeric);
+  --type-num-sm:    600 15px/1.2   var(--font-numeric);
+
+  /* ═══ BIG NUMERAL GRADIENT (per-tone, for hero KPIs) ═══ */
+  --grad-brand: linear-gradient(180deg, #2a2b86 0%, #16175a 100%);
+  --grad-iris:  linear-gradient(180deg, #7c6cf5 0%, #4a4bc8 100%);
+  --grad-gold:  linear-gradient(180deg, #fcaf16 0%, #b07a00 100%);
+  --grad-mint:  linear-gradient(180deg, #10b981 0%, #047857 100%);
+  --grad-rose:  linear-gradient(180deg, #f472b6 0%, #be185d 100%);
+}
+
+/* ══════════════════════════════════════════════════════
+   SURFACE ADAPTERS — v3 multi-surface architecture
+   ---------------------------------------------------
+   Foundation tokens above are universal.
+   Each adapter resolves SCALE for its archetype:
+     · portal     — default (uses :root above; executive briefing / report)
+     · marketing  — landing pages, public web
+     · app        — internal admin (back-office, dashboards, internal mobile)
+     · store      — POS / signage / fitting-room tablet (build out at v3.1)
+   Activate by setting `data-surface="..."` on <body> or any container.
+   ═════════════════════════════════════════════════════ */
+
+/* ─── PORTAL — default (already in :root, declared here for clarity) ─── */
+[data-surface="portal"] {
+  --motion-budget: ambient;
+  --accent-freq:   narrative;
+  --container-max: 1280px;
+  --section-pad:   clamp(48px, 8vw, 96px) clamp(24px, 4vw, 56px);
+
+  /* Button scale */
+  --btn-h-sm:  40px;  --btn-px-sm: 18px; --btn-fs-sm: 15px;
+  --btn-h:     52px;  --btn-px:    28px; --btn-fs:    17px;
+  --btn-h-lg:  64px;  --btn-px-lg: 36px; --btn-fs-lg: 19px;
+  --btn-radius: var(--radius-pill);
+}
+
+/* ─── MARKETING — landing pages, public web ─── */
+[data-surface="marketing"] {
+  /* Type — hero scales up, body slightly lighter LH */
+  --type-hero:     800 clamp(72px, 8vw,   120px)/0.94 var(--font-impact);
+  --type-display:  800 clamp(56px, 5.6vw, 88px)/0.98  var(--font-impact);
+  --type-h1:       800 clamp(40px, 4.4vw, 56px)/1.08  var(--font-impact);
+  --type-h2:       700 clamp(28px, 3vw,   36px)/1.18  var(--font-impact);
+  --type-body-lg:  400 22px/1.55 var(--font-body);
+  --type-body:     400 19px/1.6  var(--font-body);
+  --type-body-sm:  400 16px/1.55 var(--font-body);
+
+  /* Layout */
+  --gutter:        24px;
+  --gutter-wide:   40px;
+  --section-pad:   clamp(72px, 10vw, 160px) clamp(24px, 6vw, 80px);
+  --container-max: 1200px;
+
+  /* Discipline */
+  --motion-budget: rich;            /* scroll-reveal · parallax OK */
+  --accent-freq:   bold;            /* full-bleed brand sections OK */
+  --shadow-rest:   var(--shadow);
+
+  /* Button scale */
+  --btn-h-sm:  44px;  --btn-px-sm: 20px; --btn-fs-sm: 15px;
+  --btn-h:     52px;  --btn-px:    28px; --btn-fs:    17px;
+  --btn-h-lg:  64px;  --btn-px-lg: 36px; --btn-fs-lg: 19px;
+  --btn-radius: var(--radius-pill);
+
+  /* Form scale */
+  --input-h-sm:    40px;
+  --input-h:       48px;
+  --input-h-lg:    56px;
+  --input-fs:      16px;
+  --input-px:      16px;
+  --input-radius:  12px;
+  --check-size:    20px;
+  --radio-size:    20px;
+  --toggle-w:      44px;
+  --toggle-h:      24px;
+  --toggle-pad:    3px;
+}
+
+/* ─── APP — internal admin, PLM, OMS, vendor portal, internal mobile ─── */
+[data-surface="app"] {
+  /* Type — Linear/Notion grade · Be Vietnam Pro pairing (no Montserrat in admin chrome) */
+  --type-display:  700 28px/1.15 var(--font-brand);    /* page title — rare, breadcrumbs preferred */
+  --type-h1:       700 22px/1.2  var(--font-brand);    /* section title */
+  --type-h2:       700 18px/1.25 var(--font-brand);    /* sub-section */
+  --type-h3:       600 15px/1.3  var(--font-brand);    /* card title */
+  --type-h4:       600 13px/1.3  var(--font-brand);    /* small card / list group */
+
+  --type-body-lg:  400 15px/1.55 var(--font-body);     /* lede · long-form readme */
+  --type-body:     400 13.5px/1.5 var(--font-body);    /* default body */
+  --type-body-sm:  400 12.5px/1.45 var(--font-body);   /* secondary text */
+
+  --type-label:    500 12px/1.3  var(--font-body);     /* form label · table header */
+  --type-label-sm: 600 10.5px/1  var(--font-body);     /* tiny pill / chip label */
+  --type-caption:  400 11.5px/1.4 var(--font-body);    /* metadata, timestamps */
+
+  --type-eyebrow:  700 10.5px/1  var(--font-mono);     /* uppercase mono eyebrow */
+  --type-mono:     500 12.5px/1.45 var(--font-mono);   /* inline code, IDs */
+  --type-mono-sm:  500 11px/1.4  var(--font-mono);     /* tiny code */
+  --type-tag:      600 10.5px/1  var(--font-mono);     /* status pill */
+
+  /* Tabular KPI numerals — Be Vietnam Pro 700 with tnum (NOT Montserrat) */
+  --type-num-lg:   700 28px/1.05 var(--font-brand);    /* hero KPI on dashboard */
+  --type-num:      600 17px/1.1  var(--font-brand);    /* table number, value */
+  --type-num-sm:   600 13.5px/1.2 var(--font-brand);   /* small KPI · table cell */
+
+  /* Form scale — dense, table-aligned (matches button h) */
+  --input-h-sm:    28px;
+  --input-h:       32px;
+  --input-h-lg:    40px;
+  --input-fs:      13.5px;
+  --input-px:      10px;
+  --input-radius:  6px;
+  --check-size:    14px;
+  --radio-size:    14px;
+  --toggle-w:      28px;
+  --toggle-h:      16px;
+  --toggle-pad:    2px;
+
+  /* Layout */
+  --gutter-tight:  8px;
+  --gutter:        12px;
+  --gutter-wide:   20px;
+  --section-pad:   20px 24px;
+  --container-max: 100%;            /* fluid — app fills its frame */
+
+  /* Density tiers (app-specific) */
+  --row-compact:   32px;
+  --row-cozy:      44px;
+  --row-spacious:  56px;
+
+  /* Discipline */
+  --motion-budget: instant;         /* state transitions only · no scroll reveal */
+  --accent-freq:   signal;          /* color = status only */
+  --shadow-rest:   var(--shadow-sm);
+
+  /* Button scale — tight for high-density tables */
+  --btn-h-sm:  28px;  --btn-px-sm: 10px; --btn-fs-sm: 12px;
+  --btn-h:     32px;  --btn-px:    14px; --btn-fs:    13.5px;
+  --btn-h-lg:  40px;  --btn-px-lg: 20px; --btn-fs-lg: 15px;
+  --btn-radius: var(--radius-sm);  /* squarer corners in dense UI */
+}
+
+/* ─── STORE — POS / signage / fitting-room tablet (v3.1) ─── */
+[data-surface="store"] {
+  /* Type — readable from 2-3m, high-contrast */
+  --type-signage:  800 clamp(96px, 12vw, 160px)/0.92 var(--font-impact);   /* window display */
+  --type-price:    700 clamp(32px, 4vw,   48px)/1.05  var(--font-numeric);  /* sticker */
+  --type-cta:      700 19px/1.2  var(--font-brand);
+  --type-body:     500 17px/1.45 var(--font-body);
+  --type-body-sm:  500 15px/1.4  var(--font-body);
+  --type-label:    600 13px/1.3  var(--font-body);
+
+  /* Layout & tap targets (touch-first) */
+  --gutter:                  24px;
+  --tap-min:                 56px;
+  --tap-min-store-primary:   72px;
+  --row-touch:               72px;
+  --section-pad:             32px 24px;
+
+  /* Discipline */
+  --motion-budget: ambient-loop;    /* signage only · ZERO motion on POS */
+  --accent-freq:   high-contrast;   /* navy + gold only · max contrast */
+  --shadow-rest:   none;            /* flat · glare-resistant */
+
+  /* Button scale — touch-first, large hit areas */
+  --btn-h-sm:  56px;  --btn-px-sm: 24px; --btn-fs-sm: 17px;
+  --btn-h:     72px;  --btn-px:    32px; --btn-fs:    19px;
+  --btn-h-lg:  88px;  --btn-px-lg: 40px; --btn-fs-lg: 22px;
+  --btn-radius: var(--radius);
+
+  /* Form scale — touch-first */
+  --input-h-sm:    52px;
+  --input-h:       64px;
+  --input-h-lg:    80px;
+  --input-fs:      17px;
+  --input-px:      18px;
+  --input-radius:  12px;
+  --check-size:    24px;
+  --radio-size:    24px;
+  --toggle-w:      56px;
+  --toggle-h:      32px;
+  --toggle-pad:    4px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  font-family: var(--font-body); font-size: 19px; line-height: 1.7;
+  color: var(--fg-1); background: var(--bg);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .h1 { font: var(--type-h1); letter-spacing: -0.022em; color: var(--fg-1); }
+h2, .h2 { font: var(--type-h2); letter-spacing: -0.018em; color: var(--fg-1); }
+h3, .h3 { font: var(--type-h3); letter-spacing: -0.01em; color: var(--fg-1); }
+p       { font: var(--type-body); color: var(--fg-2); }
+
+.display       { font: var(--type-display); letter-spacing: -0.025em; }
+.hero-display  { font: var(--type-hero); letter-spacing: -0.03em; }
+.brand-face    { font-family: var(--font-brand); }
+.kpi-num       { font: var(--type-kpi); font-variant-numeric: tabular-nums; letter-spacing: -0.025em; }
+
+/* Hero-only artistic italic — Playfair */
+.art-italic    { font: var(--type-art-italic); letter-spacing: -0.005em; }
+
+/* Geometric italic accent — Montserrat italic — for H1/H2 inside headlines */
+em.accent, .em-accent { font: italic 800 1em/1 var(--font-impact); font-style: italic; color: var(--iris); letter-spacing: -0.015em; }
+em.accent.gold,  .em-accent.gold  { color: var(--gold-deep); }
+em.accent.mint,  .em-accent.mint  { color: var(--mint-deep); }
+em.accent.rose,  .em-accent.rose  { color: var(--rose-deep); }
+em.accent.brand, .em-accent.brand { color: var(--brand); }
+
+/* Roman numerals (I/II/III/IV/V) — Montserrat italic 800, per-tone */
+.roman        { font: var(--type-roman); }
+.roman.iris   { color: var(--iris); }
+.roman.gold   { color: var(--gold-deep); }
+.roman.mint   { color: var(--mint-deep); }
+.roman.rose   { color: var(--rose-deep); }
+.roman.brand  { color: var(--brand); }
+
+/* Big-num — gradient numerals for hero KPIs */
+.big-num       { font-family: var(--font-impact); font-weight: 800;
+                 line-height: 0.85; letter-spacing: -0.04em;
+                 color: transparent; background-clip: text; -webkit-background-clip: text;
+                 display: inline-block; }
+.big-num.brand { background-image: var(--grad-brand); }
+.big-num.iris  { background-image: var(--grad-iris); }
+.big-num.gold  { background-image: var(--grad-gold); }
+.big-num.mint  { background-image: var(--grad-mint); }
+.big-num.rose  { background-image: var(--grad-rose); }
+
+/* Section eyebrow — mono uppercase with flanking dashes */
+.s-eyebrow {
+  font-family: var(--font-mono); font-weight: 700;
+  font-size: 13px; letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--brand);
+  display: inline-flex; align-items: center; gap: 14px;
+}
+.s-eyebrow::before, .s-eyebrow::after {
+  content: ''; width: 32px; height: 1px; background: currentColor; opacity: 0.5;
+}
+.s-eyebrow.gold  { color: var(--gold-deep); }
+.s-eyebrow.iris  { color: var(--iris-deep); }
+.s-eyebrow.mint  { color: var(--mint-deep); }
+.s-eyebrow.rose  { color: var(--rose-deep); }
+
+/* Insight callout — mandatory per section */
+.insight {
+  margin-top: 56px; padding: 36px 44px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+.insight::before {
+  content: ''; position: absolute; left: 0; top: 28px; bottom: 28px;
+  width: 3px; background: linear-gradient(180deg, var(--gold), var(--gold-deep));
+  border-radius: 0 3px 3px 0;
+}
+.insight-label {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--fg-3); font-weight: 700;
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.insight-label::before { content: ''; width: 18px; height: 1px; background: currentColor; opacity: 0.5; }
+.insight-body { font-size: 22px; line-height: 1.6; color: var(--fg-1); }
+.insight-body em { font: italic 700 1em/1.6 var(--font-serif); color: var(--iris); }
+.insight-body em.gold { color: var(--gold-deep); }
+.insight-body em.mint { color: var(--mint-deep); }
+
+/* Status pills — JetBrains Mono uppercase pill */
+.tag {
+  display: inline-flex; align-items: center;
+  font: var(--type-tag); text-transform: uppercase; letter-spacing: 0.6px;
+  padding: 3px 10px; border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.tag-lg { font-size: 12px; padding: 5px 12px; letter-spacing: 0.8px; }
+.tag-live  { background: var(--live-bg);  color: var(--mint-deep); border: 1px solid rgba(16,185,129,.22); }
+.tag-build { background: var(--build-bg); color: var(--iris-deep); border: 1px solid rgba(124,108,245,.22); }
+.tag-gap   { background: var(--gap-bg);   color: var(--gap);       border: 1px solid rgba(239,68,68,.20); }
+.tag-plan  { background: var(--plan-bg);  color: var(--gold-deep); border: 1px solid rgba(245,158,11,.22); }
+
+/* CTA system */
+.cta {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 0 32px; height: 56px; border-radius: var(--radius-pill);
+  font: 600 17px/1 var(--font-body); text-decoration: none; cursor: pointer; border: none;
+  transition: all var(--dur) var(--ease-out);
+}
+.cta-primary   { background: var(--brand); color: #fff; }
+.cta-primary:hover { background: var(--brand-light); transform: translateY(-1px); box-shadow: var(--shadow-brand); }
+.cta-secondary { border: 1px solid var(--border); color: var(--fg-1); background: transparent; }
+.cta-secondary:hover { background: var(--bg-muted); }
+.cta-gold      { background: var(--gold); color: #0e0f24; font-weight: 700; }
+.cta-gold:hover { transform: translateY(-1px); box-shadow: var(--shadow-gold); }
+
+/* Utility */
+.label   { font: var(--type-label); color: var(--fg-3); }
+.caption { font: var(--type-caption); color: var(--fg-3); }
+.mono    { font: var(--type-mono); }
+.eyebrow { font: var(--type-eyebrow); text-transform: uppercase; letter-spacing: 0.32em; color: var(--brand); }
