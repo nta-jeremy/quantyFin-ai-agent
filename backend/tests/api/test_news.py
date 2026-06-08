@@ -183,7 +183,7 @@ def test_post_process_ai(client: TestClient, monkeypatch: pytest.MonkeyPatch):
 
     assert "data" in json_data
     assert json_data["error"] is None
-    assert json_data["data"]["message"] == "AI pipeline triggered successfully"
+    assert json_data["data"]["message"] == "AI pipeline with entity resolution triggered successfully"
     assert "trace_id" in json_data["meta"]
     assert called is True
 

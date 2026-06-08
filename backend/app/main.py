@@ -18,6 +18,7 @@ from app.core.exceptions import BaseAppException
 from app.core.db import get_session, engine
 from app.models.stock import StockTicker, StockPrice
 from app.models.crawler_config import CrawlerConfig
+from app.models.entity import CanonicalEntity, EntitySynonym
 from app.services.stock_data import ingest_all_active_tickers
 from app.services.crawler import ingest_news_articles
 
@@ -29,7 +30,7 @@ def init_db():
         inspector = inspect(engine)
         if "news_articles" in inspector.get_table_names():
             columns = [col["name"] for col in inspector.get_columns("news_articles")]
-            if any(c not in columns for c in ["sentiment_score", "raw_entities", "raw_relationships"]):
+            if any(c not in columns for c in ["sentiment_score", "raw_entities", "raw_relationships", "resolved_entities", "resolved_relationships"]):
                 with Session(engine) as session:
                     if "sentiment_score" not in columns:
                         session.execute(text("ALTER TABLE news_articles ADD COLUMN sentiment_score FLOAT"))
@@ -37,6 +38,10 @@ def init_db():
                         session.execute(text("ALTER TABLE news_articles ADD COLUMN raw_entities JSON"))
                     if "raw_relationships" not in columns:
                         session.execute(text("ALTER TABLE news_articles ADD COLUMN raw_relationships JSON"))
+                    if "resolved_entities" not in columns:
+                        session.execute(text("ALTER TABLE news_articles ADD COLUMN resolved_entities JSON"))
+                    if "resolved_relationships" not in columns:
+                        session.execute(text("ALTER TABLE news_articles ADD COLUMN resolved_relationships JSON"))
                     session.commit()
                 logger.info("Migrated news_articles table structure successfully.")
         with Session(engine) as session:
@@ -76,10 +81,49 @@ def init_db():
                 session.rollback()
                 logger.warning(f"Error seeding default CrawlerConfig: {str(seed_config_err)}")
 
+            # Seed canonical entities from stock tickers
+            try:
+                seed_canonical_entities(session)
+            except Exception as seed_entity_err:
+                session.rollback()
+                logger.warning(f"Error seeding canonical entities: {str(seed_entity_err)}")
+
             logger.info("Database initialized and initial stock tickers seeded successfully.")
     except Exception as e:
         logger.critical(f"Database initialization failed: {str(e)}")
         raise e
+
+
+def seed_canonical_entities(session: Session):
+    """Seed canonical entities from active stock tickers."""
+    from app.models.entity import CanonicalEntity, EntitySynonym
+    
+    tickers = session.exec(select(StockTicker).where(StockTicker.is_active == True)).all()
+    
+    for ticker in tickers:
+        existing = session.exec(select(CanonicalEntity).where(CanonicalEntity.id == ticker.ticker)).first()
+        if not existing:
+            canonical = CanonicalEntity(
+                id=ticker.ticker,
+                name=ticker.name,
+                type="COMPANY",
+                description=None
+            )
+            session.add(canonical)
+            session.flush()
+            
+            synonyms_to_create = [ticker.ticker.lower()]
+            name_parts = ticker.name.lower().replace("công ty cổ phần", "").replace("ctcp", "").replace("tập đoàn", "").strip()
+            if name_parts and name_parts != ticker.ticker.lower():
+                synonyms_to_create.append(name_parts)
+            
+            for syn in synonyms_to_create:
+                existing_syn = session.exec(select(EntitySynonym).where(EntitySynonym.synonym == syn)).first()
+                if not existing_syn:
+                    session.add(EntitySynonym(synonym=syn, canonical_id=ticker.ticker))
+    
+    session.commit()
+    logger.info(f"Seeded {len(tickers)} canonical entities from stock tickers.")
 
 
 def get_crawler_config_from_db() -> tuple[str, str]:
@@ -163,8 +207,10 @@ async def scheduled_crawler_task(event: Optional[asyncio.Event] = None):
 
                 def run_ai_pipeline():
                     from app.services.ai_pipeline import process_pending_news_articles
+                    from app.services.entity_resolution import process_resolved_entities_batch
                     with Session(engine) as session:
                         process_pending_news_articles(session)
+                        process_resolved_entities_batch(session)
 
                 logger.info("Triggering automatic AI pipeline for ingested news...")
                 await asyncio.to_thread(run_ai_pipeline)

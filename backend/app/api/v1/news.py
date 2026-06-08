@@ -11,6 +11,46 @@ from app.core.limiter import limiter
 
 router = APIRouter()
 
+@router.post("/process-resolution", status_code=202)
+@limiter.limit("5/minute")
+def process_entity_resolution(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session)
+):
+    """
+    Kích hoạt tiến trình chuẩn hóa thực thể (Entity Resolution) bất đồng bộ.
+    """
+    try:
+        from app.services.entity_resolution import process_resolved_entities_batch
+        trace_id = trace_id_var.get()
+        
+        def run_in_background():
+            token = trace_id_var.set(trace_id)
+            try:
+                from app.core.db import engine
+                with Session(engine) as bg_session:
+                    process_resolved_entities_batch(bg_session)
+            except Exception as bg_err:
+                logger.error(f"Lỗi khi chạy Entity Resolution ngầm: {str(bg_err)}")
+            finally:
+                trace_id_var.reset(token)
+
+        background_tasks.add_task(run_in_background)
+        
+        return {
+            "data": {
+                "message": "Entity resolution pipeline triggered successfully"
+            },
+            "error": None,
+            "meta": {
+                "trace_id": trace_id
+            }
+        }
+    except Exception as e:
+        logger.error(f"Lỗi khi kích hoạt Entity Resolution: {str(e)}")
+        raise e
+
 @router.post("/process-ai", status_code=202)
 @limiter.limit("5/minute")
 def process_news_ai(
@@ -20,9 +60,11 @@ def process_news_ai(
 ):
     """
     Kích hoạt tiến trình AI bóc tách thực thể và phân tích cảm xúc bất đồng bộ.
+    Sau khi hoàn tất, tự động chạy Entity Resolution.
     """
     try:
         from app.services.ai_pipeline import process_pending_news_articles
+        from app.services.entity_resolution import process_resolved_entities_batch
         trace_id = trace_id_var.get()
         
         def run_in_background():
@@ -31,6 +73,7 @@ def process_news_ai(
                 from app.core.db import engine
                 with Session(engine) as bg_session:
                     process_pending_news_articles(bg_session)
+                    process_resolved_entities_batch(bg_session)
             except Exception as bg_err:
                 logger.error(f"Lỗi khi chạy AI pipeline ngầm: {str(bg_err)}")
             finally:
@@ -40,7 +83,7 @@ def process_news_ai(
         
         return {
             "data": {
-                "message": "AI pipeline triggered successfully"
+                "message": "AI pipeline with entity resolution triggered successfully"
             },
             "error": None,
             "meta": {

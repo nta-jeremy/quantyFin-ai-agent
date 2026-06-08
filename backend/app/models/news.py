@@ -18,6 +18,8 @@ class NewsArticle(SQLModel, table=True):
     sentiment_score: Optional[float] = Field(default=None, index=True)
     raw_entities: Optional[list] = Field(default=None, sa_column=Column(JSON, nullable=True))
     raw_relationships: Optional[list] = Field(default=None, sa_column=Column(JSON, nullable=True))
+    resolved_entities: Optional[list] = Field(default=None, sa_column=Column(JSON, nullable=True))
+    resolved_relationships: Optional[list] = Field(default=None, sa_column=Column(JSON, nullable=True))
     created_at: dt.datetime = Field(
         default_factory=lambda: dt.datetime.now(dt.timezone.utc).replace(tzinfo=None),
         sa_column=Column(DateTime, server_default=func.now(), nullable=False)
