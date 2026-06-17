@@ -187,3 +187,32 @@ def test_post_process_ai(client: TestClient, monkeypatch: pytest.MonkeyPatch):
     assert "trace_id" in json_data["meta"]
     assert called is True
 
+
+def test_post_process_sync(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+    """
+    Test triggering the graph sync pipeline.
+    """
+    called = False
+    def mock_process_sync(session):
+        nonlocal called
+        called = True
+        return {"total": 1, "processed": 1, "failed": 0}
+
+    import app.services.neo4j_sync
+    monkeypatch.setattr(app.services.neo4j_sync, "process_graph_sync_batch", mock_process_sync)
+
+    # Mock BackgroundTasks.add_task to execute the task synchronously
+    from fastapi import BackgroundTasks
+    monkeypatch.setattr(BackgroundTasks, "add_task", lambda self, func, *args, **kwargs: func(*args, **kwargs))
+
+    response = client.post("/api/v1/news/process-sync")
+    assert response.status_code == 202
+    json_data = response.json()
+
+    assert "data" in json_data
+    assert json_data["error"] is None
+    assert json_data["data"]["message"] == "Graph sync pipeline triggered successfully"
+    assert "trace_id" in json_data["meta"]
+    assert called is True
+
+

@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     LITELLM_API_BASE: str | None = None
     LITELLM_MODEL: str = "gemini/gemini-1.5-flash"
 
+    # Telegram settings
+    TELEGRAM_BOT_TOKEN: str | None = None
+    TELEGRAM_CHAT_ID: str | None = None
+
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
     @model_validator(mode='after')
