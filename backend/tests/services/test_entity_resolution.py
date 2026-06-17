@@ -90,8 +90,11 @@ class TestResolveEntity:
     
     def test_resolve_substring_match(self, session: Session, seed_canonical):
         """Test resolving by substring matching."""
-        result = resolve_entity(session, "Công ty Cổ phần Vingroup", "COMPANY")
-        assert result == "VIC"
+        # The new heuristic matching logic checks if CanonicalEntity.name or EntitySynonym.synonym
+        # contains the normalized text.
+        # CanonicalEntity has "Công ty Cổ phần Sữa Việt Nam" -> contains "cổ phần sữa việt nam"
+        result = resolve_entity(session, "Cổ phần Sữa Việt Nam", "COMPANY")
+        assert result == "VNM"
     
     def test_resolve_adds_synonym(self, session: Session, seed_canonical):
         """Test that resolving adds a new synonym."""

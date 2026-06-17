@@ -88,6 +88,14 @@ def init_db():
                 session.rollback()
                 logger.warning(f"Error seeding canonical entities: {str(seed_entity_err)}")
 
+            # Khởi tạo các ràng buộc của Neo4j (Từ Story 2.3/3.1)
+            try:
+                from app.services.neo4j_sync import init_neo4j_constraints
+                init_neo4j_constraints()
+                logger.info("Neo4j constraints initialized successfully.")
+            except Exception as neo_err:
+                logger.warning(f"Error initializing Neo4j constraints: {str(neo_err)}")
+
             logger.info("Database initialized and initial stock tickers seeded successfully.")
     except Exception as e:
         logger.critical(f"Database initialization failed: {str(e)}")
@@ -208,9 +216,34 @@ async def scheduled_crawler_task(event: Optional[asyncio.Event] = None):
                 def run_ai_pipeline():
                     from app.services.ai_pipeline import process_pending_news_articles
                     from app.services.entity_resolution import process_resolved_entities_batch
+                    from app.services.neo4j_sync import process_graph_sync_batch
+                    from app.services.risk_monitor import check_and_trigger_alerts
                     with Session(engine) as session:
-                        process_pending_news_articles(session)
-                        process_resolved_entities_batch(session)
+                        try:
+                            process_pending_news_articles(session)
+                        except Exception as ai_err:
+                            logger.error(f"Lỗi AI pipeline: {str(ai_err)}")
+                            session.rollback()
+                            return
+                        try:
+                            process_resolved_entities_batch(session)
+                        except Exception as er_err:
+                            logger.error(f"Lỗi Entity resolution: {str(er_err)}")
+                            session.rollback()
+                            return
+                        try:
+                            process_graph_sync_batch(session)
+                        except Exception as gs_err:
+                            logger.error(f"Lỗi Graph Sync: {str(gs_err)}")
+                            session.rollback()
+                            return
+                        try:
+                            check_and_trigger_alerts(session)
+                        except Exception as rm_err:
+                            logger.error(f"Lỗi Risk Monitor: {str(rm_err)}")
+                            session.rollback()
+                            return
+                        session.commit()
 
                 logger.info("Triggering automatic AI pipeline for ingested news...")
                 await asyncio.to_thread(run_ai_pipeline)
@@ -252,14 +285,27 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     app.state.scheduler_update_event = asyncio.Event()
     app.state.scheduler_update_loop = loop
-    init_db()
+    # Khởi chạy init_db không đồng bộ để tránh block Event Loop khi startup
+    await asyncio.to_thread(init_db)
+    
     # Start background scheduler task
     scheduler_task = asyncio.create_task(scheduled_crawler_task(app.state.scheduler_update_event))
+    
+    # Start Telegram bot polling task
+    from app.services.telegram_bot import run_telegram_bot_polling
+    telegram_bot_task = asyncio.create_task(run_telegram_bot_polling())
+    
     yield
     # Shutdown / clean up
     scheduler_task.cancel()
+    telegram_bot_task.cancel()
     try:
         await scheduler_task
+    except asyncio.CancelledError:
+        pass
+        
+    try:
+        await telegram_bot_task
     except asyncio.CancelledError:
         pass
         
@@ -284,9 +330,11 @@ app = FastAPI(
 from app.api.v1.stocks import router as stocks_router
 from app.api.v1.news import router as news_router
 from app.api.v1.settings import router as settings_router
+from app.api.v1.alerts import router as alerts_router
 app.include_router(stocks_router, prefix="/api/v1/stocks", tags=["stocks"])
 app.include_router(news_router, prefix="/api/v1/news", tags=["news"])
 app.include_router(settings_router, prefix="/api/v1/settings", tags=["settings"])
+app.include_router(alerts_router, prefix="/api/v1/alerts", tags=["alerts"])
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
