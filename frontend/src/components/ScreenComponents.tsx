@@ -2536,8 +2536,8 @@ interface ScreenLoginProps {
 }
 
 export function ScreenLogin({ onSignIn }: ScreenLoginProps) {
-  const [email, setEmail] = useState<string>('hungnguyen@quantyfin.vn');
-  const [pw, setPw] = useState<string>('••••••••••••');
+  const [email, setEmail] = useState<string>('admin@quantyfin.ai');
+  const [pw, setPw] = useState<string>('password123');
   return (
     <div className="qf-login">
       <div className="pane-art">
@@ -2589,30 +2589,32 @@ export function ScreenLogin({ onSignIn }: ScreenLoginProps) {
         <div className="pane-form-inner">
           <h2 className="form-h">Đăng nhập</h2>
           <div className="form-sub">Sử dụng tài khoản workspace của bạn.</div>
-          <TextInput label="Email" value={email} onChange={setEmail} mono />
-          <TextInput label="Mật khẩu" value={pw} onChange={setPw} mono />
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              font: 'var(--type-caption)',
-              color: 'var(--fg-3)',
-              margin: '4px 0 20px',
-            }}
-          >
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" defaultChecked /> Ghi nhớ phiên 14 ngày
-            </label>
-            <a style={{ color: 'var(--iris-deep)', cursor: 'pointer' }}>Quên mật khẩu?</a>
-          </div>
-          <button
-            className="btn primary lg"
-            style={{ width: '100%', justifyContent: 'center' }}
-            onClick={onSignIn}
-          >
-            Đăng nhập <Icon k="arrowR" size={14} />
-          </button>
+          <form onSubmit={(e) => { e.preventDefault(); onSignIn(); }} style={{ display: 'contents' }}>
+            <TextInput label="Email" value={email} onChange={setEmail} name="email" type="text" mono />
+            <TextInput label="Mật khẩu" value={pw} onChange={setPw} name="password" type="password" mono />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                font: 'var(--type-caption)',
+                color: 'var(--fg-3)',
+                margin: '4px 0 20px',
+              }}
+            >
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <input type="checkbox" defaultChecked /> Ghi nhớ phiên 14 ngày
+              </label>
+              <a style={{ color: 'var(--iris-deep)', cursor: 'pointer' }}>Quên mật khẩu?</a>
+            </div>
+            <button
+              type="submit"
+              className="btn primary lg"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              Đăng nhập <Icon k="arrowR" size={14} />
+            </button>
+          </form>
           <div
             style={{
               margin: '14px 0',

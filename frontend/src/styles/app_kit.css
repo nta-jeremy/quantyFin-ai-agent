@@ -1720,3 +1720,47 @@
 .chart-legend-mark.s6 { background: var(--gap); }
 .chart-legend-mark.line { height: 2px; border-radius: 9999px; }
 .chart-legend-mark.dot  { border-radius: 50%; }
+
+/* Responsive Gantt & Calendar */
+@media (max-width: 680px) {
+  .chart-gantt-wrap {
+    grid-template-columns: 1fr;
+  }
+  .chart-gantt-labels {
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+  .chart-calendar-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .chart-calendar {
+    grid-template-columns: 1fr;
+  }
+  .chart-calendar-day {
+    min-height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .chart-calendar-day .num {
+    margin-bottom: 0;
+    width: 24px;
+    flex-shrink: 0;
+  }
+  .chart-calendar-events {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex-grow: 1;
+  }
+}

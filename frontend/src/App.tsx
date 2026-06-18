@@ -14,13 +14,9 @@ function App() {
   const [authed, setAuthed] = useState<boolean>(() => {
     try {
       const v = localStorage.getItem('qf_auth');
-      if (v == null) {
-        localStorage.setItem('qf_auth', '1');
-        return true;
-      }
       return v === '1';
     } catch {
-      return true;
+      return false;
     }
   });
 

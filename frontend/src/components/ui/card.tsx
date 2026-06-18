@@ -6,9 +6,14 @@ export interface CardProps extends React.ComponentProps<"div"> {
   variant?: "default" | "dashboard";
 }
 
-function Card({ className, variant = "default", ...props }: CardProps) {
+function Card({ className, variant = "default", role, ...props }: CardProps) {
+  const resolvedRole = role || (variant === "dashboard" ? "region" : undefined);
+  const resolvedAriaLabel = props["aria-label"] || (props["aria-labelledby"] ? undefined : (resolvedRole === "region" ? "Dashboard Card" : undefined));
+
   return (
     <div
+      role={resolvedRole}
+      aria-label={resolvedAriaLabel}
       data-slot="card"
       data-variant={variant}
       data-surface={variant === "dashboard" ? "app" : undefined}
