@@ -65,6 +65,10 @@
   /* Legacy aliases — keep compatibility with older previews */
   --accent: var(--iris);
   --accent-tint: var(--iris-tint);
+  --accent-bg: var(--iris-tint);
+  --accent-border: var(--border);
+  --text-h: var(--fg-1);
+  --social-bg: var(--bg-2);
 
   /* ═══ STATUS ═══ */
   --live: var(--mint);
@@ -874,7 +878,7 @@ em.accent.brand,
   text-decoration: none;
   cursor: pointer;
   border: none;
-  transition: all var(--dur) var(--ease-out);
+  transition: all var(--dur, 200ms) var(--ease-out, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 .cta-primary {

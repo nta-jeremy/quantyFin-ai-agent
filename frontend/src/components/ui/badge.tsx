@@ -69,6 +69,8 @@ function StatusBadge({ status, className, children, ...props }: StatusBadgeProps
 
   return (
     <Badge
+      role="status"
+      aria-label={children ? undefined : resolvedLabel}
       variant={resolvedVariant}
       className={cn("font-mono font-bold tracking-[0.6px] uppercase", className)}
       {...props}
