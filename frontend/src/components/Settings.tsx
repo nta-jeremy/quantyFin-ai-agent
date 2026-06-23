@@ -1,20 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icon, KpiCard, TPill, PageHead, Section, Segment, fmtInt } from './SharedUI';
 
 const SET_NAV = [
-  { group: 'AI · Dữ liệu', items: [
+  { group: 'AI & Dữ liệu', items: [
     { k: 'llm',     label: 'LLM Gateway',       icon: 'sparkle', sub: 'Routing + budget' },
     { k: 'sources', label: 'Nguồn dữ liệu',     icon: 'database', sub: '8 nguồn · 6 RSS' },
     { k: 'kg',      label: 'Knowledge Graph',   icon: 'graph',    sub: 'Neo4j · embeddings' },
   ]},
-  { group: 'Phân phối', items: [
-    { k: 'alerts',  label: 'Cảnh báo & Webhooks', icon: 'bell',    sub: '6 rule · 3 kênh' },
-  ]},
-  { group: 'Quản trị', items: [
-    { k: 'access',    label: 'Truy cập & API',  icon: 'shield',   sub: '12 thành viên · 4 key' },
+  { group: 'Giao diện', items: [
     { k: 'workspace', label: 'Workspace',       icon: 'cog',      sub: 'Brand · vùng · lưu trữ' },
   ]},
+  { group: 'Thông báo', items: [
+    { k: 'alerts',  label: 'Cảnh báo & Webhooks', icon: 'bell',    sub: '6 rule · 3 kênh' },
+  ]},
+  { group: 'Tài khoản', items: [
+    { k: 'access',    label: 'Truy cập & API',  icon: 'shield',   sub: '12 thành viên · 4 key' },
+  ]},
+  { group: 'Nâng cao', items: [
+    { k: 'advanced',  label: 'Nâng cao',          icon: 'server',   sub: 'Dọn dẹp · tối ưu hóa' },
+  ]},
 ];
+
+function SecAdvanced() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Section title="Cài đặt nâng cao" meta="Các tùy chọn hệ thống nâng cao">
+        <div style={{ font: '13.5px var(--font-body)', color: 'var(--fg-2)' }}>
+          Cấu hình nâng cao cho hệ thống phân tích tài chính. Vui lòng liên hệ Admin để thay đổi các tham số này.
+        </div>
+      </Section>
+    </div>
+  );
+}
 
 interface FieldProps {
   label: string;
@@ -112,11 +129,88 @@ function SecretField({ value, masked = true, onCopy }: SecretFieldProps) {
 // ════════════════════════════════════════════════════════════════════
 // SECTION · LLM GATEWAY
 // ════════════════════════════════════════════════════════════════════
-function SecLLM() {
-  const [primary, setPrimary] = useState('sonnet');
+interface SecLLMProps {
+  endpoint: string;
+  setEndpoint: (v: string) => void;
+  apiKey: string;
+  setApiKey: (v: string) => void;
+  model: string;
+  setModel: (v: string) => void;
+  temperature: number;
+  setTemperature: (v: number) => void;
+  setDirty: (v: boolean) => void;
+}
+
+function SecLLM({
+  endpoint,
+  setEndpoint,
+  apiKey,
+  setApiKey,
+  model,
+  setModel,
+  temperature,
+  setTemperature,
+  setDirty,
+}: SecLLMProps) {
   const [budget, setBudget] = useState(120000);
   const [cache, setCache] = useState(true);
   const [retry, setRetry] = useState(2);
+
+  const [showKey, setShowKey] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [latency, setLatency] = useState<number | null>(null);
+  const [testError, setTestError] = useState('');
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const handleTestConnection = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    setTestStatus('loading');
+    setLatency(null);
+    setTestError('');
+
+    if (!endpoint.trim() || !apiKey.trim()) {
+      setTestStatus('error');
+      setTestError('API Endpoint và API Key không được trống');
+      return;
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    let targetUrl = endpoint.trim();
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = 'https://' + targetUrl;
+    }
+
+    const start = performance.now();
+    fetch(targetUrl, {
+      method: 'GET',
+      mode: 'no-cors',
+      signal: controller.signal,
+    })
+      .then(() => {
+        const end = performance.now();
+        setLatency(Math.max(1, Math.round(end - start)));
+        setTestStatus('success');
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        setTestStatus('error');
+        setTestError('Không thể kết nối tới Endpoint');
+      });
+  };
 
   const dailySpend = (budget * 0.000003 * 0.62 + 1.84).toFixed(2);
   const monthSpend = (Number(dailySpend) * 30).toFixed(0);
@@ -130,6 +224,135 @@ function SecLLM() {
         <KpiCard label="p95 latency" value="2.4s" sub="↓ 0.3s so với tuần trước" />
       </div>
 
+      <Section title="Cấu hình LLM Gateway" meta="Thiết lập các kết nối và tham số AI cho Gateway chính">
+        <div className="set-fields" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <Field label="API Endpoint" hint="Đường dẫn API của Gateway (ví dụ: OpenAI, OpenRouter...)">
+            <input
+              type="text"
+              value={endpoint}
+              onChange={(e) => {
+                setEndpoint(e.target.value);
+                setDirty(true);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid var(--border-light)',
+                borderRadius: '6px',
+                background: 'var(--bg)',
+                color: 'var(--fg-1)',
+                font: '13px var(--font-mono)',
+              }}
+              className="qf-endpoint-input"
+            />
+          </Field>
+
+          <Field label="API Key" hint="Khóa bảo mật API dùng để xác thực các cuộc gọi Gateway">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+              <input
+                type={showKey ? 'text' : 'password'}
+                value={apiKey}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  setDirty(true);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '6px',
+                  background: 'var(--bg)',
+                  color: 'var(--fg-1)',
+                  font: '13px var(--font-mono)',
+                }}
+                className="qf-apikey-input"
+              />
+              <button
+                type="button"
+                className="btn ghost sm"
+                style={{ padding: '8px 10px', minWidth: 0 }}
+                onClick={() => setShowKey(!showKey)}
+              >
+                <Icon k={showKey ? 'eyeOff' : 'eye'} size={14} />
+              </button>
+            </div>
+          </Field>
+
+          <Field label="Model chính" hint="Chọn mô hình ngôn ngữ lớn làm nền tảng xử lý dữ liệu">
+            <select
+              value={model}
+              onChange={(e) => {
+                setModel(e.target.value);
+                setDirty(true);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid var(--border-light)',
+                borderRadius: '6px',
+                background: 'var(--bg)',
+                color: 'var(--fg-1)',
+                font: '13px var(--font-body)',
+              }}
+              className="qf-model-select"
+            >
+              <option value="haiku">Claude Haiku 3.5</option>
+              <option value="sonnet">Claude Sonnet 4</option>
+              <option value="gpt4o">GPT-4o</option>
+              <option value="gemini">Gemini 1.5 Pro</option>
+            </select>
+          </Field>
+
+          <Field label="Temperature" hint="Độ sáng tạo / ngẫu nhiên của mô hình AI">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+              <input
+                type="range"
+                min="0.0"
+                max="1.0"
+                step="0.1"
+                value={temperature}
+                onChange={(e) => {
+                  setTemperature(Number(e.target.value));
+                  setDirty(true);
+                }}
+                style={{ flex: 1 }}
+                className="qf-temp-slider"
+              />
+              <strong style={{ font: '600 13px var(--font-mono)', width: 28, color: 'var(--fg-1)' }}>
+                {temperature.toFixed(1)}
+              </strong>
+            </div>
+          </Field>
+        </div>
+
+        <div className="divider" />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button
+            type="button"
+            className="btn primary qf-test-conn-btn"
+            disabled={testStatus === 'loading'}
+            onClick={handleTestConnection}
+          >
+            {testStatus === 'loading' ? 'Đang kết nối...' : 'Kiểm tra kết nối'}
+          </button>
+
+          {testStatus === 'success' && (
+            <span style={{ color: 'var(--mint-deep)', font: '600 12.5px var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6 }} className="qf-test-success">
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--mint)' }} />
+              Kết nối thành công (Độ trễ: {latency}ms)
+            </span>
+          )}
+
+          {testStatus === 'error' && (
+            <span style={{ color: 'var(--gap)', font: '600 12.5px var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6 }} className="qf-test-error">
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gap)' }} />
+              {testError}
+            </span>
+          )}
+        </div>
+      </Section>
+
       <Section title="Model routing" meta="Tự động chọn model theo task để cân bằng chi phí · chất lượng">
         <div>
           <div style={{ font: 'var(--type-label)', color: 'var(--fg-2)', marginBottom: 8 }}>Model chính cho analyst</div>
@@ -140,11 +363,11 @@ function SecLLM() {
               { k: 'gpt4o',  vendor: 'OpenAI',    name: 'GPT-4o',            desc: 'Đa mục đích · multimodal',         price: '$2.50 / 1M', tps: '110 tok/s' },
               { k: 'gemini', vendor: 'Google',    name: 'Gemini 1.5 Pro',    desc: 'Long context · phân tích báo cáo', price: '$1.25 / 1M', tps: '85 tok/s' },
             ].map((m) => (
-              <button key={m.k} onClick={() => setPrimary(m.k)} className="set-model-card" data-active={primary === m.k ? 'true' : 'false'}>
+              <button key={m.k} onClick={() => { setModel(m.k); setDirty(true); }} className="set-model-card" data-active={model === m.k ? 'true' : 'false'}>
                 <div className="head">
                   <span className="v">{m.vendor}</span>
                   {m.rec && <span className="rec">Đề xuất</span>}
-                  {primary === m.k && <Icon k="check" size={13} style={{ color: 'var(--iris)', marginLeft: 'auto' }} />}
+                  {model === m.k && <Icon k="check" size={13} style={{ color: 'var(--iris)', marginLeft: 'auto' }} />}
                 </div>
                 <div className="n">{m.name}</div>
                 <div className="d">{m.desc}</div>
@@ -991,26 +1214,70 @@ export function Settings() {
   const [active, setActive] = useState('llm');
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => {
-    const root = document.querySelector('.set-pane');
-    if (!root) return;
-    const fn = () => setDirty(true);
-    root.addEventListener('click', fn);
-    return () => root.removeEventListener('click', fn);
-  }, [active]);
+  // States for LLM Gateway configuration
+  const [endpoint, setEndpoint] = useState(() => {
+    try {
+      return localStorage.getItem('qf_llm_endpoint') || 'https://api.openai.com/v1';
+    } catch {
+      return 'https://api.openai.com/v1';
+    }
+  });
+  const [apiKey, setApiKey] = useState(() => {
+    try {
+      return localStorage.getItem('qf_llm_apikey') || 'sk-proj-••••••••••••••••';
+    } catch {
+      return 'sk-proj-••••••••••••••••';
+    }
+  });
+  const [model, setModel] = useState(() => {
+    try {
+      return localStorage.getItem('qf_llm_model') || 'sonnet';
+    } catch {
+      return 'sonnet';
+    }
+  });
+  const [temperature, setTemperature] = useState(() => {
+    try {
+      const val = Number(localStorage.getItem('qf_llm_temp') || '0.3');
+      return isNaN(val) ? 0.3 : val;
+    } catch {
+      return 0.3;
+    }
+  });
 
-  useEffect(() => { setDirty(false); }, [active]);
+  const handleSave = () => {
+    try {
+      localStorage.setItem('qf_llm_endpoint', endpoint);
+      if (apiKey !== 'sk-proj-••••••••••••••••') {
+        localStorage.setItem('qf_llm_apikey', apiKey);
+      }
+      localStorage.setItem('qf_llm_model', model);
+      localStorage.setItem('qf_llm_temp', temperature.toString());
+    } catch {}
+    setDirty(false);
+  };
+
+  const handleCancel = () => {
+    try {
+      setEndpoint(localStorage.getItem('qf_llm_endpoint') || 'https://api.openai.com/v1');
+      setApiKey(localStorage.getItem('qf_llm_apikey') || 'sk-proj-••••••••••••••••');
+      setModel(localStorage.getItem('qf_llm_model') || 'sonnet');
+      setTemperature(Number(localStorage.getItem('qf_llm_temp') || '0.3'));
+    } catch {}
+    setDirty(false);
+  };
 
   const flat = SET_NAV.flatMap(g => g.items);
   const cur = flat.find(n => n.k === active) || flat[0];
 
   let body: React.ReactNode = null;
-  if      (active === 'llm')       body = <SecLLM />;
+  if      (active === 'llm')       body = <SecLLM endpoint={endpoint} setEndpoint={setEndpoint} apiKey={apiKey} setApiKey={setApiKey} model={model} setModel={setModel} temperature={temperature} setTemperature={setTemperature} setDirty={setDirty} />;
   else if (active === 'sources')   body = <SecSources />;
   else if (active === 'kg')        body = <SecKG />;
   else if (active === 'alerts')    body = <SecAlerts />;
   else if (active === 'access')    body = <SecAccess />;
   else if (active === 'workspace') body = <SecWorkspace />;
+  else if (active === 'advanced')  body = <SecAdvanced />;
 
   return (
     <main className="page">
@@ -1020,8 +1287,8 @@ export function Settings() {
         sub={<><span>Workspace · QuantyFin Production</span><span className="sep">·</span><span>Version 0.4.2-rc</span><span className="sep">·</span><span>Cập nhật lần cuối bởi <strong style={{color:'var(--fg-2)'}}>@hungnguyen</strong> · 12 phút trước</span></>}
         actions={<>
           {dirty && <span className="set-dirty"><span className="dt"/>Có thay đổi chưa lưu</span>}
-          <button className="btn ghost" onClick={() => setDirty(false)}>Hủy</button>
-          <button className="btn primary" onClick={() => setDirty(false)}><Icon k="check" size={14} /> Lưu thay đổi</button>
+          <button className="btn ghost" onClick={handleCancel}>Hủy</button>
+          <button className="btn primary" onClick={handleSave}><Icon k="check" size={14} /> Lưu thay đổi</button>
         </>}
       />
       <div className="qf-page">

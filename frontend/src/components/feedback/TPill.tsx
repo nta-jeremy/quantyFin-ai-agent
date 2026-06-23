@@ -3,7 +3,7 @@ import React from 'react';
 interface TPillProps {
   children: React.ReactNode;
   tone?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLSpanElement>) => void;
   className?: string;
   style?: React.CSSProperties;
 }

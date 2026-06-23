@@ -15,6 +15,8 @@ export function SideRail({ active, onNav, alertCount }: SideRailProps) {
     { k: 'chat', label: 'AI Chat', icon: 'chat' },
     { k: 'alerts', label: 'Cảnh báo', icon: 'bell', badge: alertCount },
     { k: 'jobs', label: 'Pipeline & Jobs', icon: 'pipe' },
+    { k: 'crawler', label: 'Giám sát Crawler', icon: 'server' },
+    { k: 'ai-health', label: 'AI Pipeline Health', icon: 'bolt' },
     { k: 'settings', label: 'Cài đặt', icon: 'cog' },
   ];
 
@@ -28,15 +30,14 @@ export function SideRail({ active, onNav, alertCount }: SideRailProps) {
           <button
             key={n.k}
             className="nav-link"
-            data-active={active === n.k}
+            data-active={active === n.k ? 'true' : undefined}
             onClick={() => onNav(n.k)}
             style={{
               display: 'grid', gridTemplateColumns: '16px 1fr auto',
               alignItems: 'center', gap: 10,
               padding: '8px 12px',
-              border: 'none', background: 'transparent',
+              border: 'none',
               borderRadius: 'var(--radius-sm)',
-              color: 'var(--fg-2)',
               font: '500 13px/1 var(--font-body)',
               cursor: 'pointer', textAlign: 'left',
               position: 'relative',
