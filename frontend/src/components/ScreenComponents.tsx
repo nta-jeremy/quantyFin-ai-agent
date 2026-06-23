@@ -7,6 +7,9 @@ import { TextInput } from '@/components/forms';
 import { fmt, fmtInt, fmtPct, fmtKbig } from '@/lib/format';
 import { KGViewer } from './KGViewer';
 import { Settings } from './Settings';
+import { ScreenAiHealth } from './ScreenAiHealth';
+import { NodeExplorerBento } from './NodeExplorerBento';
+import { StatusBadge, Badge } from '@/components/ui';
 import {
   WATCHLIST,
   KG_NODES,
@@ -16,6 +19,9 @@ import type {
   Stock,
   NewsItemData,
   DashboardData,
+  Job,
+  PortfolioData,
+  AIJob,
 } from '../lib/mockData';
 
 // ════════════════════════════════════════════════════════════════════
@@ -26,10 +32,12 @@ interface ScreenDashboardProps {
   onNav: (screen: string) => void;
   onTicker: (ticker: string) => void;
   scenario: string;
+  onDismissAlert?: (id: string) => void;
 }
 
-export function ScreenDashboard({ data, onNav, onTicker, scenario }: ScreenDashboardProps) {
+export function ScreenDashboard({ data, onNav, onTicker, scenario, onDismissAlert }: ScreenDashboardProps) {
   const { stocks, news, alerts, indices, macros } = data;
+  const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
   const vni = indices[0];
   const watch = WATCHLIST.map((t) => stocks.find((s) => s.ticker === t)).filter((s): s is Stock => !!s);
 
@@ -165,9 +173,34 @@ export function ScreenDashboard({ data, onNav, onTicker, scenario }: ScreenDashb
           >
             <div className="scroll" style={{ maxHeight: 380 }}>
               {alerts.map((a) => (
-                <AlertRow key={a.id} a={a} onTicker={onTicker} />
+                <AlertRow
+                  key={a.id}
+                  a={a}
+                  onTicker={onTicker}
+                  onDismiss={onDismissAlert ? () => onDismissAlert(a.id) : undefined}
+                  onClick={() => setSelectedAlert(a)}
+                />
               ))}
             </div>
+          </Section>
+        </div>
+
+        {/* ROW 3.5 · Portfolio Snapshot + Top Movers */}
+        <div className="qf-grid qf-grid-2-1" style={{ marginBottom: 16 }}>
+          <Section
+            flush
+            title="Danh mục đầu tư (Portfolio Snapshot)"
+            meta="Giá trị tài sản & Hiệu suất"
+          >
+            <PortfolioTable portfolio={data.portfolio} onTicker={onTicker} />
+          </Section>
+
+          <Section
+            flush
+            title="Top Movers hôm nay"
+            meta="Biến động mạnh nhất"
+          >
+            <TopMoversWidget gainers={gainers} losers={losers} onTicker={onTicker} />
           </Section>
         </div>
 
@@ -278,7 +311,13 @@ export function ScreenDashboard({ data, onNav, onTicker, scenario }: ScreenDashb
             </div>
           </Section>
         </div>
+
+        {/* ROW 6 · Node Explorer Bento Box */}
+        <NodeExplorerBento onTicker={onTicker} onExpandKG={() => onNav('kg')} />
       </div>
+      {selectedAlert && (
+        <AlertDetailsModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} onTicker={onTicker} />
+      )}
     </main>
   );
 }
@@ -535,6 +574,219 @@ function WatchlistTable({ rows, onTicker }: WatchlistTableProps) {
         ))}
       </tbody>
     </table>
+  );
+}
+
+interface PortfolioTableProps {
+  portfolio: PortfolioData;
+  onTicker: (ticker: string) => void;
+}
+
+function PortfolioTable({ portfolio, onTicker }: PortfolioTableProps) {
+  if (!portfolio || !portfolio.assets) return null;
+  const up = portfolio.totalProfitOrLoss >= 0;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '12px 16px',
+          background: 'var(--bg-muted)',
+          borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border-hairline)',
+        }}
+      >
+        <div>
+          <div style={{ font: '12.5px var(--font-body)', color: 'var(--fg-3)', marginBottom: 2 }}>Tổng giá trị tài sản</div>
+          <div style={{ font: '700 20px/1 var(--font-mono)', color: 'var(--fg-1)' }}>
+            {fmtInt(portfolio.totalValue)} ₫
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ font: '12.5px var(--font-body)', color: 'var(--fg-3)', marginBottom: 2 }}>Tổng lãi/lỗ</div>
+          <div
+            className={up ? 'dir-up' : 'dir-down'}
+            style={{ font: '700 16px var(--font-mono)' }}
+          >
+            {up ? '+' : ''}{fmtInt(portfolio.totalProfitOrLoss)} ₫ ({fmtPct(portfolio.totalProfitOrLossPct)})
+          </div>
+        </div>
+      </div>
+
+      <table className="dt" style={{ width: '100%' }}>
+        <thead>
+          <tr>
+            <th>Mã</th>
+            <th className="num">Số lượng</th>
+            <th className="num">Giá vốn</th>
+            <th className="num">Giá hiện tại</th>
+            <th className="num">Giá trị</th>
+            <th className="num">Lãi/Lỗ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(portfolio.assets || []).map((asset) => {
+            const assetUp = asset.profitOrLoss >= 0;
+            return (
+              <tr
+                key={asset.ticker}
+                onClick={() => onTicker?.(asset.ticker)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onTicker?.(asset.ticker);
+                  }
+                }}
+                style={{ cursor: 'pointer', outline: 'none' }}
+                tabIndex={0}
+                role="button"
+              >
+                <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>
+                  {asset.ticker}
+                  <span
+                    style={{
+                      display: 'block',
+                      font: '400 11px var(--font-body)',
+                      color: 'var(--fg-3)',
+                      fontWeight: 'normal',
+                      marginTop: 2,
+                    }}
+                  >
+                    {asset.name}
+                  </span>
+                </td>
+                <td className="num tabular">{fmtInt(asset.shares)}</td>
+                <td className="num tabular">{fmt(asset.avgCost)}</td>
+                <td className="num tabular">{fmt(asset.currentPrice)}</td>
+                <td className="num tabular">{fmtInt(asset.totalValue)}</td>
+                <td className={'num tabular ' + (assetUp ? 'dir-up' : 'dir-down')}>
+                  {assetUp ? '+' : ''}{fmtPct(asset.profitOrLossPct)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+interface MoverCardProps {
+  stock: Stock;
+  onTicker: (ticker: string) => void;
+  isGainer: boolean;
+}
+
+function MoverCard({ stock, onTicker, isGainer }: MoverCardProps) {
+  return (
+    <div
+      onClick={() => onTicker?.(stock.ticker)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onTicker?.(stock.ticker);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '10px 12px',
+        background: 'var(--bg-muted)',
+        borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--border-hairline)',
+        cursor: 'pointer',
+        outline: 'none',
+      }}
+    >
+      <div>
+        <div style={{ font: '700 14px var(--font-mono)', color: 'var(--fg-1)' }}>
+          {stock.ticker}
+        </div>
+        <div style={{ font: '400 11px var(--font-body)', color: 'var(--fg-3)', marginTop: 2 }}>
+          {stock.name}
+        </div>
+      </div>
+      <div style={{ textAlign: 'right' }}>
+        <div
+          style={{
+            font: '700 13.5px var(--font-mono)',
+            color: isGainer ? 'var(--mint-deep)' : 'var(--gap)',
+          }}
+        >
+          {fmt(stock.price)}
+        </div>
+        <div
+          className={isGainer ? 'dir-up' : 'dir-down'}
+          style={{ font: '600 11.5px var(--font-mono)', marginTop: 2 }}
+        >
+          {isGainer ? '+' : ''}{fmtPct(stock.changePct)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface TopMoversWidgetProps {
+  gainers: Stock[];
+  losers: Stock[];
+  onTicker: (ticker: string) => void;
+}
+
+function TopMoversWidget({ gainers, losers, onTicker }: TopMoversWidgetProps) {
+  const topGainers = (gainers || []).slice(0, 3);
+  const topLosers = (losers || []).slice(0, 3);
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: '4px 0' }}>
+      <div>
+        <h4
+          style={{
+            font: '700 12.5px var(--font-brand)',
+            color: 'var(--mint-deep)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            marginBottom: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <Icon k="trend" size={13} /> Tăng mạnh nhất
+        </h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {topGainers.map((s) => (
+            <MoverCard key={s.ticker} stock={s} onTicker={onTicker} isGainer={true} />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4
+          style={{
+            font: '700 12.5px var(--font-brand)',
+            color: 'var(--gap)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            marginBottom: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <Icon k="trendDown" size={13} /> Giảm mạnh nhất
+        </h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {topLosers.map((s) => (
+            <MoverCard key={s.ticker} stock={s} onTicker={onTicker} isGainer={false} />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -887,6 +1139,10 @@ export function ScreenStock({ data, ticker, onTicker }: ScreenStockProps) {
             <span className={up ? 'dir-up' : 'dir-down'} style={{ whiteSpace: 'nowrap' }}>
               {fmtPct(s.changePct)} ({fmt(s.change)})
             </span>
+            <span className="sep">·</span>
+            <span style={{ color: 'var(--fg-3)', whiteSpace: 'nowrap' }}>
+              KL: {fmtKbig(s.volume)}
+            </span>
           </span>
         }
         actions={
@@ -1166,15 +1422,22 @@ interface ScreenNewsProps {
 }
 
 export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
-  const { news, jobs } = data;
+  const news = data.news || [];
+  const jobs = data.jobs || [];
   const [sentF, setSentF] = useState<string>('all');
   const [statusF, setStatusF] = useState<string>('all');
   const [srcF, setSrcF] = useState<string>('all');
+  const [typeF, setTypeF] = useState<string>('all');
+  const [sectorF, setSectorF] = useState<string>('all');
+  const [tickerF, setTickerF] = useState<string>('all');
 
   const filtered = news.filter((n) => {
     if (sentF !== 'all' && n.tone !== sentF) return false;
     if (statusF !== 'all' && n.filterStatus !== statusF) return false;
     if (srcF !== 'all' && n.src !== srcF) return false;
+    if (typeF !== 'all' && n.type !== typeF) return false;
+    if (sectorF !== 'all' && n.sector !== sectorF) return false;
+    if (tickerF !== 'all' && !(n.tickers || []).includes(tickerF)) return false;
     return true;
   });
 
@@ -1186,10 +1449,15 @@ export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
     pos: news.filter((n) => n.tone === 'pos').length,
     neg: news.filter((n) => n.tone === 'neg').length,
     neu: news.filter((n) => n.tone === 'neu').length,
+    macroType: news.filter((n) => n.type === 'vĩ mô').length,
+    bizType: news.filter((n) => n.type === 'doanh nghiệp').length,
+    legalType: news.filter((n) => n.type === 'pháp lý').length,
   };
-  const filterRate = ((stats.filtered / stats.total) * 100).toFixed(0);
+  const filterRate = stats.total > 0 ? ((stats.filtered / stats.total) * 100).toFixed(0) : '0';
 
-  const sources = Array.from(new Set(news.map((n) => n.src)));
+  const sources = Array.from(new Set(news.map((n) => n.src).filter(Boolean)));
+  const sectors = Array.from(new Set(news.map((n) => n.sector).filter(Boolean)));
+  const tickers = Array.from(new Set(news.flatMap((n) => n.tickers || []).filter(Boolean)));
 
   return (
     <main className="page">
@@ -1248,7 +1516,7 @@ export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
         {/* main feed + sidebar */}
         <div className="qf-grid qf-grid-2-1">
           <Section flush>
-            <div className="filter-bar">
+            <div className="filter-bar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <Segment
                 value={sentF}
                 onChange={setSentF}
@@ -1270,6 +1538,18 @@ export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
                   { k: 'filtered', label: 'Đã lọc · zero-cost' },
                 ]}
               />
+              <span style={{ width: 1, height: 20, background: 'var(--border)' }} />
+              <Segment
+                value={typeF}
+                onChange={setTypeF}
+                options={[
+                  { k: 'all', label: 'Tất cả loại tin', count: stats.total },
+                  { k: 'vĩ mô', label: 'Vĩ mô', count: stats.macroType },
+                  { k: 'doanh nghiệp', label: 'Doanh nghiệp', count: stats.bizType },
+                  { k: 'pháp lý', label: 'Pháp lý', count: stats.legalType },
+                ]}
+              />
+              <span style={{ width: 1, height: 20, background: 'var(--border)' }} />
               <select
                 value={srcF}
                 onChange={(e) => setSrcF(e.target.value)}
@@ -1291,7 +1571,49 @@ export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
                   </option>
                 ))}
               </select>
-              <span style={{ marginLeft: 'auto', font: 'var(--type-caption)', color: 'var(--fg-3)' }}>
+              <select
+                value={sectorF}
+                onChange={(e) => setSectorF(e.target.value)}
+                style={{
+                  height: 28,
+                  padding: '0 8px',
+                  borderRadius: 5,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg)',
+                  color: 'var(--fg-2)',
+                  font: '12px var(--font-body)',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="all">Mọi ngành</option>
+                {sectors.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={tickerF}
+                onChange={(e) => setTickerF(e.target.value)}
+                style={{
+                  height: 28,
+                  padding: '0 8px',
+                  borderRadius: 5,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg)',
+                  color: 'var(--fg-2)',
+                  font: '12px var(--font-body)',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="all">Mọi mã CK</option>
+                {tickers.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <span style={{ font: 'var(--type-caption)', color: 'var(--fg-3)', marginLeft: 'auto' }}>
                 {filtered.length} tin hiển thị
               </span>
             </div>
@@ -1419,72 +1741,214 @@ interface ChatMessage {
   confPct?: number;
 }
 
-const SAMPLE_CHAT: ChatMessage[] = [
-  {
-    role: 'user',
-    text: 'Tại sao cổ phiếu VHM giảm mạnh tuần này?',
-  },
-  {
-    role: 'ai',
-    text: (
-      <>
-        <p>
-          <strong>VHM</strong> giảm 5.8% trong 5 phiên gần nhất, có 3 nguyên nhân chính được tổng
-          hợp từ Knowledge Graph:
-        </p>
-        <p>
-          <strong>1. Áp lực vĩ mô</strong> — CPI tháng 5 vượt mục tiêu kiểm soát đã kích hoạt lo
-          ngại NHNN thắt chặt tiền tệ
-          <sup style={{ color: 'var(--iris-deep)', fontWeight: 700 }}>[1]</sup>, ảnh hưởng tiêu
-          cực đến nhóm Bất động sản.
-        </p>
-        <p>
-          <strong>2. Khối ngoại bán ròng</strong> tăng đột biến, riêng VHM chịu áp lực 420 tỷ đồng
-          trong tuần
-          <sup style={{ color: 'var(--iris-deep)', fontWeight: 700 }}>[2]</sup>.
-        </p>
-        <p>
-          <strong>3. Tin nội bộ</strong> — cổ đông lớn đăng ký bán 2.3% vốn, làm yếu tâm lý ngắn
-          hạn
-          <sup style={{ color: 'var(--iris-deep)', fontWeight: 700 }}>[3]</sup>.
-        </p>
-        <p>
-          Sentiment 24h: <Sentiment tone="neg" score={-0.62} compact /> · KG path 3 hops từ{' '}
-          <strong>CPI → tỷ giá → khối ngoại → VHM</strong>.
-        </p>
-      </>
-    ),
+const VALID_TICKERS = new Set([
+  'VCB', 'TCB', 'MBB', 'CTG', 'BID',
+  'VHM', 'VIC', 'NVL', 'DXG', 'KDH',
+  'HPG', 'HSG', 'NKG',
+  'MWG', 'MSN', 'VNM', 'PNJ', 'FRT',
+  'FPT', 'CMG', 'VGI',
+  'GAS', 'PLX', 'POW', 'BSR',
+  'SSI', 'VND', 'HCM',
+  'HVN', 'ACV'
+]);
+
+function renderTextWithTickers(text: string | React.ReactNode, onTicker: (ticker: string) => void) {
+  if (typeof text !== 'string') {
+    return text;
+  }
+
+  // 1. Split by newlines to render paragraphs
+  const paragraphs = text.split('\n\n');
+
+  return (
+    <>
+      {paragraphs.map((pText, pIdx) => {
+        // 2. Parse [Sentiment:tone:score] inside each paragraph
+        const sentimentRegex = /\[Sentiment:(pos|neg|neu):(-?\d+\.?\d*)\]/g;
+        const parts = pText.split(sentimentRegex);
+        
+        const renderParts = (inputText: string) => {
+          // 3. Parse tickers (not CPI, FED, etc.)
+          const tickerRegex = /(?<![A-Za-z0-9À-ỹĐđ])([A-Z]{3})(?![A-Za-z0-9À-ỹĐđ])/g;
+          const tParts = inputText.split(tickerRegex);
+          if (tParts.length === 1) return inputText;
+          
+          return tParts.map((tPart, tIdx) => {
+            if (tIdx % 2 === 1) {
+              const ticker = tPart;
+              if (VALID_TICKERS.has(ticker)) {
+                return (
+                  <a
+                    key={tIdx}
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onTicker?.(ticker);
+                    }}
+                    style={{
+                      fontWeight: 700,
+                      color: 'var(--brand)',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                    }}
+                    className="ticker-link"
+                  >
+                    {ticker}
+                  </a>
+                );
+              }
+              return ticker;
+            }
+            return tPart;
+          });
+        };
+
+        if (parts.length === 1) {
+          return <p key={pIdx}>{renderParts(pText)}</p>;
+        }
+
+        const renderedElements: React.ReactNode[] = [];
+        let i = 0;
+        while (i < parts.length) {
+          if (parts[i]) {
+            renderedElements.push(<React.Fragment key={i}>{renderParts(parts[i])}</React.Fragment>);
+          }
+          if (i + 2 < parts.length) {
+            const tone = parts[i + 1];
+            const score = parseFloat(parts[i + 2]);
+            renderedElements.push(
+              <Sentiment key={`sent-${i}`} tone={tone as 'pos' | 'neg' | 'neu'} score={score} compact />
+            );
+            i += 3;
+          } else {
+            i += 1;
+          }
+        }
+
+        return <p key={pIdx}>{renderedElements}</p>;
+      })}
+    </>
+  );
+}
+
+function buildSampleChat(): ChatMessage[] {
+  return [
+    {
+      role: 'user',
+      text: 'Tại sao cổ phiếu VHM giảm mạnh tuần này?',
+    },
+    {
+      role: 'ai',
+      text: `VHM giảm 5.8% trong 5 phiên gần nhất, có 3 nguyên nhân chính được tổng hợp từ Knowledge Graph:
+
+1. Áp lực vĩ mô — CPI tháng 5 vượt mục tiêu kiểm soát đã kích hoạt lo ngại NHNN thắt chặt tiền tệ [1], ảnh hưởng tiêu cực đến nhóm Bất động sản.
+
+2. Khối ngoại bán ròng tăng đột biến, riêng VHM chịu áp lực 420 tỷ đồng trong tuần [2].
+
+3. Tin nội bộ — cổ đông lớn đăng ký bán 2.3% vốn, làm yếu tâm lý ngắn hạn [3].
+
+Sentiment 24h: [Sentiment:neg:-0.62] · KG path 3 hops từ CPI → tỷ giá → khối ngoại → VHM.`,
+      citations: [
+        {
+          n: 1,
+          src: 'CafeF',
+          t: 'CPI tháng 5 tăng 4.6% so với cùng kỳ, vượt mục tiêu kiểm soát của Chính phủ',
+          date: '03/06/2026',
+        },
+        {
+          n: 2,
+          src: 'Vietstock',
+          t: 'Khối ngoại bán ròng 580 tỷ đồng cổ phiếu VHM trong tuần',
+          date: '02/06/2026',
+        },
+        {
+          n: 3,
+          src: 'NDH',
+          t: 'VHM: cổ đông lớn đăng ký bán 2.3% vốn, cổ phiếu chịu áp lực',
+          date: '01/06/2026',
+        },
+      ],
+      conf: 'high',
+      confPct: 89,
+    },
+  ];
+}
+
+function generateAIResponse(text: string, data: DashboardData): { text: string; citations: any[]; conf: 'high' | 'med' | 'low'; confPct: number } {
+  if (!data || !data.stocks) {
+    return {
+      text: 'Hệ thống đang tải dữ liệu hoặc dữ liệu hiện không khả dụng. Vui lòng thử lại sau.',
+      citations: [],
+      conf: 'low',
+      confPct: 0
+    };
+  }
+  const question = text.toUpperCase();
+  const foundTickers = Array.from(VALID_TICKERS).filter(t => question.includes(t));
+  
+  const scenario = data.scenario || 'normal';
+  let scenarioDesc = '';
+  if (scenario === 'up') scenarioDesc = 'Thị trường đang trong xu hướng tăng điểm tích cực.';
+  else if (scenario === 'down') scenarioDesc = 'Thị trường đang chịu áp lực điều chỉnh giảm.';
+  else if (scenario === 'volatile') scenarioDesc = 'Thị trường đang biến động mạnh với sự giằng co giữa bên mua và bên bán.';
+  else if (scenario === 'crisis') scenarioDesc = 'Thị trường đang trong giai đoạn khủng hoảng với tâm lý hoảng loạn.';
+  else scenarioDesc = 'Thị trường đang giao dịch tương đối ổn định.';
+
+  if (foundTickers.length > 0) {
+    const ticker = foundTickers[0];
+    const s = data.stocks.find(x => x.ticker === ticker);
+    if (s) {
+      const isUp = s.changePct >= 0;
+      const tone = isUp ? 'pos' : 'neg';
+      const score = isUp ? 0.65 : -0.55;
+      
+      const responseText = `Phân tích chi tiết cho cổ phiếu ${ticker}:
+
+Hiện tại, ${ticker} (${s.name}) đang giao dịch ở mức giá ${s.price} (${isUp ? '+' : ''}${s.changePct.toFixed(2)}% so với phiên trước).
+
+Trong bối cảnh kịch bản thị trường "${scenario}", ${ticker} đang thể hiện xu hướng ${isUp ? 'tích cực' : 'tiêu cực'}. Đồ thị tri thức Knowledge Graph ghi nhận dòng tiền di chuyển liên quan đến nhóm ngành ${s.sector}.
+
+Sentiment 24h: [Sentiment:${tone}:${score}] · Phân tích kỹ thuật và dòng tin tức hỗ trợ cho thấy mức độ tự tin trung bình.`;
+
+      return {
+        text: responseText,
+        citations: [
+          { n: 1, src: 'QuantyFin AI', t: `Báo cáo phân tích tự động cho ${ticker} dựa trên kịch bản ${scenario}`, date: 'Vừa xong' }
+        ],
+        conf: 'high',
+        confPct: 85
+      };
+    }
+  }
+
+  const tone = scenario === 'up' ? 'pos' : (scenario === 'down' || scenario === 'crisis' ? 'neg' : 'neu');
+  const score = scenario === 'up' ? 0.75 : (scenario === 'down' || scenario === 'crisis' ? -0.7 : 0.05);
+  
+  const responseText = `Tổng hợp phân tích thị trường (Kịch bản: ${scenario}):
+
+${scenarioDesc} Dữ liệu Knowledge Graph cho thấy dòng tiền đang có sự phân hóa mạnh giữa các nhóm ngành.
+
+Các mã vốn hóa lớn như FPT, VCB, và HPG đang đóng vai trò dẫn dắt thị trường chính. Nhà đầu tư nên chú ý đến các tín hiệu từ luồng tin tức vĩ mô để đưa ra quyết định phù hợp.
+
+Sentiment chung: [Sentiment:${tone}:${score}] · Vui lòng hỏi chi tiết về một mã cụ thể (ví dụ: HPG, FPT, VCB) để nhận phân tích sâu hơn.`;
+
+  return {
+    text: responseText,
     citations: [
-      {
-        n: 1,
-        src: 'CafeF',
-        t: 'CPI tháng 5 tăng 4.6% so với cùng kỳ, vượt mục tiêu kiểm soát của Chính phủ',
-        date: '03/06/2026',
-      },
-      {
-        n: 2,
-        src: 'Vietstock',
-        t: 'Khối ngoại bán ròng 580 tỷ đồng cổ phiếu VHM trong tuần',
-        date: '02/06/2026',
-      },
-      {
-        n: 3,
-        src: 'NDH',
-        t: 'VHM: cổ đông lớn đăng ký bán 2.3% vốn, cổ phiếu chịu áp lực',
-        date: '01/06/2026',
-      },
+      { n: 1, src: 'QuantyFin AI', t: `Tổng hợp xu hướng thị trường theo kịch bản ${scenario}`, date: 'Vừa xong' }
     ],
-    conf: 'high',
-    confPct: 89,
-  },
-];
+    conf: 'med',
+    confPct: 72
+  };
+}
 
 interface ScreenChatProps {
+  data: DashboardData;
   onTicker: (ticker: string) => void;
 }
 
-export function ScreenChat({ onTicker: _onTicker }: ScreenChatProps) {
-  const [stream, setStream] = useState<ChatMessage[]>(SAMPLE_CHAT);
+export function ScreenChat({ data, onTicker }: ScreenChatProps) {
+  const [stream, setStream] = useState<ChatMessage[]>(() => buildSampleChat());
   const [input, setInput] = useState<string>('');
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -1504,26 +1968,15 @@ export function ScreenChat({ onTicker: _onTicker }: ScreenChatProps) {
     setInput('');
 
     setTimeout(() => {
+      const aiResponse = generateAIResponse(text, data);
       setStream((prev) =>
         prev.slice(0, -1).concat([
           {
             role: 'ai',
-            text: (
-              <>
-                <p>Phân tích nhanh dựa trên dữ liệu hiện tại:</p>
-                <p>
-                  Tôi đã quét <strong>14 tin</strong> trong 24 giờ và đối chiếu với Knowledge
-                  Graph. Có <strong>2 tín hiệu mạnh</strong> và <strong>1 tín hiệu yếu</strong> cần
-                  lưu ý — chi tiết bên dưới với citation.
-                </p>
-                <p style={{ color: 'var(--fg-2)' }}>Bạn muốn tôi đào sâu vào tín hiệu nào trước?</p>
-              </>
-            ),
-            citations: [
-              { n: 1, src: 'Vietstock', t: 'Báo cáo tự động · tổng hợp 24h', date: 'Vừa xong' },
-            ],
-            conf: 'med',
-            confPct: 76,
+            text: aiResponse.text,
+            citations: aiResponse.citations,
+            conf: aiResponse.conf,
+            confPct: aiResponse.confPct,
           },
         ])
       );
@@ -1592,7 +2045,7 @@ export function ScreenChat({ onTicker: _onTicker }: ScreenChatProps) {
                     )}
                   </div>
                   <div className="text">
-                    {typeof m.text === 'string' ? <p>{m.text}</p> : m.text}
+                    {renderTextWithTickers(m.text, onTicker)}
                   </div>
                   {m.citations && (
                     <div className="cite-list">
@@ -1710,157 +2163,542 @@ export function ScreenChat({ onTicker: _onTicker }: ScreenChatProps) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// ALERTS / TELEGRAM CONFIG
+// ALERTS MODALS & CONFIG
 // ════════════════════════════════════════════════════════════════════
-interface ScreenAlertsProps {
-  data: DashboardData;
-  onTicker: (ticker: string) => void;
+
+interface AlertDetailsModalProps {
+  alert: any;
+  onClose: () => void;
+  onTicker?: (ticker: string) => void;
 }
 
-export function ScreenAlerts({ data, onTicker }: ScreenAlertsProps) {
-  const { alerts } = data;
-  const [tab, setTab] = useState<string>('rules');
+export function AlertDetailsModal({ alert, onClose, onTicker }: AlertDetailsModalProps) {
+  if (!alert) return null;
+
+  const sevLabel = alert.sev === 'high' ? 'Khẩn cấp (Critical)' : alert.sev === 'med' ? 'Cảnh báo (Warning)' : 'Thông tin (Info)';
+  const sevColor = alert.sev === 'high' ? 'var(--gap)' : alert.sev === 'med' ? 'var(--gold-deep)' : 'var(--iris-deep)';
+  const sevBg = alert.sev === 'high' ? 'var(--gap-bg)' : alert.sev === 'med' ? 'var(--plan-bg)' : 'var(--iris-tint)';
+
+  // Generate dynamic AI actionable suggestion
+  let aiSuggestion = "Duy trì tỷ trọng danh mục ở mức an toàn, theo dõi diễn biến cung cầu quanh các mốc hỗ trợ và kháng cự quan trọng.";
+  const alertText = (alert && typeof alert.t === 'string') ? alert.t.toLowerCase() : '';
+  if (alertText.includes('rút') || alertText.includes('bán tháo') || alertText.includes('tháo')) {
+    aiSuggestion = "Hệ thống phát hiện rủi ro lây lan. Khuyến nghị giảm tỷ trọng danh mục về mức 30-40% cổ phiếu, ưu tiên nắm giữ tiền mặt và các vị thế phòng thủ.";
+  } else if (alertText.includes('fpt') || alertText.includes('vượt đỉnh') || alertText.includes('tăng')) {
+    aiSuggestion = "Tín hiệu xu hướng tăng mạnh. Tiếp tục nắm giữ cổ phiếu dẫn dắt. Chỉ mua gia tăng trong các nhịp điều chỉnh tích lũy ngắn hạn.";
+  } else if (alertText.includes('bán ròng')) {
+    aiSuggestion = "Áp lực rút vốn của khối ngoại gây ảnh hưởng lên tâm lý thị trường. Tránh mua đuổi giá cao, ưu tiên các doanh nghiệp có câu chuyện kinh doanh nội tại tốt.";
+  } else if (alertText.includes('giảm sàn') || alertText.includes('sàn')) {
+    aiSuggestion = "Cổ phiếu giảm sàn kèm thanh khoản lớn thể hiện áp lực bán tháo quyết liệt. Tuyệt đối không bắt dao rơi, chờ đợi cổ phiếu tìm được vùng cân bằng mới.";
+  }
 
   return (
-    <main className="page">
-      <PageHead
-        eyebrow="Alerts · Telegram"
-        title="Cảnh báo & kênh phân phối"
-        sub={
-          <>
-            <span>{alerts.length} cảnh báo đang hoạt động</span>
-            <span className="sep">·</span>
-            <span>
-              Telegram bot:{' '}
-              <strong style={{ color: 'var(--mint-deep)' }}>@quantyfin_bot</strong>
-            </span>
-            <span className="sep">·</span>
-            <span>2 kênh, 1 cá nhân</span>
-          </>
-        }
-        actions={
-          <>
-            <button className="btn ghost">
-              <Icon k="copy" size={14} /> Sao chép token
-            </button>
-            <button className="btn primary">
-              <Icon k="plus" size={14} /> Tạo rule mới
-            </button>
-          </>
-        }
-      />
-      <div className="qf-page">
-        <div className="qf-grid qf-grid-2-1">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Section
-              flush
-              title="Rule cảnh báo"
-              actions={
-                <Segment
-                  value={tab}
-                  onChange={setTab}
-                  options={[
-                    { k: 'rules', label: 'Rules', count: 6 },
-                    { k: 'history', label: 'Lịch sử', count: alerts.length + 24 },
-                  ]}
-                />
-              }
-            >
-              {tab === 'rules' ? (
-                <RuleList />
-              ) : (
-                <div className="scroll" style={{ maxHeight: 540 }}>
-                  {alerts.map((a) => (
-                    <AlertRow key={a.id} a={a} onTicker={onTicker} />
-                  ))}
-                  {/* extend with mock historical */}
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <AlertRow
-                      key={'h' + i}
-                      a={{
-                        id: 'h' + i,
-                        sev: i % 3 === 0 ? ('high' as const) : i % 3 === 1 ? ('med' as const) : ('info' as const),
-                        t: [
-                          'VCB đạt giá mục tiêu 95.0 ₫',
-                          'Khối lượng FPT vượt 2× trung bình',
-                          'Sentiment ngành Bán lẻ chuyển sang tích cực',
-                          'GAS có 3 tin tích cực trong 1 giờ',
-                          'NVL chạm sàn liên tục 2 phiên',
-                          'Đề xuất tái cân đối: nhóm Thép yếu hơn 5 phiên',
-                        ][i],
-                        m: [
-                          'Price target hit',
-                          'Volume spike',
-                          'Sentiment shift',
-                          'News surge',
-                          'Price floor',
-                          'AI suggestion',
-                        ][i],
-                        tickers: [
-                          ['VCB'],
-                          ['FPT'],
-                          ['MWG', 'PNJ'],
-                          ['GAS'],
-                          ['NVL'],
-                          ['HPG', 'HSG'],
-                        ][i],
-                        when: [
-                          '2g trước',
-                          '4g trước',
-                          '6g trước',
-                          '8g trước',
-                          'Hôm qua',
-                          'Hôm qua',
-                        ][i],
-                      }}
-                      onTicker={onTicker}
-                    />
-                  ))}
-                </div>
-              )}
-            </Section>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(14, 15, 36, 0.65)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(4px)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'var(--bg)',
+          border: '1px solid var(--border-light)',
+          borderRadius: '12px',
+          width: '90%',
+          maxWidth: '540px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 20,
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.04)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, font: '700 16px var(--font-brand)', color: 'var(--fg-1)' }}>
+            Chi tiết Cảnh báo
+          </h3>
+          <button
+            type="button"
+            className="btn ghost sm"
+            style={{ padding: 4, minWidth: 0, width: 28, height: 28, borderRadius: '50%' }}
+            onClick={onClose}
+          >
+            <Icon k="x" size={14} />
+          </button>
+        </div>
 
-            <Section
-              title="Telegram kênh & người nhận"
-              actions={
-                <button className="btn sm">
-                  <Icon k="plus" size={12} /> Thêm
-                </button>
-              }
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span
+              style={{
+                padding: '4px 8px',
+                borderRadius: '6px',
+                background: sevBg,
+                color: sevColor,
+                font: '600 12px var(--font-body)',
+              }}
             >
-              <TelegramTargets />
-            </Section>
+              {sevLabel}
+            </span>
+            <span style={{ font: 'var(--type-caption)', color: 'var(--fg-3)' }}>
+              {alert.when}
+            </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Section ai title="Đề xuất rule" meta="AI quan sát hành vi 7 ngày">
-              <SuggestedRules />
-            </Section>
-            <Section title="Tổng quan kênh" meta="24 giờ qua">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <BarRow label="Tin đã gửi" value="184" pct={100} color="var(--iris)" />
-                <BarRow label="Tin đọc" value="142" pct={77} color="var(--mint)" />
-                <BarRow label="Bot replies" value="48" pct={26} color="var(--gold)" />
-                <BarRow label="Bị bỏ qua" value="42" pct={23} color="var(--border-hover)" />
+          <p style={{ margin: 0, font: '500 14px/1.5 var(--font-body)', color: 'var(--fg-1)' }}>
+            {alert.t}
+          </p>
+
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', font: 'var(--type-caption)', color: 'var(--fg-3)' }}>
+            <span>Cơ chế kích hoạt:</span>
+            <span
+              style={{
+                font: 'var(--type-mono-sm)',
+                padding: '2px 6px',
+                background: 'var(--bg-muted)',
+                borderRadius: 4,
+                color: 'var(--fg-2)',
+              }}
+            >
+              {alert.m}
+            </span>
+          </div>
+
+          {alert.tickers && alert.tickers.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ font: 'var(--type-caption)', color: 'var(--fg-3)' }}>Mã liên quan:</span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {alert.tickers.map((t: string) => (
+                  <TPill
+                    key={t}
+                    tone="iris"
+                    onClick={onTicker ? () => {
+                      onClose();
+                      onTicker(t);
+                    } : undefined}
+                  >
+                    {t}
+                  </TPill>
+                ))}
               </div>
-              <div className="divider" />
-              <div style={{ font: 'var(--type-caption)', color: 'var(--fg-3)' }}>
-                Khoảng thời gian hoạt động:{' '}
-                <strong style={{ color: 'var(--fg-1)' }}>08:30–15:00 GMT+7</strong>
-              </div>
-            </Section>
-            <Section title="Preview Telegram message" meta="Layout chuẩn">
-              <TelegramPreview />
-            </Section>
+            </div>
+          )}
+        </div>
+
+        <div className="divider" style={{ margin: 0 }} />
+
+        <div
+          style={{
+            padding: '12px 14px',
+            background: 'var(--iris-tint)',
+            border: '1px solid rgba(124, 108, 245, 0.15)',
+            borderRadius: '8px',
+            display: 'flex',
+            gap: 12,
+          }}
+        >
+          <span
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: '6px',
+              background: 'var(--bg)',
+              color: 'var(--iris-deep)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Icon k="sparkle" size={13} />
+          </span>
+          <div>
+            <h4 style={{ margin: 0, font: '600 12.5px var(--font-body)', color: 'var(--iris-deep)', marginBottom: 4 }}>
+              Đề xuất hành động từ AI
+            </h4>
+            <p style={{ margin: 0, font: '400 12px/1.5 var(--font-body)', color: 'var(--fg-2)' }}>
+              {aiSuggestion}
+            </p>
           </div>
         </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button className="btn primary sm" onClick={onClose}>
+            Đồng ý
+          </button>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
 
-function RuleList() {
-  const rules = [
+interface CreateRuleModalProps {
+  onClose: () => void;
+  onAddRule: (rule: any) => void;
+}
+
+export function CreateRuleModal({ onClose, onAddRule }: CreateRuleModalProps) {
+  const [name, setName] = useState('');
+  const [triggerType, setTriggerType] = useState('price');
+  const [ticker, setTicker] = useState('');
+  const [op, setOp] = useState('>');
+  const [threshold, setThreshold] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [channels, setChannels] = useState({
+    tele_personal: true,
+    tele_group: false,
+    email: false,
+  });
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError('Vui lòng nhập tên quy tắc');
+      return;
+    }
+
+    let trigger = '';
+    if (triggerType === 'price') {
+      if (!ticker.trim() || !threshold.trim()) {
+        setError('Vui lòng điền mã và giá trị ngưỡng');
+        return;
+      }
+      trigger = `${ticker.toUpperCase()} ${op} ${threshold}`;
+    } else if (triggerType === 'volume') {
+      if (!ticker.trim() || !threshold.trim()) {
+        setError('Vui lòng điền mã và giá trị ngưỡng');
+        return;
+      }
+      trigger = `volume(${ticker.toUpperCase()}) ${op} ${threshold}x`;
+    } else {
+      if (!keyword.trim()) {
+        setError('Vui lòng nhập từ khóa');
+        return;
+      }
+      trigger = `news.contains("${keyword}")`;
+    }
+
+    const targetList = [];
+    if (channels.tele_personal) targetList.push('CH Cá nhân');
+    if (channels.tele_group) targetList.push('Group Telegram');
+    if (channels.email) targetList.push('Email');
+
+    if (targetList.length === 0) {
+      setError('Vui lòng chọn ít nhất một kênh phân phối');
+      return;
+    }
+
+    const newRule = {
+      name,
+      enabled: true,
+      trigger,
+      target: targetList.join(' + '),
+      last: 'Vừa tạo',
+    };
+
+    onAddRule(newRule);
+    onClose();
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(14, 15, 36, 0.65)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(4px)',
+      }}
+      onClick={onClose}
+    >
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          background: 'var(--bg)',
+          border: '1px solid var(--border-light)',
+          borderRadius: '12px',
+          width: '90%',
+          maxWidth: '480px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.04)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, font: '700 16px var(--font-brand)', color: 'var(--fg-1)' }}>
+            Tạo Quy tắc Cảnh báo mới
+          </h3>
+          <button
+            type="button"
+            className="btn ghost sm"
+            style={{ padding: 4, minWidth: 0, width: 28, height: 28, borderRadius: '50%' }}
+            onClick={onClose}
+          >
+            <Icon k="x" size={14} />
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ padding: '8px 12px', background: 'var(--gap-bg)', color: 'var(--gap)', borderRadius: 6, font: '500 12px var(--font-body)' }} className="qf-error-message">
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ display: 'block', font: 'var(--type-label)', color: 'var(--fg-2)', marginBottom: 6 }}>
+              Tên quy tắc
+            </label>
+            <input
+              type="text"
+              placeholder="Ví dụ: VIC giảm > 3%"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError('');
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid var(--border-light)',
+                borderRadius: '6px',
+                background: 'var(--bg)',
+                color: 'var(--fg-1)',
+                font: '13px var(--font-body)',
+              }}
+              className="qf-input-field"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', font: 'var(--type-label)', color: 'var(--fg-2)', marginBottom: 6 }}>
+              Loại trigger
+            </label>
+            <select
+              value={triggerType}
+              onChange={(e) => {
+                setTriggerType(e.target.value);
+                setError('');
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid var(--border-light)',
+                borderRadius: '6px',
+                background: 'var(--bg)',
+                color: 'var(--fg-1)',
+                font: '13px var(--font-body)',
+              }}
+              className="qf-select-field"
+            >
+              <option value="price">Mục tiêu giá (Price Target)</option>
+              <option value="volume">Đột biến khối lượng (Volume Spike)</option>
+              <option value="news">Từ khóa tin tức (News Keyword)</option>
+            </select>
+          </div>
+
+          {triggerType !== 'news' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'center' }}>
+              <div>
+                <label style={{ display: 'block', font: 'var(--type-label)', color: 'var(--fg-2)', marginBottom: 6 }}>
+                  Mã Ticker
+                </label>
+                <input
+                  type="text"
+                  placeholder="VIC"
+                  value={ticker}
+                  onChange={(e) => {
+                    setTicker(e.target.value);
+                    setError('');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '6px',
+                    background: 'var(--bg)',
+                    color: 'var(--fg-1)',
+                    font: '13px var(--font-mono)',
+                    textTransform: 'uppercase',
+                  }}
+                  className="qf-ticker-input"
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', font: 'var(--type-label)', color: 'var(--fg-2)', marginBottom: 6 }}>
+                  Toán tử
+                </label>
+                <select
+                  value={op}
+                  onChange={(e) => setOp(e.target.value)}
+                  style={{
+                    padding: '8px 8px',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '6px',
+                    background: 'var(--bg)',
+                    color: 'var(--fg-1)',
+                    font: '13px var(--font-body)',
+                  }}
+                  className="qf-operator-select"
+                >
+                  <option value=">">&gt;</option>
+                  <option value="<">&lt;</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', font: 'var(--type-label)', color: 'var(--fg-2)', marginBottom: 6 }}>
+                  Giá trị ngưỡng
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder={triggerType === 'volume' ? '2.5' : '45000'}
+                  value={threshold}
+                  onChange={(e) => {
+                    setThreshold(e.target.value);
+                    setError('');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '6px',
+                    background: 'var(--bg)',
+                    color: 'var(--fg-1)',
+                    font: '13px var(--font-mono)',
+                  }}
+                  className="qf-threshold-input"
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label style={{ display: 'block', font: 'var(--type-label)', color: 'var(--fg-2)', marginBottom: 6 }}>
+                Từ khóa tin tức
+              </label>
+              <input
+                type="text"
+                placeholder="Ví dụ: mua bán sáp nhập, phát hành..."
+                value={keyword}
+                onChange={(e) => {
+                  setKeyword(e.target.value);
+                  setError('');
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '6px',
+                  background: 'var(--bg)',
+                  color: 'var(--fg-1)',
+                  font: '13px var(--font-body)',
+                }}
+                className="qf-keyword-input"
+              />
+            </div>
+          )}
+
+          <div>
+            <label style={{ display: 'block', font: 'var(--type-label)', color: 'var(--fg-2)', marginBottom: 6 }}>
+              Kênh phân phối
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, font: '13px var(--font-body)', color: 'var(--fg-1)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={channels.tele_personal}
+                  onChange={(e) => setChannels({ ...channels, tele_personal: e.target.checked })}
+                  style={{ cursor: 'pointer' }}
+                  className="qf-chan-tele-p"
+                />
+                Telegram cá nhân
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, font: '13px var(--font-body)', color: 'var(--fg-1)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={channels.tele_group}
+                  onChange={(e) => setChannels({ ...channels, tele_group: e.target.checked })}
+                  style={{ cursor: 'pointer' }}
+                  className="qf-chan-tele-g"
+                />
+                Group Telegram
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, font: '13px var(--font-body)', color: 'var(--fg-1)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={channels.email}
+                  onChange={(e) => setChannels({ ...channels, email: e.target.checked })}
+                  style={{ cursor: 'pointer' }}
+                  className="qf-chan-email"
+                />
+                Email
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="divider" style={{ margin: 0 }} />
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button type="button" className="btn ghost sm" onClick={onClose}>
+            Hủy
+          </button>
+          <button type="submit" className="btn primary sm">
+            Tạo quy tắc
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+interface ScreenAlertsProps {
+  data: DashboardData;
+  onTicker: (ticker: string) => void;
+  onDismissAlert?: (id: string) => void;
+}
+
+export function ScreenAlerts({ data, onTicker, onDismissAlert }: ScreenAlertsProps) {
+  const { alerts } = data;
+  const [tab, setTab] = useState<string>('history');
+  const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
+  const [showCreateRule, setShowCreateRule] = useState<boolean>(false);
+  const [customRules, setCustomRules] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('qf_custom_rules');
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const handleAddRule = (newRule: any) => {
+    setCustomRules((prev) => {
+      const updated = [newRule, ...prev];
+      try {
+        localStorage.setItem('qf_custom_rules', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const defaultRules = [
     {
       name: 'VHM giảm > 3% trong phiên',
       enabled: true,
@@ -1904,6 +2742,170 @@ function RuleList() {
       last: 'Lần cuối 28/05',
     },
   ];
+
+  const allRules = useMemo(() => {
+    return [...customRules, ...defaultRules];
+  }, [customRules]);
+
+  return (
+    <main className="page">
+      <PageHead
+        eyebrow="Alerts · Telegram"
+        title="Cảnh báo & kênh phân phối"
+        sub={
+          <>
+            <span>{alerts.length} cảnh báo đang hoạt động</span>
+            <span className="sep">·</span>
+            <span>
+              Telegram bot:{' '}
+              <strong style={{ color: 'var(--mint-deep)' }}>@quantyfin_bot</strong>
+            </span>
+            <span className="sep">·</span>
+            <span>2 kênh, 1 cá nhân</span>
+          </>
+        }
+        actions={
+          <>
+            <button className="btn ghost">
+              <Icon k="copy" size={14} /> Sao chép token
+            </button>
+            <button className="btn primary" onClick={() => setShowCreateRule(true)}>
+              <Icon k="plus" size={14} /> Tạo rule mới
+            </button>
+          </>
+        }
+      />
+      <div className="qf-page">
+        <div className="qf-grid qf-grid-2-1">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Section
+              flush
+              title="Rule cảnh báo"
+              actions={
+                <Segment
+                  value={tab}
+                  onChange={setTab}
+                  options={[
+                    { k: 'rules', label: 'Rules', count: allRules.length },
+                    { k: 'history', label: 'Lịch sử', count: alerts.length + 24 },
+                  ]}
+                />
+              }
+            >
+              {tab === 'rules' ? (
+                <RuleList rules={allRules} />
+              ) : (
+                <div className="scroll" style={{ maxHeight: 540 }}>
+                  {alerts.map((a) => (
+                    <AlertRow
+                      key={a.id}
+                      a={a}
+                      onTicker={onTicker}
+                      onDismiss={onDismissAlert ? () => onDismissAlert(a.id) : undefined}
+                      onClick={() => setSelectedAlert(a)}
+                    />
+                  ))}
+                  {/* extend with mock historical */}
+                  {Array.from({ length: 6 }).map((_, i) => {
+                    const mockA = {
+                      id: 'h' + i,
+                      sev: i % 3 === 0 ? ('high' as const) : i % 3 === 1 ? ('med' as const) : ('info' as const),
+                      t: [
+                        'VCB đạt giá mục tiêu 95.0 ₫',
+                        'Khối lượng FPT vượt 2× trung bình',
+                        'Sentiment ngành Bán lẻ chuyển sang tích cực',
+                        'GAS có 3 tin tích cực trong 1 giờ',
+                        'NVL chạm sàn liên tục 2 phiên',
+                        'Đề xuất tái cân đối: nhóm Thép yếu hơn 5 phiên',
+                      ][i],
+                      m: [
+                        'Price target hit',
+                        'Volume spike',
+                        'Sentiment shift',
+                        'News surge',
+                        'Price floor',
+                        'AI suggestion',
+                      ][i],
+                      tickers: [
+                        ['VCB'],
+                        ['FPT'],
+                        ['MWG', 'PNJ'],
+                        ['GAS'],
+                        ['NVL'],
+                        ['HPG', 'HSG'],
+                      ][i],
+                      when: [
+                        '2g trước',
+                        '4g trước',
+                        '6g trước',
+                        '8g trước',
+                        'Hôm qua',
+                        'Hôm qua',
+                      ][i],
+                    };
+                    return (
+                      <AlertRow
+                        key={'h' + i}
+                        a={mockA}
+                        onTicker={onTicker}
+                        onClick={() => setSelectedAlert(mockA)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </Section>
+
+            <Section
+              title="Telegram kênh & người nhận"
+              actions={
+                <button className="btn sm">
+                  <Icon k="plus" size={12} /> Thêm
+                </button>
+              }
+            >
+              <TelegramTargets />
+            </Section>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Section ai title="Đề xuất rule" meta="AI quan sát hành vi 7 ngày">
+              <SuggestedRules />
+            </Section>
+            <Section title="Tổng quan kênh" meta="24 giờ qua">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <BarRow label="Tin đã gửi" value="184" pct={100} color="var(--iris)" />
+                <BarRow label="Tin đọc" value="142" pct={77} color="var(--mint)" />
+                <BarRow label="Bot replies" value="48" pct={26} color="var(--gold)" />
+                <BarRow label="Bị bỏ qua" value="42" pct={23} color="var(--border-hover)" />
+              </div>
+              <div className="divider" />
+              <div style={{ font: 'var(--type-caption)', color: 'var(--fg-3)' }}>
+                Khoảng thời gian hoạt động:{' '}
+                <strong style={{ color: 'var(--fg-1)' }}>08:30–15:00 GMT+7</strong>
+              </div>
+            </Section>
+            <Section title="Preview Telegram message" meta="Layout chuẩn">
+              <TelegramPreview />
+            </Section>
+          </div>
+        </div>
+      </div>
+      {showCreateRule && (
+        <CreateRuleModal onClose={() => setShowCreateRule(false)} onAddRule={handleAddRule} />
+      )}
+      {selectedAlert && (
+        <AlertDetailsModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} onTicker={onTicker} />
+      )}
+    </main>
+  );
+}
+
+interface RuleListProps {
+  rules: any[];
+}
+
+function RuleList({ rules }: RuleListProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {rules.map((r) => (
@@ -2224,19 +3226,658 @@ function TelegramPreview() {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// CRAWLER MONITOR
+// ════════════════════════════════════════════════════════════════════
+interface ScreenCrawlerProps {
+  data: DashboardData;
+}
+
+export function ScreenCrawler({ data }: ScreenCrawlerProps) {
+  const [isCrawling, setIsCrawling] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'ERROR'>('ALL');
+  const [sourceFilter, setSourceFilter] = useState<string>('ALL');
+  const [autoScroll, setAutoScroll] = useState(true);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  type CrawlerJob = Job & { lastStatus: 'success' | 'failed' | 'running' | 'idle' | 'retry' };
+  const mapJobStatus = (j: Job): CrawlerJob => ({
+    ...j,
+    lastStatus: j.status === 'done' ? 'success' : j.status === 'running' ? 'running' : j.status === 'failed' ? 'failed' : j.status === 'retry' ? 'retry' : 'idle',
+  });
+  const [jobs, setJobs] = useState<CrawlerJob[]>(() => data.jobs.map(mapJobStatus));
+
+  const [logs, setLogs] = useState<
+    Array<{
+      time: string;
+      level: 'INFO' | 'WARN' | 'ERROR';
+      msg: string;
+      source: string;
+      traceId: string;
+    }>
+  >([
+    { time: '14:30:00', level: 'INFO', msg: 'System scheduler initialized (Daily batch check).', source: 'System', traceId: 'tr-9981' },
+    { time: '14:30:01', level: 'INFO', msg: 'Loading dynamic scheduler parameters. Active targets: 4.', source: 'System', traceId: 'tr-9981' },
+    { time: '14:30:02', level: 'INFO', msg: 'vn-stock: Connection to exchange api established.', source: 'vn-stock', traceId: 'tr-1022' },
+    { time: '14:30:03', level: 'INFO', msg: 'vn-stock: Fetched 25 tickers OHLCV successfully.', source: 'vn-stock', traceId: 'tr-1022' },
+    { time: '14:30:04', level: 'INFO', msg: 'CafeF: Resolving rss endpoint https://cafef.vn/trang-chu.rss', source: 'CafeF', traceId: 'tr-1023' },
+    { time: '14:30:05', level: 'WARN', msg: 'NDH: Fetch connection timeout. Retrying (Attempt 2/3)...', source: 'NDH', traceId: 'tr-1024' },
+    { time: '14:30:06', level: 'INFO', msg: 'CafeF: Found 12 news records in index.', source: 'CafeF', traceId: 'tr-1023' },
+    { time: '14:30:07', level: 'INFO', msg: 'CafeF: Zero-cost filter filtered out 8 items (no target tickers).', source: 'CafeF', traceId: 'tr-1023' },
+    { time: '14:30:08', level: 'INFO', msg: 'NDH: Fetched 4 items successfully.', source: 'NDH', traceId: 'tr-1024' },
+    { time: '14:30:09', level: 'ERROR', msg: 'Vietstock: SSL validation failed for domain https://vietstock.vn', source: 'Vietstock', traceId: 'tr-1025' },
+  ]);
+
+  useEffect(() => {
+    // Guard: do not overwrite active crawl state from props update
+    if (!isCrawling) {
+      setJobs(data.jobs.map(mapJobStatus));
+    }
+  }, [data.jobs, isCrawling]);
+
+  useEffect(() => {
+    if (autoScroll && terminalEndRef.current) {
+      terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs, autoScroll]);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  const handleRunCrawler = () => {
+    if (isCrawling || intervalRef.current) return;
+    setIsCrawling(true);
+
+    // Set all jobs status to running
+    setJobs((prev) => prev.map((j) => ({ ...j, lastStatus: 'running' })));
+
+    const nowStr = new Date().toLocaleTimeString('vi-VN', { hour12: false });
+    setLogs((prev) => [
+      ...prev,
+      {
+        time: nowStr,
+        level: 'INFO',
+        msg: 'Manual crawler execution cycle triggered (Run Now).',
+        source: 'System',
+        traceId: 'tr-1050',
+      },
+      {
+        time: nowStr,
+        level: 'INFO',
+        msg: 'Initializing browser worker cluster for Playwright tasks...',
+        source: 'System',
+        traceId: 'tr-1050',
+      },
+    ]);
+
+    let step = 0;
+    intervalRef.current = setInterval(() => {
+      step++;
+      const timeNow = new Date().toLocaleTimeString('vi-VN', { hour12: false });
+
+      if (step === 1) {
+        setLogs((prev) => [
+          ...prev,
+          {
+            time: timeNow,
+            level: 'INFO',
+            msg: 'vn-stock: Scraping stock ticker live transaction feeds...',
+            source: 'vn-stock',
+            traceId: 'tr-1051',
+          },
+        ]);
+      } else if (step === 2) {
+        setLogs((prev) => [
+          ...prev,
+          {
+            time: timeNow,
+            level: 'INFO',
+            msg: 'vn-stock: Done. Upserted 25 ticks to PostgreSQL tables (No duplicates).',
+            source: 'vn-stock',
+            traceId: 'tr-1051',
+          },
+        ]);
+        setJobs((prev) =>
+          prev.map((j) => (j.src?.includes('stock') || j.id === 'j1' ? { ...j, lastStatus: 'success', lastRun: timeNow } : j))
+        );
+      } else if (step === 3) {
+        setLogs((prev) => [
+          ...prev,
+          {
+            time: timeNow,
+            level: 'INFO',
+            msg: 'CafeF: Querying CafeF rss channels...',
+            source: 'CafeF',
+            traceId: 'tr-1052',
+          },
+        ]);
+      } else if (step === 4) {
+        setLogs((prev) => [
+          ...prev,
+          {
+            time: timeNow,
+            level: 'INFO',
+            msg: 'CafeF: Zero-cost filter evaluated 15 articles, 11 filtered out, 4 sent to extraction queue.',
+            source: 'CafeF',
+            traceId: 'tr-1052',
+          },
+        ]);
+        setJobs((prev) =>
+          prev.map((j) => (j.src?.includes('CafeF') || j.id === 'j2' ? { ...j, lastStatus: 'success', lastRun: timeNow } : j))
+        );
+      } else if (step === 5) {
+        setLogs((prev) => [
+          ...prev,
+          {
+            time: timeNow,
+            level: 'WARN',
+            msg: 'NDH: RSS server response slow (latency > 1500ms). Retrying connection...',
+            source: 'NDH',
+            traceId: 'tr-1053',
+          },
+        ]);
+      } else if (step === 6) {
+        setLogs((prev) => [
+          ...prev,
+          {
+            time: timeNow,
+            level: 'ERROR',
+            msg: 'NDH: Failed to fetch feed contents after 3 attempts. Host unreachable.',
+            source: 'NDH',
+            traceId: 'tr-1053',
+          },
+        ]);
+        setJobs((prev) =>
+          prev.map((j) => (j.src?.includes('NDH') || j.id === 'j3' ? { ...j, lastStatus: 'failed', lastRun: timeNow } : j))
+        );
+      } else if (step === 7) {
+        setLogs((prev) => [
+          ...prev,
+          {
+            time: timeNow,
+            level: 'INFO',
+            msg: 'System: Crawler cycle terminated. Summary: 2 success, 1 failure.',
+            source: 'System',
+            traceId: 'tr-1050',
+          },
+        ]);
+        setIsCrawling(false);
+        setJobs((prev) =>
+          prev.map((j) => (j.lastStatus === 'running' ? { ...j, lastStatus: 'success', lastRun: timeNow } : j))
+        );
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      }
+    }, 1200);
+  };
+
+  const filteredLogs = logs.filter((l) => {
+    const matchesLevel = logFilter === 'ALL' || l.level === logFilter;
+    const matchesSource = sourceFilter === 'ALL' || l.source === sourceFilter;
+    return matchesLevel && matchesSource;
+  });
+
+  const sourcesList = useMemo(() => {
+    const fromLogs = Array.from(new Set(logs.map((l) => l.source))).filter((src) => src !== 'ALL');
+    // Ensure current sourceFilter remains in the list even if no logs match
+    if (sourceFilter !== 'ALL' && !fromLogs.includes(sourceFilter)) {
+      fromLogs.push(sourceFilter);
+    }
+    return ['ALL', ...fromLogs];
+  }, [logs, sourceFilter]);
+
+  return (
+    <main className="page">
+      <PageHead
+        eyebrow="Quản trị · Giám sát Crawler"
+        title="Crawler Terminal & Monitor"
+        sub={
+          <>
+            <span>{jobs.length} crawler targets</span>
+            <span className="sep">·</span>
+            <span>Trạng thái: {isCrawling ? 'Đang chạy...' : 'Sẵn sàng'}</span>
+          </>
+        }
+        actions={
+          <>
+            <button className="btn primary" onClick={handleRunCrawler} disabled={isCrawling}>
+              <Icon k="refresh" size={14} /> Run Now
+            </button>
+          </>
+        }
+      />
+
+      <div className="qf-page">
+        {/* Table representation */}
+        <Section title="Trạng thái Crawler Nguồn" meta="Trading Desk Style">
+          <table className="dt font-mono" style={{ width: '100%' }}>
+            <thead>
+              <tr style={{ font: 'var(--type-mono-sm)' }}>
+                <th>Nguồn</th>
+                <th>URL đích</th>
+                <th>Tier</th>
+                <th>Trạng thái</th>
+                <th>Thời lượng</th>
+                <th className="num">Total</th>
+                <th className="num">Filtered</th>
+                <th className="num">Last Run</th>
+                <th>Trace ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((j) => {
+                const isFailed = j.lastStatus === 'failed';
+                const isRunning = j.lastStatus === 'running';
+                const isSuccess = j.lastStatus === 'success';
+                const isRetry = j.lastStatus === 'retry';
+
+                const badgeStatus = isFailed ? 'gap' : isRunning ? 'build' : isSuccess ? 'live' : 'plan';
+                const label = isRunning ? 'RUNNING' : isSuccess ? 'LIVE' : isFailed ? 'GAP' : isRetry ? 'RETRY' : 'IDLE';
+
+                const handleSelect = () => {
+                  const isCurrentlySelected = selectedJobId === String(j.id);
+                  const newSelected = isCurrentlySelected ? null : String(j.id);
+                  setSelectedJobId(newSelected);
+                  setSourceFilter(newSelected ? j.src : 'ALL');
+                };
+                return (
+                  <tr
+                    key={j.id}
+                    onClick={handleSelect}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelect();
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-pressed={selectedJobId === String(j.id)}
+                    style={{
+                      cursor: 'pointer',
+                      background: selectedJobId === String(j.id) ? 'var(--bg-muted)' : undefined,
+                      outline: 'none',
+                    }}
+                  >
+                    <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>{j.src}</td>
+                    <td style={{ color: 'var(--fg-3)', fontSize: '11.5px' }}>{j.url}</td>
+                    <td style={{ textTransform: 'uppercase', color: 'var(--fg-2)' }}>{j.tier}</td>
+                    <td>
+                      <StatusBadge status={badgeStatus}>
+                        {label}
+                      </StatusBadge>
+                    </td>
+                    <td className="num tabular">{j.durationMs !== undefined ? `${(j.durationMs / 1000).toFixed(1)}s` : '—'}</td>
+                    <td className="num tabular">{fmtInt(j.total)}</td>
+                    <td className="num tabular" style={{ color: 'var(--iris)' }}>
+                      {fmtInt(j.filteredOut)}
+                    </td>
+                    <td className="num tabular">{j.lastRun}</td>
+                    <td style={{ color: 'var(--fg-3)', fontSize: '11px' }}>{j.traceId}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Section>
+
+        {/* Monospace Terminal Panel */}
+        <div style={{ marginTop: 16 }}>
+          <Section
+            title="Real-time Log Console (Trading Desk Terminal)"
+            meta="JetBrains Mono · auto-scroll"
+            actions={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* Level filter */}
+                <Segment
+                  value={logFilter}
+                  onChange={(val) => setLogFilter(val as 'ALL' | 'INFO' | 'WARN' | 'ERROR')}
+                  options={[
+                    { k: 'ALL', label: 'All Log' },
+                    { k: 'INFO', label: 'Info' },
+                    { k: 'WARN', label: 'Warn' },
+                    { k: 'ERROR', label: 'Error' },
+                  ]}
+                />
+
+                {/* Source filter */}
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => {
+                    setSourceFilter(e.target.value);
+                    // Reset job highlight when user manually changes source
+                    setSelectedJobId(null);
+                  }}
+                  aria-label="Lọc theo nguồn"
+                  style={{
+                    background: 'var(--bg-muted)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--fg-1)',
+                    font: '500 12px var(--font-body)',
+                    padding: '2px 8px',
+                    minHeight: 32,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {sourcesList.map((src) => (
+                    <option key={src} value={src}>
+                      {src === 'ALL' ? 'Nguồn: Tất cả' : src}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Auto Scroll toggle */}
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    font: '12px var(--font-body)',
+                    cursor: 'pointer',
+                    color: 'var(--fg-2)',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={autoScroll}
+                    onChange={(e) => setAutoScroll(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Auto-scroll
+                </label>
+
+                {/* Clear button */}
+                <button
+                  className="btn ghost sm"
+                  onClick={() => {
+                    setLogs([]);
+                    setSourceFilter('ALL');
+                    setLogFilter('ALL');
+                    setSelectedJobId(null);
+                  }}
+                  style={{ padding: '2px 8px', fontSize: 11, minHeight: 32 }}
+                  aria-label="Xóa toàn bộ log"
+                >
+                  Clear
+                </button>
+              </div>
+            }
+          >
+            {/* Terminal Screen container */}
+            <div
+              style={{
+                background: 'var(--terminal-bg, #0d1117)',
+                border: '1px solid var(--terminal-border, #21262d)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '16px',
+                height: '320px',
+                overflowY: 'auto',
+                fontFamily: 'var(--font-mono), monospace',
+                fontSize: '12.5px',
+                lineHeight: '1.6',
+                color: 'var(--mint)',
+                boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)',
+              }}
+            >
+              {filteredLogs.length === 0 ? (
+                <div style={{ color: 'var(--fg-3)', textAlign: 'center', paddingTop: 100 }}>
+                  Console empty. No logs matching filters found.
+                </div>
+              ) : (
+                filteredLogs.map((log, index) => {
+                  // WARN uses gold/amber for high contrast on dark terminal background
+                  let levelColor = 'var(--iris)'; // INFO
+                  if (log.level === 'WARN') levelColor = '#f59e0b';
+                  if (log.level === 'ERROR') levelColor = 'var(--gap)';
+
+                  return (
+                    <div
+                      key={`${log.traceId}-${log.time}-${index}`}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '80px 70px 100px 100px 1fr',
+                        gap: 12,
+                        borderBottom: '1px solid var(--terminal-separator, #161b22)',
+                        padding: '2px 0',
+                      }}
+                    >
+                      <span style={{ color: 'var(--fg-3)' }}>[{log.time}]</span>
+                      <span style={{ color: levelColor, fontWeight: 'bold' }}>{log.level}</span>
+                      <span style={{ color: 'var(--mint)' }}>{log.source}</span>
+                      <span style={{ color: 'var(--fg-3)' }}>{log.traceId}</span>
+                      <span style={{ color: log.level === 'ERROR' ? 'var(--gap)' : 'var(--mint)', whiteSpace: 'pre-wrap' }}>
+                        {log.msg}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={terminalEndRef} />
+            </div>
+          </Section>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
 // JOBS / PIPELINE
 // ════════════════════════════════════════════════════════════════════
 interface ScreenJobsProps {
   data: DashboardData;
 }
 
+function parseBoldText(text: string) {
+  const parts = text.split(/\*\*([^*]+)\*\*/g);
+  return parts.map((part, i) => {
+    if (i % 2 === 1) {
+      return <strong key={i} style={{ color: 'var(--fg-1)', fontWeight: 600 }}>{part}</strong>;
+    }
+    return part;
+  });
+}
+
+function MarkdownRenderer({ content = '' }: { content?: string }) {
+  const lines = (content || '').split('\n');
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return null;
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h4 key={idx} style={{ margin: '12px 0 6px 0', font: '600 15px var(--font-brand)', color: 'var(--fg-1)' }}>
+              {trimmed.substring(4)}
+            </h4>
+          );
+        }
+        if (trimmed.startsWith('- ')) {
+          const text = trimmed.substring(2);
+          return (
+            <div key={idx} style={{ display: 'flex', gap: 8, paddingLeft: 12, font: '14px/1.5 var(--font-body)', color: 'var(--fg-2)' }}>
+              <span>•</span>
+              <span>{parseBoldText(text)}</span>
+            </div>
+          );
+        }
+        if (trimmed.startsWith('*') && trimmed.endsWith('*')) {
+          return (
+            <p key={idx} style={{ margin: 0, font: 'italic 13px var(--font-body)', color: 'var(--fg-3)' }}>
+              {trimmed.slice(1, -1)}
+            </p>
+          );
+        }
+        return (
+          <p key={idx} style={{ margin: 0, font: '14px/1.5 var(--font-body)', color: 'var(--fg-2)' }}>
+            {parseBoldText(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+interface JobDetailsModalProps {
+  job: AIJob | null;
+  onClose: () => void;
+}
+
+export function JobDetailsModal({ job, onClose }: JobDetailsModalProps) {
+  if (!job) return null;
+
+  const statusLabel = job.status === 'completed' ? 'Completed' : job.status === 'running' ? 'Running' : 'Failed';
+  const statusVariant = job.status === 'completed' ? 'live' : job.status === 'running' ? 'plan' : 'gap';
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(14, 15, 36, 0.65)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(4px)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'var(--bg)',
+          border: '1px solid var(--border-light)',
+          borderRadius: '12px',
+          width: '90%',
+          maxWidth: '540px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 20,
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.04)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, font: '700 16px var(--font-brand)', color: 'var(--fg-1)' }}>
+            Chi tiết Tác vụ AI
+          </h3>
+          <button
+            type="button"
+            className="btn ghost sm"
+            style={{ padding: 4, minWidth: 0, width: 28, height: 28, borderRadius: '50%' }}
+            onClick={onClose}
+          >
+            <Icon k="x" size={14} />
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Title & Status */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <h4 style={{ margin: 0, font: '600 15px var(--font-body)', color: 'var(--fg-1)' }}>
+              {job.name}
+            </h4>
+            <Badge
+              variant={statusVariant}
+              style={{ fontFamily: 'JetBrains Mono, monospace', textTransform: 'none', fontWeight: 600 }}
+            >
+              {statusLabel}
+            </Badge>
+          </div>
+
+          {/* Details list */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, font: 'var(--type-caption)', color: 'var(--fg-3)', background: 'var(--bg-muted)', padding: 12, borderRadius: 8 }}>
+            <div>
+              <span style={{ color: 'var(--fg-3)' }}>Bắt đầu: </span>
+              <span style={{ color: 'var(--fg-1)', fontWeight: 500 }}>{job.startedAt}</span>
+            </div>
+            <div>
+              <span style={{ color: 'var(--fg-3)' }}>Thời lượng: </span>
+              <span style={{ color: 'var(--fg-1)', fontWeight: 500 }}>
+                {job.durationMs ? `${(job.durationMs / 1000).toFixed(1)}s` : 'N/A'}
+              </span>
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <span style={{ color: 'var(--fg-3)' }}>Trace ID: </span>
+              <span style={{ color: 'var(--fg-2)', fontFamily: 'JetBrains Mono, monospace' }}>{job.traceId}</span>
+            </div>
+          </div>
+
+          {/* Output / Error Logs */}
+          {job.status === 'completed' && job.output && (
+            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
+              <h5 style={{ margin: '0 0 8px 0', font: '600 13px var(--font-brand)', color: 'var(--fg-2)' }}>
+                Kết quả phân tích
+              </h5>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: 4 }}>
+                <MarkdownRenderer content={job.output} />
+              </div>
+            </div>
+          )}
+
+          {job.status === 'failed' && job.errorLog && (
+            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
+              <h5 style={{ margin: '0 0 8px 0', font: '600 13px var(--font-brand)', color: 'var(--fg-2)' }}>
+                Log lỗi (Error Log)
+              </h5>
+              <pre
+                style={{
+                  margin: 0,
+                  padding: 12,
+                  background: 'rgba(239, 68, 68, 0.05)',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: 6,
+                  color: 'var(--gap)',
+                  font: '12px/1.4 JetBrains Mono, monospace',
+                  whiteSpace: 'pre-wrap',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                }}
+              >
+                {job.errorLog}
+              </pre>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+          <button className="btn secondary" onClick={onClose}>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ScreenJobs({ data }: ScreenJobsProps) {
   const { jobs } = data;
+  const aiJobsList = data.aiJobs || [];
+
+  const [activeTab, setActiveTab] = useState<'crawler' | 'ai'>('crawler');
+  const [crawlerFilter, setCrawlerFilter] = useState<'all' | 'rss' | 'search' | 'pw'>('all');
+  const [selectedJob, setSelectedJob] = useState<AIJob | null>(null);
+
   const totalCrawled = jobs.reduce((sum, j) => sum + j.total, 0);
   const totalAnalyzed = jobs.reduce((sum, j) => sum + j.analyzed, 0);
   const totalFiltered = jobs.reduce((sum, j) => sum + j.filteredOut, 0);
   const failed = jobs.filter((j) => j.status === 'failed').length;
   const running = jobs.filter((j) => j.status === 'running').length;
+
+  const filteredCrawlerJobs = useMemo(() => {
+    if (crawlerFilter === 'all') return jobs;
+    return jobs.filter((j) => j.tier.toLowerCase() === (crawlerFilter === 'pw' ? 'playwright' : crawlerFilter));
+  }, [jobs, crawlerFilter]);
 
   return (
     <main className="page">
@@ -2305,79 +3946,157 @@ export function ScreenJobs({ data }: ScreenJobsProps) {
         {/* Job table */}
         <Section
           flush
-          title="Crawler jobs theo nguồn"
+          title={activeTab === 'crawler' ? "Crawler jobs theo nguồn" : "Tác vụ AI Chạy nền"}
           actions={
-            <>
+            <div style={{ display: 'flex', gap: 12 }}>
               <Segment
-                value="all"
-                onChange={() => {}}
+                value={activeTab}
+                onChange={(val: any) => setActiveTab(val)}
                 options={[
-                  { k: 'all', label: 'Tất cả' },
-                  { k: 'rss', label: 'RSS' },
-                  { k: 'search', label: 'Search' },
-                  { k: 'pw', label: 'Playwright' },
+                  { k: 'crawler', label: 'Trình thu thập dữ liệu (Crawler Jobs)' },
+                  { k: 'ai', label: 'Tác vụ AI Chạy nền (AI Agent Jobs)' },
                 ]}
               />
-            </>
+              {activeTab === 'crawler' && (
+                <Segment
+                  value={crawlerFilter}
+                  onChange={(val: any) => setCrawlerFilter(val)}
+                  options={[
+                    { k: 'all', label: 'Tất cả' },
+                    { k: 'rss', label: 'RSS' },
+                    { k: 'search', label: 'Search' },
+                    { k: 'pw', label: 'Playwright' },
+                  ]}
+                />
+              )}
+            </div>
           }
         >
-          <table className="dt" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>Source</th>
-                <th>Tier</th>
-                <th>Status</th>
-                <th className="num">Total</th>
-                <th className="num">Filtered</th>
-                <th className="num">Analyzed</th>
-                <th className="num">Duration</th>
-                <th>Trace</th>
-                <th>Last run</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {jobs.map((j) => (
-                <tr key={j.id}>
-                  <td>
-                    <div style={{ font: '500 13px/1.2 var(--font-body)', color: 'var(--fg-1)' }}>
-                      {j.src}
-                    </div>
-                    <div style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-3)' }}>{j.url}</div>
-                  </td>
-                  <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-2)', textTransform: 'uppercase' }}>
-                    {j.tier}
-                  </td>
-                  <td>
-                    <span className={'trace-pill ' + (j.status === 'failed' ? 'fail' : '')}>
-                      {j.status === 'done'
-                        ? 'OK · 200'
-                        : j.status === 'running'
-                        ? 'Đang chạy'
-                        : j.status === 'retry'
-                        ? 'Retry 2/3'
-                        : 'Lỗi · 504'}
-                    </span>
-                  </td>
-                  <td className="num tabular">{fmtInt(j.total)}</td>
-                  <td className="num tabular" style={{ color: 'var(--iris-deep)' }}>
-                    {fmtInt(j.filteredOut)}
-                  </td>
-                  <td className="num tabular">{fmtInt(j.analyzed)}</td>
-                  <td className="num tabular" style={{ color: 'var(--fg-3)' }}>
-                    {(j.durationMs / 1000).toFixed(1)}s
-                  </td>
-                  <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-3)' }}>{j.traceId}</td>
-                  <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-3)' }}>{j.lastRun}</td>
-                  <td>
-                    <button className="btn ghost sm">
-                      <Icon k="more" size={14} />
-                    </button>
-                  </td>
+          {activeTab === 'crawler' ? (
+            <table className="dt" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Tier</th>
+                  <th>Status</th>
+                  <th className="num">Total</th>
+                  <th className="num">Filtered</th>
+                  <th className="num">Analyzed</th>
+                  <th className="num">Duration</th>
+                  <th>Trace</th>
+                  <th>Last run</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredCrawlerJobs.map((j) => (
+                  <tr key={j.id}>
+                    <td>
+                      <div style={{ font: '500 13px/1.2 var(--font-body)', color: 'var(--fg-1)' }}>
+                        {j.src}
+                      </div>
+                      <div style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-3)' }}>{j.url}</div>
+                    </td>
+                    <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-2)', textTransform: 'uppercase' }}>
+                      {j.tier}
+                    </td>
+                    <td>
+                      <span className={'trace-pill ' + (j.status === 'failed' ? 'fail' : '')}>
+                        {j.status === 'done'
+                          ? 'OK · 200'
+                          : j.status === 'running'
+                          ? 'Đang chạy'
+                          : j.status === 'retry'
+                          ? 'Retry 2/3'
+                          : 'Lỗi · 504'}
+                      </span>
+                    </td>
+                    <td className="num tabular">{fmtInt(j.total)}</td>
+                    <td className="num tabular" style={{ color: 'var(--iris-deep)' }}>
+                      {fmtInt(j.filteredOut)}
+                    </td>
+                    <td className="num tabular">{fmtInt(j.analyzed)}</td>
+                    <td className="num tabular" style={{ color: 'var(--fg-3)' }}>
+                      {(j.durationMs / 1000).toFixed(1)}s
+                    </td>
+                    <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-3)' }}>{j.traceId}</td>
+                    <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-3)' }}>{j.lastRun}</td>
+                    <td>
+                      <button className="btn ghost sm">
+                        <Icon k="more" size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <table className="dt" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Tên tác vụ (Task)</th>
+                  <th>Phân loại (Type)</th>
+                  <th>Trạng thái (Status)</th>
+                  <th>Tiến trình (Progress)</th>
+                  <th>Bắt đầu (Started)</th>
+                  <th>Trace ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aiJobsList.map((j) => (
+                  <tr key={j.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedJob(j)}>
+                    <td>
+                      <div style={{ font: '500 13px/1.2 var(--font-body)', color: 'var(--fg-1)' }}>
+                        {j.name}
+                      </div>
+                    </td>
+                    <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-2)' }}>
+                      {j.type}
+                    </td>
+                    <td>
+                      <Badge
+                        variant={
+                          j.status === 'completed'
+                            ? 'live'
+                            : j.status === 'running'
+                            ? 'plan'
+                            : 'gap'
+                        }
+                        style={{ fontFamily: 'JetBrains Mono, monospace', textTransform: 'none', fontWeight: 600 }}
+                      >
+                        {j.status === 'completed'
+                          ? 'Completed'
+                          : j.status === 'running'
+                          ? 'Running'
+                          : 'Failed'}
+                      </Badge>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{
+                          width: '60px',
+                          height: '6px',
+                          background: 'var(--bg-muted)',
+                          borderRadius: '3px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            width: `${j.progress}%`,
+                            height: '100%',
+                            background: j.status === 'completed' ? 'var(--mint)' : j.status === 'running' ? 'var(--gold-deep)' : 'var(--gap)',
+                            borderRadius: '3px'
+                          }} />
+                        </div>
+                        <span style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-2)' }}>{j.progress}%</span>
+                      </div>
+                    </td>
+                    <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-3)' }}>{j.startedAt}</td>
+                    <td style={{ font: 'var(--type-mono-sm)', color: 'var(--fg-3)' }}>{j.traceId}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </Section>
 
         {/* Sub: LLM usage + Errors */}
@@ -2390,6 +4109,7 @@ export function ScreenJobs({ data }: ScreenJobsProps) {
           </Section>
         </div>
       </div>
+      <JobDetailsModal job={selectedJob} onClose={() => setSelectedJob(null)} />
     </main>
   );
 }
@@ -2538,6 +4258,18 @@ interface ScreenLoginProps {
 export function ScreenLogin({ onSignIn }: ScreenLoginProps) {
   const [email, setEmail] = useState<string>('admin@quantyfin.ai');
   const [pw, setPw] = useState<string>('password123');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim().toLowerCase() === 'admin@quantyfin.ai' && pw === 'password123') {
+      setError(null);
+      onSignIn();
+    } else {
+      setError('Email hoặc mật khẩu không chính xác.');
+    }
+  };
+
   return (
     <div className="qf-login">
       <div className="pane-art">
@@ -2589,9 +4321,14 @@ export function ScreenLogin({ onSignIn }: ScreenLoginProps) {
         <div className="pane-form-inner">
           <h2 className="form-h">Đăng nhập</h2>
           <div className="form-sub">Sử dụng tài khoản workspace của bạn.</div>
-          <form onSubmit={(e) => { e.preventDefault(); onSignIn(); }} style={{ display: 'contents' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
             <TextInput label="Email" value={email} onChange={setEmail} name="email" type="text" mono />
             <TextInput label="Mật khẩu" value={pw} onChange={setPw} name="password" type="password" mono />
+            {error && (
+              <div style={{ color: 'var(--gap)', font: '500 12.5px/1 var(--font-body)', marginTop: -6, marginBottom: 12 }}>
+                {error}
+              </div>
+            )}
             <div
               style={{
                 display: 'flex',
@@ -2610,7 +4347,7 @@ export function ScreenLogin({ onSignIn }: ScreenLoginProps) {
             <button
               type="submit"
               className="btn primary lg"
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', justifyContent: 'center', minHeight: 44 }}
             >
               Đăng nhập <Icon k="arrowR" size={14} />
             </button>
@@ -2662,6 +4399,8 @@ export const Screens = {
   Chat: ScreenChat,
   Alerts: ScreenAlerts,
   Jobs: ScreenJobs,
+  Crawler: ScreenCrawler,
   Settings: ScreenSettings,
+  AiHealth: ScreenAiHealth,
   Login: ScreenLogin,
 };

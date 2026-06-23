@@ -44,6 +44,7 @@ export interface NewsItemData {
   confPct: number;
   filterStatus: 'filtered' | 'pending' | 'analyzed';
   sector: string;
+  type: 'vĩ mô' | 'doanh nghiệp' | 'pháp lý';
 }
 
 export interface Alert {
@@ -67,6 +68,20 @@ export interface Job {
   traceId: string;
   lastRun: string;
   tier: string;
+}
+
+export interface AIJob {
+  id: string;
+  name: string;
+  type: string;
+  status: 'running' | 'completed' | 'failed';
+  progress: number;
+  startedAt: string;
+  completedAt?: string;
+  durationMs?: number;
+  traceId: string;
+  output?: string;
+  errorLog?: string;
 }
 
 export interface LLMModel {
@@ -307,9 +322,13 @@ function buildNews(scenario: string, stocks: Stock[]): NewsItemData[] {
     const conf = confChoices[Math.floor(rand() * confChoices.length)];
     const confPct = conf === 'high' ? 85 + Math.round(rand() * 13) : conf === 'med' ? 65 + Math.round(rand() * 18) : 40 + Math.round(rand() * 20);
     const filterStatus = i % 11 === 5 ? 'filtered' as const : (i % 17 === 3 ? 'pending' as const : 'analyzed' as const);
+    const titleText = tpl.fmt(stock);
+    const type = (titleText.includes('UBCKNN') || titleText.includes('xử phạt') || i % 7 === 1) ? 'pháp lý' as const
+               : (titleText.includes('CPI') || titleText.includes('NHNN') || i % 7 === 0) ? 'vĩ mô' as const
+               : 'doanh nghiệp' as const;
     items.push({
       id: 'n' + i,
-      title: tpl.fmt(stock),
+      title: titleText,
       src: tpl.src,
       url: '#',
       tickers: [stock.ticker].concat(rand() > 0.7 ? [stocks[Math.floor(rand() * stocks.length)].ticker] : []),
@@ -319,6 +338,7 @@ function buildNews(scenario: string, stocks: Stock[]): NewsItemData[] {
       conf, confPct,
       filterStatus,
       sector: stock.sector,
+      type,
     });
   }
   items.sort((a, b) => a.minutesAgo - b.minutesAgo);
@@ -468,6 +488,24 @@ export const LLM_MODELS: LLMModel[] = [
   { name: 'Gemini Flash',vendor: 'Google',   role: 'Fallback',           tokens24h:   4220, cost24h: 0.02, share:  3 },
 ];
 
+export interface PortfolioAsset {
+  ticker: string;
+  name: string;
+  shares: number;
+  avgCost: number;
+  currentPrice: number;
+  totalValue: number;
+  profitOrLoss: number;
+  profitOrLossPct: number;
+}
+
+export interface PortfolioData {
+  assets: PortfolioAsset[];
+  totalValue: number;
+  totalProfitOrLoss: number;
+  totalProfitOrLossPct: number;
+}
+
 export interface DashboardData {
   stocks: Stock[];
   news: NewsItemData[];
@@ -475,8 +513,92 @@ export interface DashboardData {
   indices: IndexData[];
   macros: Macro[];
   jobs: Job[];
+  portfolio: PortfolioData;
   scenario: string;
+  aiJobs: AIJob[];
 }
+
+export function buildPortfolio(_scenario: string, stocks: Stock[]): PortfolioData {
+  const tickers = ['FPT', 'VCB', 'VNM'];
+  const mockAssets = tickers.map(ticker => {
+    const s = stocks.find(x => x.ticker === ticker) || stocks[0] || { ticker, name: ticker, price: 100, sector: 'Unknown' };
+    const shares = ticker === 'FPT' ? 5000 : ticker === 'VCB' ? 3000 : 4000;
+    // average costs: FPT +8%, VCB -5%, VNM +2% compared to current price
+    const avgCost = ticker === 'FPT' ? s.price / 1.08 : ticker === 'VCB' ? s.price / 0.95 : s.price / 1.02;
+    const totalValue = shares * s.price * 1000;
+    const costBasis = shares * avgCost * 1000;
+    const profitOrLoss = totalValue - costBasis;
+    const profitOrLossPct = (totalValue - costBasis) / costBasis;
+    return {
+      ticker,
+      name: s.name,
+      shares,
+      avgCost: +avgCost.toFixed(1),
+      currentPrice: s.price,
+      totalValue,
+      profitOrLoss,
+      profitOrLossPct,
+    };
+  });
+
+  const totalValue = mockAssets.reduce((sum, a) => sum + a.totalValue, 0);
+  const totalCost = mockAssets.reduce((sum, a) => sum + (a.shares * a.avgCost * 1000), 0);
+  const totalProfitOrLoss = totalValue - totalCost;
+  const totalProfitOrLossPct = (totalValue - totalCost) / totalCost;
+
+  return {
+    assets: mockAssets,
+    totalValue,
+    totalProfitOrLoss,
+    totalProfitOrLossPct,
+  };
+}
+
+export const AI_JOBS: AIJob[] = [
+  {
+    id: 'ai-j1',
+    name: 'Phân tích rủi ro danh mục tự động',
+    type: 'Portfolio Analysis',
+    status: 'completed',
+    progress: 100,
+    startedAt: '10 phút trước',
+    completedAt: '8 phút trước',
+    durationMs: 120000,
+    traceId: 'trc_ai_port01',
+    output: '### Kết quả phân tích danh mục\n\n- **Đánh giá chung:** Danh mục có mức rủi ro trung bình.\n- **FPT:** Tăng trưởng tốt, đóng vai trò đệm lợi nhuận.\n- **VCB:** Nhóm Ngân hàng có rủi ro hệ thống thấp nhưng định giá hiện tại khá sát giá trị thực.\n- **VNM:** Sức mua hồi phục chậm, tỷ lệ tăng trưởng thấp.\n\n*Khuyến nghị:* Giảm nhẹ tỷ trọng VNM, tăng cường giữ FPT.'
+  },
+  {
+    id: 'ai-j2',
+    name: 'Quét cảm xúc nhóm ngành Bất động sản',
+    type: 'Sentiment Scan',
+    status: 'completed',
+    progress: 100,
+    startedAt: '25 phút trước',
+    completedAt: '20 phút trước',
+    durationMs: 300000,
+    traceId: 'trc_ai_sent02',
+    output: '### Quét cảm xúc nhóm ngành Bất động sản (Real Estate)\n\n- **Tổng số tin tức quét:** 142 tin.\n- **Tỉ lệ phân bố cảm xúc:**\n  - Tích cực: 45%\n  - Tiêu cực: 15%\n  - Trung lập: 40%\n- **Nhận định:** Cảm xúc thị trường đối với ngành Bất động sản đang ấm dần lên nhờ các thông tin chính sách tháo gỡ pháp lý và lãi suất cho vay ưu đãi từ các ngân hàng thương mại.'
+  },
+  {
+    id: 'ai-j3',
+    name: 'Tổng hợp báo cáo tài chính FPT',
+    type: 'Report Digest',
+    status: 'running',
+    progress: 75,
+    startedAt: '1 phút trước',
+    traceId: 'trc_ai_dig03'
+  },
+  {
+    id: 'ai-j4',
+    name: 'Giám sát watchlist cổ phiếu',
+    type: 'Watchlist Monitor',
+    status: 'failed',
+    progress: 40,
+    startedAt: '5 phút trước',
+    traceId: 'trc_ai_mon04',
+    errorLog: 'Error: Connection timeout after 15000ms while fetching real-time ticker quotes from HOSE feed.\n    at Timeout._onTimeout (watcher.ts:42:15)\n    at listOnTimeout (node:internal/timers:573:17)\n    at process.processTimers (node:internal/timers:514:7)'
+  }
+];
 
 export function buildData(scenario: string): DashboardData {
   const stocks = buildStocks(scenario);
@@ -485,5 +607,6 @@ export function buildData(scenario: string): DashboardData {
   const indices = buildIndices(scenario);
   const macros = buildMacros(scenario);
   const jobs = buildJobs(scenario);
-  return { stocks, news, alerts, indices, macros, jobs, scenario };
+  const portfolio = buildPortfolio(scenario, stocks);
+  return { stocks, news, alerts, indices, macros, jobs, portfolio, scenario, aiJobs: AI_JOBS };
 }

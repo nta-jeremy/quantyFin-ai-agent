@@ -35,6 +35,42 @@ function App() {
   }, [tweaks.theme, tweaks.showConfidence]);
 
   const data = useMemo(() => buildData(tweaks.scenario), [tweaks.scenario]);
+  const [activeAlerts, setActiveAlerts] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem(`qf_active_alerts_${tweaks.scenario}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return data.alerts;
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`qf_active_alerts_${tweaks.scenario}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setActiveAlerts(parsed);
+          return;
+        }
+      }
+    } catch {}
+    setActiveAlerts(data.alerts);
+  }, [data.alerts, tweaks.scenario]);
+
+  function onDismissAlert(id: string) {
+    const updated = activeAlerts.filter((a) => a.id !== id);
+    setActiveAlerts(updated);
+    try {
+      localStorage.setItem(`qf_active_alerts_${tweaks.scenario}`, JSON.stringify(updated));
+    } catch {}
+  }
+
+  const dataWithActiveAlerts = useMemo(() => {
+    return { ...data, alerts: activeAlerts };
+  }, [data, activeAlerts]);
 
   function onTicker(t: string) {
     setTicker(t);
@@ -68,31 +104,36 @@ function App() {
   if (screen === 'dashboard') {
     body = (
       <Screens.Dashboard
-        data={data}
+        data={dataWithActiveAlerts}
         onNav={setScreen}
         onTicker={onTicker}
         scenario={tweaks.scenario}
+        onDismissAlert={onDismissAlert}
       />
     );
   } else if (screen === 'kg') {
     body = <Screens.KG onTicker={onTicker} />;
   } else if (screen === 'stock') {
-    body = <Screens.Stock data={data} ticker={ticker} onTicker={onTicker} />;
+    body = <Screens.Stock data={dataWithActiveAlerts} ticker={ticker} onTicker={onTicker} />;
   } else if (screen === 'news') {
-    body = <Screens.News data={data} onTicker={onTicker} />;
+    body = <Screens.News data={dataWithActiveAlerts} onTicker={onTicker} />;
   } else if (screen === 'chat') {
-    body = <Screens.Chat onTicker={onTicker} />;
+    body = <Screens.Chat data={dataWithActiveAlerts} onTicker={onTicker} />;
   } else if (screen === 'alerts') {
-    body = <Screens.Alerts data={data} onTicker={onTicker} />;
+    body = <Screens.Alerts data={dataWithActiveAlerts} onTicker={onTicker} onDismissAlert={onDismissAlert} />;
   } else if (screen === 'jobs') {
-    body = <Screens.Jobs data={data} />;
+    body = <Screens.Jobs data={dataWithActiveAlerts} />;
+  } else if (screen === 'crawler') {
+    body = <Screens.Crawler data={dataWithActiveAlerts} />;
+  } else if (screen === 'ai-health') {
+    body = <Screens.AiHealth data={dataWithActiveAlerts} />;
   } else if (screen === 'settings') {
     body = <Screens.Settings />;
   }
 
   return (
     <div className="app-shell">
-      <SideRail active={screen} onNav={setScreen} alertCount={data.alerts.length} />
+      <SideRail active={screen} onNav={setScreen} alertCount={activeAlerts.length} />
       <Topbar
         scenario={tweaks.scenario}
         onScenario={(s) => setTweak('scenario', s)}
