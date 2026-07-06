@@ -18,21 +18,21 @@ def test_get_crawler_config_default(client: TestClient):
 def test_put_crawler_config_valid(client: TestClient, session: Session):
     payload = {
         "schedule_time": "15:30",
-        "active_sources": "cafef,vietstock"
+        "active_sources": "cafef,tuoitre"
     }
     response = client.put("/api/v1/settings/crawler", json=payload)
     assert response.status_code == 200
     json_data = response.json()
     data = json_data["data"]
     assert data["schedule_time"] == "15:30"
-    assert data["active_sources"] == "cafef,vietstock"
+    assert data["active_sources"] == "cafef,tuoitre"
 
     # Verify database directly
     from sqlmodel import select
     db_config = session.exec(select(CrawlerConfig)).first()
     assert db_config is not None
     assert db_config.schedule_time == "15:30"
-    assert db_config.active_sources == "cafef,vietstock"
+    assert db_config.active_sources == "cafef,tuoitre"
 
 def test_put_crawler_config_invalid_time(client: TestClient):
     payload = {

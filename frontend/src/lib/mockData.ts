@@ -9,11 +9,11 @@ export interface Stock {
   fiveDay: number;
   volume: number;
   series: number[];
-  sentiment: 'pos' | 'neg' | 'neu';
-  sentScore: number;
-  newsCount24h: number;
-  confidence: 'high' | 'med' | 'low';
-  confidencePct: number;
+  sentiment: 'pos' | 'neg' | 'neu' | null;
+  sentScore: number | null;
+  newsCount24h: number | null;
+  confidence: 'high' | 'med' | 'low' | null;
+  confidencePct: number | null;
 }
 
 export interface IndexData {
@@ -37,14 +37,14 @@ export interface NewsItemData {
   src: string;
   url: string;
   tickers: string[];
-  tone: 'pos' | 'neg' | 'neu';
-  sentScore: number;
+  tone: 'pos' | 'neg' | 'neu' | null;
+  sentScore: number | null;
   minutesAgo: number;
-  conf: 'high' | 'med' | 'low';
-  confPct: number;
+  conf: 'high' | 'med' | 'low' | null;
+  confPct: number | null;
   filterStatus: 'filtered' | 'pending' | 'analyzed';
-  sector: string;
-  type: 'vĩ mô' | 'doanh nghiệp' | 'pháp lý';
+  sector: string | null;
+  type: 'vĩ mô' | 'doanh nghiệp' | 'pháp lý' | null;
 }
 
 export interface Alert {

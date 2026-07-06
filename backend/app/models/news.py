@@ -9,6 +9,7 @@ class NewsArticle(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(max_length=500)
     content: str = Field(sa_column=Column(Text, nullable=False))
+    summary: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
     published_at: dt.datetime = Field(
         sa_column=Column(DateTime, nullable=False, index=True)
     )

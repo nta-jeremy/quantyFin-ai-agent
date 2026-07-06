@@ -30,19 +30,26 @@ def init_db():
         inspector = inspect(engine)
         if "news_articles" in inspector.get_table_names():
             columns = [col["name"] for col in inspector.get_columns("news_articles")]
-            if any(c not in columns for c in ["sentiment_score", "raw_entities", "raw_relationships", "resolved_entities", "resolved_relationships"]):
+            if any(c not in columns for c in ["sentiment_score", "raw_entities", "raw_relationships", "resolved_entities", "resolved_relationships", "summary"]):
                 with Session(engine) as session:
-                    if "sentiment_score" not in columns:
-                        session.execute(text("ALTER TABLE news_articles ADD COLUMN sentiment_score FLOAT"))
-                    if "raw_entities" not in columns:
-                        session.execute(text("ALTER TABLE news_articles ADD COLUMN raw_entities JSON"))
-                    if "raw_relationships" not in columns:
-                        session.execute(text("ALTER TABLE news_articles ADD COLUMN raw_relationships JSON"))
-                    if "resolved_entities" not in columns:
-                        session.execute(text("ALTER TABLE news_articles ADD COLUMN resolved_entities JSON"))
-                    if "resolved_relationships" not in columns:
-                        session.execute(text("ALTER TABLE news_articles ADD COLUMN resolved_relationships JSON"))
-                    session.commit()
+                    try:
+                        if "sentiment_score" not in columns:
+                            session.execute(text("ALTER TABLE news_articles ADD COLUMN sentiment_score FLOAT"))
+                        if "raw_entities" not in columns:
+                            session.execute(text("ALTER TABLE news_articles ADD COLUMN raw_entities JSON"))
+                        if "raw_relationships" not in columns:
+                            session.execute(text("ALTER TABLE news_articles ADD COLUMN raw_relationships JSON"))
+                        if "resolved_entities" not in columns:
+                            session.execute(text("ALTER TABLE news_articles ADD COLUMN resolved_entities JSON"))
+                        if "resolved_relationships" not in columns:
+                            session.execute(text("ALTER TABLE news_articles ADD COLUMN resolved_relationships JSON"))
+                        if "summary" not in columns:
+                            session.execute(text("ALTER TABLE news_articles ADD COLUMN summary TEXT"))
+                        session.commit()
+                    except Exception as mig_err:
+                        session.rollback()
+                        logger.error(f"Migration news_articles thất bại: {str(mig_err)}")
+                        raise
                 logger.info("Migrated news_articles table structure successfully.")
         with Session(engine) as session:
             initial_tickers = [

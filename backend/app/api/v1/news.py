@@ -7,6 +7,7 @@ from app.core.db import get_session
 from app.core.logging import trace_id_var, logger
 from app.models.news import NewsArticle
 from app.services.crawler import ingest_news_articles
+from app.services.health import get_latest_source_health
 from app.core.limiter import limiter
 
 router = APIRouter()
@@ -177,7 +178,8 @@ def trigger_news_ingestion(request: Request, session: Session = Depends(get_sess
                 "totalScraped": stats["total_scraped"],
                 "totalFiltered": stats["total_filtered"],
                 "totalSaved": stats["total_saved"],
-                "errors": stats["errors"]
+                "errors": stats["errors"],
+                "sourceHealth": stats["source_health"]
             },
             "error": None,
             "meta": {
@@ -187,6 +189,28 @@ def trigger_news_ingestion(request: Request, session: Session = Depends(get_sess
     except Exception as e:
         logger.error(f"Error during manual news ingestion: {str(e)}")
         raise e
+
+
+@router.get("/source-health")
+def get_source_health():
+    """
+    Trả về snapshot Source_Health_Report của lần chạy crawl gần nhất.
+
+    Cho phép Jobs_View truy vấn trạng thái nguồn độc lập mà không phải kích hoạt
+    lại một lần crawl. Khi chưa có lần chạy nào kể từ lúc khởi động tiến trình,
+    trả về danh sách rỗng. Mặc định Jobs_View vẫn có thể tiêu thụ `sourceHealth`
+    trong phản hồi của `POST /api/v1/news/ingest`.
+    """
+    snapshot = get_latest_source_health()
+    if snapshot is None:
+        snapshot = {"sourceHealth": [], "generatedAt": None, "traceId": None}
+    return {
+        "data": snapshot,
+        "error": None,
+        "meta": {
+            "trace_id": trace_id_var.get()
+        }
+    }
 
 
 @router.get("/articles")

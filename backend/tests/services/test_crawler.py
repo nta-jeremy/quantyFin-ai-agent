@@ -1,10 +1,14 @@
+import datetime as dt
+
 import pytest
-from datetime import datetime
 from sqlmodel import Session, select
 
+import app.services.crawler as crawler_mod
 from app.models.stock import StockTicker
 from app.models.news import NewsArticle
 from app.services.crawler import zero_cost_filter, ingest_news_articles
+from app.services.extraction.content import ExtractionResult
+from app.services.extraction.rss import ArticleStub
 
 
 def test_zero_cost_filter():
@@ -50,101 +54,94 @@ def test_ingest_news_articles(session: Session, monkeypatch: pytest.MonkeyPatch)
     # Setup active tickers in the db
     fpt = StockTicker(ticker="FPT", name="FPT Corporation", market="HOSE", is_active=True)
     vic = StockTicker(ticker="VIC", name="Vingroup", market="HOSE", is_active=True)
-    msn = StockTicker(ticker="MSN", name="Masan", market="HOSE", is_active=False) # Inactive
+    msn = StockTicker(ticker="MSN", name="Masan", market="HOSE", is_active=False)  # Inactive
     session.add(fpt)
     session.add(vic)
     session.add(msn)
     session.commit()
 
-    # Mock XML RSS response for httpx.Client.get
-    class MockResponse:
-        def __init__(self, url):
-            self.url = url
-            self.status_code = 200
+    now = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)
 
-        @property
-        def text(self):
-            # Return custom RSS based on URL
-            if "cafef" in self.url:
-                return """<?xml version="1.0" encoding="UTF-8"?>
-                <rss version="2.0">
-                    <channel>
-                        <item>
-                            <title>Cổ phiếu FPT tăng trưởng nhờ lợi nhuận vượt trội</title>
-                            <link>https://cafef.vn/fpt-loi-nhuan-123.chn</link>
-                            <description><![CDATA[FPT đạt doanh thu cao kỷ lục trong năm nay.]]></description>
-                            <pubDate>Sat, 06 Jun 2026 12:00:00 +0700</pubDate>
-                        </item>
-                        <item>
-                            <title>Sự kiện thường niên của MSN</title>
-                            <link>https://cafef.vn/msn-su-kien-124.chn</link>
-                            <description><![CDATA[Đại hội cổ đông của tập đoàn MSN bàn về doanh thu và lợi nhuận tương lai.]]></description>
-                            <pubDate>Sat, 06 Jun 2026 11:30:00 +0700</pubDate>
-                        </item>
-                    </channel>
-                </rss>"""
-            elif "vneconomy" in self.url:
-                return """<?xml version="1.0" encoding="UTF-8"?>
-                <rss version="2.0">
-                    <channel>
-                        <item>
-                            <title>Tập đoàn VIC đầu tư mạnh vào công nghệ</title>
-                            <link>https://vneconomy.vn/vic-dau-tu-cong-nghe.htm</link>
-                            <description><![CDATA[Vingroup (VIC) vừa công bố kế hoạch đầu tư lớn vào trí tuệ nhân tạo.]]></description>
-                            <pubDate>Sat, 06 Jun 2026 10:00:00 +0700</pubDate>
-                        </item>
-                    </channel>
-                </rss>"""
-            else:
-                # Other feeds return empty/no items to keep it simple
-                return """<?xml version="1.0" encoding="UTF-8"?>
-                <rss version="2.0">
-                    <channel>
-                        <title>Empty Feed</title>
-                    </channel>
-                </rss>"""
+    # Tầng 1 (RSS Discovery) được mock: CafeF trả 2 stub, các nguồn khác rỗng.
+    # - Bài FPT: ticker hoạt động + từ khóa tài chính => qua pre_filter.
+    # - Bài MSN: ticker không hoạt động => bị pre_filter loại trước khi tải full body.
+    fpt_stub = ArticleStub(
+        title="Cổ phiếu FPT tăng nhờ lợi nhuận quý 3 vượt dự báo",
+        url="https://cafef.vn/fpt-loi-nhuan-123.chn",
+        teaser="FPT công bố doanh thu và lợi nhuận tăng trưởng mạnh.",
+        published_at=now,
+        source="CafeF",
+    )
+    msn_stub = ArticleStub(
+        title="Sự kiện thường niên của MSN",
+        url="https://cafef.vn/msn-su-kien-124.chn",
+        teaser="Đại hội cổ đông của tập đoàn MSN bàn về doanh thu và lợi nhuận.",
+        published_at=now,
+        source="CafeF",
+    )
 
-        @property
-        def content(self):
-            return self.text.encode("utf-8")
+    def mock_discover_rss(source, client):
+        if source.name == "CafeF":
+            return [fpt_stub, msn_stub], "ok"
+        return [], "empty"
 
-        def raise_for_status(self):
-            pass
+    # Tầng 2 (Content Extractor) được mock: trả full body đủ dài, chứa ticker +
+    # từ khóa tài chính để qua full_content_filter.
+    long_body = (
+        "FPT đạt lợi nhuận kỷ lục trong quý vừa qua nhờ mảng công nghệ. "
+        * 40
+    )
 
-    # Mock the httpx Client.get
-    def mock_get(self_client, url, *args, **kwargs):
-        return MockResponse(url)
+    def mock_extract_full_content(url, client):
+        return ExtractionResult(
+            ok=True, body=long_body, http_status=200, needs_fallback=False
+        )
 
-    # Mock the __enter__ of httpx.Client to return client
-    monkeypatch.setattr("httpx.Client.get", mock_get)
+    monkeypatch.setattr(crawler_mod, "discover_rss", mock_discover_rss)
+    monkeypatch.setattr(crawler_mod, "extract_full_content", mock_extract_full_content)
 
-    # Run news ingestion
-    results = ingest_news_articles(session)
+    # Run news ingestion chỉ với nguồn CafeF (R13.1: chỉ thu thập nguồn cấu hình).
+    results = ingest_news_articles(session, active_sources="cafef")
 
-    # Verification:
-    # CafeF has 2 items:
-    # 1. FPT + lợi nhuận -> passes (FPT is active)
-    # 2. MSN + lợi nhuận -> fails (MSN is inactive)
-    # VnEconomy has 1 item:
-    # 3. VIC + đầu tư -> passes (VIC is active, "đầu tư" is financial keyword)
-    # Other feeds have 0 items (except NDH which fallback has FPT + VNINDEX items, but let's see)
-    # Wait, NDH scraper will also scrape:
-    # 4. FPT + lợi nhuận -> passes
-    # 5. VNINDEX + VNINDEX isn't in active list, but wait, is VNINDEX in db? No, only FPT, VIC, MSN. So item 2 (VNINDEX, VNM, VIC) has VIC in description -> passes!
-    # So we should have a couple of articles passing!
-    
-    assert results["total_scraped"] > 0
-    assert results["total_filtered"] > 0
-    assert results["total_saved"] > 0
+    # CafeF discover 2 stub; chỉ bài FPT qua pre_filter => 1 bài được lưu.
+    assert results["total_scraped"] == 2
+    assert results["total_filtered"] == 1
+    assert results["total_saved"] == 1
+    assert results["errors"] == {}
+
+    # source_health phản ánh nguồn CafeF với status ok và articlesCount = số stub.
+    health_by_source = {h["source"]: h for h in results["source_health"]}
+    assert "CafeF" in health_by_source
+    assert health_by_source["CafeF"]["status"] == "ok"
+    assert health_by_source["CafeF"]["articlesCount"] == 2
 
     # Query database and verify NewsArticle records
     articles_db = session.exec(select(NewsArticle)).all()
-    assert len(articles_db) > 0
+    assert len(articles_db) == 1
+    art = articles_db[0]
+    assert art.status == "pending_entity_extraction"
+    assert art.created_at is not None
+    assert art.updated_at is not None
+    assert art.content == long_body
+    assert art.summary == fpt_stub.teaser
+    assert "FPT" in f"{art.title} {art.content}"
 
-    for art in articles_db:
-        # Check defaults
-        assert art.status == "pending_entity_extraction"
-        assert art.created_at is not None
-        assert art.updated_at is not None
-        # Check content filter validity
-        assert any(ticker in f"{art.title} {art.content}" for ticker in ["FPT", "VIC"])
+
+def test_ingest_news_articles_aborts_without_active_sources(
+    session: Session, monkeypatch: pytest.MonkeyPatch
+):
+    """R13.2: không có active_sources => dừng, không sửa dữ liệu, trả tổng 0."""
+
+    def fail_discover(source, client):  # pragma: no cover - không được gọi
+        raise AssertionError("discover_rss không được gọi khi đã dừng")
+
+    monkeypatch.setattr(crawler_mod, "discover_rss", fail_discover)
+
+    results = ingest_news_articles(session, active_sources="")
+
+    assert results["total_scraped"] == 0
+    assert results["total_filtered"] == 0
+    assert results["total_saved"] == 0
+    assert results["source_health"] == []
+    assert "active_sources" in results["errors"]
+    assert session.exec(select(NewsArticle)).all() == []

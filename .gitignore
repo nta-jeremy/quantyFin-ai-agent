@@ -45,3 +45,4 @@ plans/*
 
 
 _bmad-output/
+_tmp_*.py

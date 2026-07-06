@@ -45,25 +45,21 @@ async def test_scheduler_dynamic_reload(session: Session):
         pass
 
 def test_ingest_news_articles_with_active_sources(session: Session, monkeypatch):
-    from app.services.scrapers import CafeFScraper, VnEconomyScraper
-    
-    scraped_sources = []
-    
-    def mock_scrape_cafef(self, client):
-        scraped_sources.append(self.source_name)
-        return []
+    import app.services.crawler as crawler_mod
 
-    def mock_scrape_vneconomy(self, client):
-        scraped_sources.append(self.source_name)
-        return []
-        
-    monkeypatch.setattr(CafeFScraper, "scrape", mock_scrape_cafef)
-    monkeypatch.setattr(VnEconomyScraper, "scrape", mock_scrape_vneconomy)
-    
-    # Run ingestion with only cafef active
+    discovered_sources = []
+
+    def mock_discover_rss(source, client):
+        discovered_sources.append(source.name)
+        return [], "empty"
+
+    monkeypatch.setattr(crawler_mod, "discover_rss", mock_discover_rss)
+
+    # Run ingestion with only cafef active (R13.1: chỉ thu thập nguồn cấu hình).
     results = ingest_news_articles(session, active_sources="cafef")
-    
-    # Assert CafeF was scraped, but VnEconomy (and others) were not
-    assert "CafeF" in scraped_sources
-    assert "VnEconomy" not in scraped_sources
-    assert len(scraped_sources) == 1
+
+    # Chỉ nguồn CafeF được discovery; các nguồn khác trong registry bị bỏ qua.
+    assert "CafeF" in discovered_sources
+    assert "TuoiTre" not in discovered_sources
+    assert len(discovered_sources) == 1
+    assert [h["source"] for h in results["source_health"]] == ["CafeF"]

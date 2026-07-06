@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon, KpiCard, TPill, PageHead, Section, Segment, fmtInt } from './SharedUI';
+import { useCrawlerConfig, useUpdateCrawler } from '../features/settings/hooks';
+import { toCrawlerPayload } from '../features/settings/adapter';
 
 const SET_NAV = [
   { group: 'AI & Dữ liệu', items: [
@@ -485,17 +487,49 @@ function SecLLM({
 // ════════════════════════════════════════════════════════════════════
 // SECTION · NGUỒN DỮ LIỆU
 // ════════════════════════════════════════════════════════════════════
+const SOURCE_LABELS: Record<string, { name: string; fav: string }> = {
+  cafef:      { name: 'CafeF',      fav: 'C' },
+  vneconomy:  { name: 'VnEconomy',  fav: 'V' },
+  vietstock:  { name: 'Vietstock',  fav: 'V' },
+  tuoitre:    { name: 'Tuổi Trẻ',   fav: 'T' },
+  thanhnien:  { name: 'Thanh Niên', fav: 'T' },
+  vnbusiness: { name: 'VnBusiness', fav: 'V' },
+  ndh:        { name: 'NDH',        fav: 'N' },
+};
+
 function SecSources() {
-  const srcs = [
-    { fav: 'C', name: 'CafeF',     url: 'cafef.vn/rss',           tier: 'RSS',        per: 'Mỗi 5 phút',  total: 184, ok: true,  filt: 62 },
-    { fav: 'V', name: 'Vietstock', url: 'vietstock.vn/rss',       tier: 'RSS',        per: 'Mỗi 5 phút',  total: 142, ok: true,  filt: 55 },
-    { fav: 'V', name: 'VnEconomy', url: 'vneconomy.vn',           tier: 'Search',     per: 'Mỗi 10 phút', total:  96, ok: true,  filt: 48 },
-    { fav: 'T', name: 'Tuổi Trẻ',  url: 'tuoitre.vn/kinh-doanh',  tier: 'Playwright', per: 'Mỗi 30 phút', total:  48, ok: true,  filt: 71 },
-    { fav: 'N', name: 'NDH',       url: 'ndh.vn',                 tier: 'RSS',        per: 'Mỗi 5 phút',  total:  68, ok: true,  filt: 58 },
-    { fav: 'Đ', name: 'ĐTCK',      url: 'tinnhanhchungkhoan.vn',  tier: 'Search',     per: 'Mỗi 10 phút', total:  84, ok: true,  filt: 64 },
-    { fav: 'F', name: 'FireAnt',   url: 'fireant.vn',             tier: 'Playwright', per: 'Mỗi 30 phút', total:  21, ok: false, filt: 42 },
-    { fav: 'X', name: 'X · finance', url: 'x.com/lists/vn-fin',   tier: 'API',        per: 'Mỗi 2 phút',  total: 312, ok: true,  filt: 84 },
-  ];
+  const { data: config, isLoading, isError, error } = useCrawlerConfig();
+  const updateCrawler = useUpdateCrawler();
+
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [activeSources, setActiveSources] = useState<string[]>([]);
+  const [dirty, setDirty] = useState(false);
+
+  // Seed local edit state from server config only while there are no unsaved
+  // edits, so a background refetch (e.g. window refocus) can't clobber pending
+  // toggle/time changes.
+  useEffect(() => {
+    if (config && !dirty) {
+      setScheduleTime(config.scheduleTime);
+      setActiveSources(config.activeSources);
+    }
+  }, [config, dirty]);
+
+  const supported = config?.supportedSources ?? [];
+
+  const toggleSource = (key: string, on: boolean) => {
+    setDirty(true);
+    setActiveSources((prev) =>
+      on ? Array.from(new Set([...prev, key])) : prev.filter((s) => s !== key),
+    );
+  };
+
+  const handleSaveCrawler = () => {
+    updateCrawler.mutate(toCrawlerPayload({ scheduleTime, activeSources }), {
+      onSuccess: () => setDirty(false),
+    });
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="qf-grid qf-grid-4">
@@ -505,39 +539,77 @@ function SecSources() {
         <KpiCard label="Tỷ lệ thành công" value="98.4%" sub="1 nguồn đang lỗi: FireAnt" />
       </div>
 
-      <Section title="Danh sách nguồn" meta="Mỗi nguồn có lịch riêng · zero-cost filter chạy ngay sau crawl"
-        actions={<><button className="btn ghost sm"><Icon k="filter" size={12} /> Lọc</button><button className="btn sm primary"><Icon k="plus" size={12} /> Thêm nguồn</button></>}>
+      <Section title="Danh sách nguồn" meta="Bật/tắt nguồn crawl · lịch chạy áp dụng chung cho mọi nguồn"
+        actions={
+          <>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, font: 'var(--type-label)', color: 'var(--fg-2)' }}>
+              <Icon k="clock" size={12} />
+              Giờ chạy
+              <input
+                type="time"
+                className="set-input mono"
+                style={{ width: 110 }}
+                value={scheduleTime}
+                onChange={(e) => { setDirty(true); setScheduleTime(e.target.value); }}
+                disabled={isLoading}
+              />
+            </label>
+            <button
+              className="btn sm primary"
+              onClick={handleSaveCrawler}
+              disabled={isLoading || updateCrawler.isPending}
+            >
+              <Icon k="check" size={12} /> {updateCrawler.isPending ? 'Đang lưu…' : 'Lưu'}
+            </button>
+          </>
+        }>
+        {isLoading && (
+          <div style={{ font: '13px var(--font-body)', color: 'var(--fg-3)' }}>Đang tải cấu hình…</div>
+        )}
+        {isError && (
+          <div className="set-callout" style={{ color: 'var(--gap)' }}>
+            <Icon k="alert" size={13} />
+            <div>Không tải được cấu hình crawler{error instanceof Error ? `: ${error.message}` : ''}.</div>
+          </div>
+        )}
+        {updateCrawler.isError && (
+          <div className="set-callout" style={{ color: 'var(--gap)', marginBottom: 12 }}>
+            <Icon k="alert" size={13} />
+            <div>{updateCrawler.error instanceof Error ? updateCrawler.error.message : 'Lưu cấu hình thất bại.'}</div>
+          </div>
+        )}
         <div className="set-source-list">
-          {srcs.map((s) => (
-            <div key={s.name} className="set-source-row">
-              <span className="fav">{s.fav}</span>
-              <div className="info">
-                <div className="name-row">
-                  <span className="name">{s.name}</span>
-                  <span className="trace-pill" style={{ background: 'var(--bg)' }}>{s.tier}</span>
+          {supported.map((key) => {
+            const meta = SOURCE_LABELS[key] || { name: key, fav: key[0]?.toUpperCase() || '?' };
+            const on = activeSources.includes(key);
+            return (
+              <div key={key} className="set-source-row">
+                <span className="fav">{meta.fav}</span>
+                <div className="info">
+                  <div className="name-row">
+                    <span className="name">{meta.name}</span>
+                  </div>
+                  <div className="url">{key}</div>
                 </div>
-                <div className="url">{s.url}</div>
+                <div className="schedule">
+                  <Icon k="clock" size={12} />
+                  <span>{scheduleTime || '—'}</span>
+                </div>
+                <div className="metric">
+                  <strong>—</strong>
+                  <span>tin · 24h</span>
+                </div>
+                <div className="metric">
+                  <strong style={{ color: 'var(--iris-deep)' }}>—</strong>
+                  <span>lọc</span>
+                </div>
+                <StatusDot ok={on} label={on ? 'Đang chạy' : 'Đã tắt'} />
+                <div className="act">
+                  <Toggle checked={on} onChange={(v) => toggleSource(key, v)} label={`Bật/tắt ${meta.name}`} />
+                </div>
               </div>
-              <div className="schedule">
-                <Icon k="clock" size={12} />
-                <span>{s.per}</span>
-              </div>
-              <div className="metric">
-                <strong>{s.total}</strong>
-                <span>tin · 24h</span>
-              </div>
-              <div className="metric">
-                <strong style={{ color: 'var(--iris-deep)' }}>{s.filt}%</strong>
-                <span>lọc</span>
-              </div>
-              <StatusDot ok={s.ok} label={s.ok ? 'Đang chạy' : 'Lỗi DNS'} />
-              <div className="act">
-                <Toggle checked={s.ok} onChange={() => {}} label="Bật/tắt" />
-                <button className="btn ghost sm" title="Chạy ngay"><Icon k="refresh" size={12} /></button>
-                <button className="btn ghost sm" title="Sửa"><Icon k="edit" size={12} /></button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Section>
 

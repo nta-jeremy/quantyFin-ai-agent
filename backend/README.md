@@ -21,6 +21,8 @@ docker compose up -d db neo4j
 # 3. Install dependencies + chạy server
 cd backend
 uv sync
+# Tải trình duyệt chromium cho Playwright (chạy một lần sau khi cài deps)
+uv run playwright install chromium
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
@@ -74,3 +76,5 @@ uv run pytest -v
 | slowapi | >=0.1.9 | Rate limiting |
 | uvicorn | >=0.49.0 | ASGI server |
 | psycopg2-binary | >=2.9.12 | PostgreSQL adapter |
+| trafilatura | >=2.0.0 | Trích xuất toàn văn bài viết (HTTP tĩnh) |
+| playwright | >=1.49.0 | Trích xuất dự phòng bằng trình duyệt headless — cần `uv run playwright install chromium` một lần |

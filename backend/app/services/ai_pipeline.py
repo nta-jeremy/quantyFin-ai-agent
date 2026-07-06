@@ -23,12 +23,26 @@ def process_pending_news_articles(session: Session) -> dict:
     processed_count = 0
     success_count = 0
     failed_count = 0
+    skipped_count = 0
     
     logger.info(f"[{trace_id}] Tìm thấy {len(articles)} bài báo đang chờ xử lý.")
     
     for article in articles:
         processed_count += 1
         logger.info(f"[{trace_id}] Đang xử lý bài báo id={article.id}, tiêu đề='{article.title}'")
+
+        # Bỏ qua bài có content rỗng/null: không thể phân tích do thiếu nội dung (R13.5)
+        if not article.content:
+            article.status = "extraction_skipped_no_content"
+            session.add(article)
+            session.commit()
+            skipped_count += 1
+            logger.warning(
+                f"[{trace_id}] Bỏ qua bài báo id={article.id} do content rỗng/null; "
+                f"đánh dấu 'extraction_skipped_no_content'"
+            )
+            continue
+
         try:
             # 2. Gọi run_extraction của CrewAI
             result = run_extraction(title=article.title, content=article.content)
@@ -68,6 +82,7 @@ def process_pending_news_articles(session: Session) -> dict:
         "processed": processed_count,
         "success": success_count,
         "failed": failed_count,
+        "skipped": skipped_count,
         "trace_id": trace_id
     }
     logger.info(f"[{trace_id}] Tiến trình AI Ingestion hoàn tất. Tóm tắt: {summary}")
