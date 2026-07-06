@@ -7,18 +7,12 @@ from app.core.db import get_session
 from app.core.logging import trace_id_var, logger
 from app.core.exceptions import BadRequestException
 from app.models.crawler_config import CrawlerConfig
+from app.services.sources.registry import supported_sources_map
 
 router = APIRouter()
 
-SUPPORTED_SOURCES_MAP = {
-    "cafef": "CafeF",
-    "vneconomy": "VnEconomy",
-    "vietstock": "Vietstock",
-    "tuoitre": "TuoiTre",
-    "thanhnien": "ThanhNien",
-    "vnbusiness": "VnBusiness",
-    "ndh": "NDH"
-}
+# Suy ra từ Source Registry thay vì hard-code (R1.6).
+SUPPORTED_SOURCES_MAP = supported_sources_map()
 
 class CrawlerConfigUpdate(BaseModel):
     schedule_time: str = Field(..., description="Thời gian chạy định dạng HH:MM (00:00 - 23:59)")

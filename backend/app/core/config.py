@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import computed_field, model_validator
+from pydantic import Field, computed_field, model_validator
 import os
 
 class Settings(BaseSettings):
@@ -30,6 +30,17 @@ class Settings(BaseSettings):
     TELEGRAM_CHAT_ID: str | None = None
 
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
+
+    # News crawler settings (news-crawler-fulltext)
+    FETCH_CONCURRENCY_LIMIT: int = Field(default=4, ge=1, le=10)
+    DEFAULT_TOP_N: int = Field(default=20, ge=1, le=100)
+    MIN_CONTENT_LENGTH: int = Field(default=500, ge=1)
+    FETCH_TIMEOUT: int = Field(default=30, ge=5, le=120)
+    PER_SITE_RATE_LIMIT: float = Field(default=1.0, ge=0.1, le=10)
+    CRAWLER_USER_AGENT: str = (
+        "Mozilla/5.0 (compatible; quantyFin-ai-news-crawler/1.0; "
+        "+https://github.com/quantyfin)"
+    )
 
     @model_validator(mode='after')
     def validate_secrets(self) -> 'Settings':
