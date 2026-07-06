@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { SideRail, Topbar } from '@/components/layout';
 import { Screens } from '@/components/ScreenComponents';
 import { buildData } from '@/lib/mockData';
+import { useAlerts, useDismissAlert } from '@/features/alerts/hooks';
+import { useStocks } from '@/features/stock/hooks';
+import { useNewsArticles } from '@/features/news/hooks';
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakToggle } from '@/components/TweaksPanel';
 
 function App() {
@@ -22,6 +25,8 @@ function App() {
 
   const [screen, setScreen] = useState<string>('dashboard');
   const [ticker, setTicker] = useState<string>('FPT');
+  const [newsPage, setNewsPage] = useState<number>(1);
+  const NEWS_PAGE_SIZE = 20;
 
   useEffect(() => {
     document.body.setAttribute('data-surface', 'app');
@@ -35,42 +40,22 @@ function App() {
   }, [tweaks.theme, tweaks.showConfidence]);
 
   const data = useMemo(() => buildData(tweaks.scenario), [tweaks.scenario]);
-  const [activeAlerts, setActiveAlerts] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem(`qf_active_alerts_${tweaks.scenario}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch {}
-    return data.alerts;
-  });
+  const alertsQuery = useAlerts({ isDismissed: false });
+  const dismissAlertMutation = useDismissAlert();
+  const activeAlerts = alertsQuery.data ?? [];
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`qf_active_alerts_${tweaks.scenario}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setActiveAlerts(parsed);
-          return;
-        }
-      }
-    } catch {}
-    setActiveAlerts(data.alerts);
-  }, [data.alerts, tweaks.scenario]);
+  const stocksQuery = useStocks();
+  const backendStocks = stocksQuery.data;
+
+  const newsQuery = useNewsArticles({ page: newsPage, limit: NEWS_PAGE_SIZE });
 
   function onDismissAlert(id: string) {
-    const updated = activeAlerts.filter((a) => a.id !== id);
-    setActiveAlerts(updated);
-    try {
-      localStorage.setItem(`qf_active_alerts_${tweaks.scenario}`, JSON.stringify(updated));
-    } catch {}
+    dismissAlertMutation.mutate(id);
   }
 
   const dataWithActiveAlerts = useMemo(() => {
-    return { ...data, alerts: activeAlerts };
-  }, [data, activeAlerts]);
+    return { ...data, alerts: activeAlerts, stocks: backendStocks };
+  }, [data, activeAlerts, backendStocks]);
 
   function onTicker(t: string) {
     setTicker(t);
@@ -116,11 +101,32 @@ function App() {
   } else if (screen === 'stock') {
     body = <Screens.Stock data={dataWithActiveAlerts} ticker={ticker} onTicker={onTicker} />;
   } else if (screen === 'news') {
-    body = <Screens.News data={dataWithActiveAlerts} onTicker={onTicker} />;
+    body = (
+      <Screens.News
+        data={dataWithActiveAlerts}
+        onTicker={onTicker}
+        items={newsQuery.data?.items}
+        page={newsQuery.data?.page ?? newsPage}
+        limit={newsQuery.data?.limit ?? NEWS_PAGE_SIZE}
+        total={newsQuery.data?.total ?? 0}
+        isLoading={newsQuery.isLoading}
+        isError={newsQuery.isError}
+        onPrevPage={() => setNewsPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => setNewsPage((p) => p + 1)}
+      />
+    );
   } else if (screen === 'chat') {
     body = <Screens.Chat data={dataWithActiveAlerts} onTicker={onTicker} />;
   } else if (screen === 'alerts') {
-    body = <Screens.Alerts data={dataWithActiveAlerts} onTicker={onTicker} onDismissAlert={onDismissAlert} />;
+    body = (
+      <Screens.Alerts
+        data={dataWithActiveAlerts}
+        onTicker={onTicker}
+        onDismissAlert={onDismissAlert}
+        isLoading={alertsQuery.isLoading}
+        isError={alertsQuery.isError}
+      />
+    );
   } else if (screen === 'jobs') {
     body = <Screens.Jobs data={dataWithActiveAlerts} />;
   } else if (screen === 'crawler') {

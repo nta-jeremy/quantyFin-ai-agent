@@ -559,10 +559,18 @@ function WatchlistTable({ rows, onTicker }: WatchlistTableProps) {
               />
             </td>
             <td>
-              <Sentiment tone={s.sentiment} compact />
+              {s.sentiment ? (
+                <Sentiment tone={s.sentiment} compact />
+              ) : (
+                <span style={{ color: 'var(--fg-3)' }}>—</span>
+              )}
             </td>
             <td>
-              <ConfChip conf={s.confidence} pct={s.confidencePct} />
+              {s.confidence ? (
+                <ConfChip conf={s.confidence} pct={s.confidencePct ?? undefined} />
+              ) : (
+                <span style={{ color: 'var(--fg-3)' }}>—</span>
+              )}
             </td>
             <td
               className="num tabular"
@@ -1091,19 +1099,18 @@ interface ScreenStockProps {
 export function ScreenStock({ data, ticker, onTicker }: ScreenStockProps) {
   const stocks = data.stocks;
   const s = stocks.find((x) => x.ticker === ticker) || stocks[0];
+  if (!s) {
+    return (
+      <main className="page">
+        <div className="qf-page">
+          <div className="empty-hint">Chưa có dữ liệu cổ phiếu. Vui lòng thử lại sau.</div>
+        </div>
+      </main>
+    );
+  }
   const relatedNews = data.news.filter((n) => n.tickers.includes(s.ticker)).slice(0, 6);
   const peers = stocks.filter((x) => x.sector === s.sector && x.ticker !== s.ticker).slice(0, 4);
 
-  // mock fundamentals
-  const fund = {
-    marketCap: (s.price * 1.8 + (s.ticker.charCodeAt(0) % 50)).toFixed(1) + ' nghìn tỷ',
-    pe: (8 + (s.ticker.charCodeAt(0) % 12)).toFixed(2),
-    pb: (1 + (s.ticker.charCodeAt(0) % 4) * 0.3).toFixed(2),
-    eps: (s.price * 1000 * 0.12).toFixed(0) + ' đ',
-    yield: (2 + (s.ticker.charCodeAt(1) % 6)).toFixed(1) + '%',
-    high52: (s.price * 1.18).toFixed(1),
-    low52: (s.price * 0.82).toFixed(1),
-  };
   const up = s.changePct >= 0;
 
   return (
@@ -1160,20 +1167,12 @@ export function ScreenStock({ data, ticker, onTicker }: ScreenStockProps) {
         }
       />
       <div className="qf-page">
-        {/* KPI row */}
+        {/* KPI row — fundamentals have no backend source yet, shown as — */}
         <div className="qf-grid qf-grid-4" style={{ marginBottom: 16 }}>
-          <KpiCard label="Vốn hóa" value={fund.marketCap} />
-          <KpiCard label="P/E · P/B" value={`${fund.pe} · ${fund.pb}`} sub="So với ngành: 9.8 · 1.6" />
-          <KpiCard label="EPS · Cổ tức" value={`${fund.eps} · ${fund.yield}`} />
-          <KpiCard
-            label="52 tuần Cao / Thấp"
-            value={`${fund.high52} / ${fund.low52}`}
-            sub={`Hiện giá đang ở ${(
-              ((s.price - parseFloat(fund.low52)) /
-                (parseFloat(fund.high52) - parseFloat(fund.low52))) *
-              100
-            ).toFixed(0)}% của biên độ`}
-          />
+          <KpiCard label="Vốn hóa" value="—" />
+          <KpiCard label="P/E · P/B" value="—" />
+          <KpiCard label="EPS · Cổ tức" value="—" />
+          <KpiCard label="52 tuần Cao / Thấp" value="—" />
         </div>
 
         {/* Chart + AI thesis */}
@@ -1194,14 +1193,22 @@ export function ScreenStock({ data, ticker, onTicker }: ScreenStockProps) {
               />
             }
           >
-            <DashboardChart series={s.series} up={up} />
+            {s.series.length ? (
+              <DashboardChart series={s.series} up={up} />
+            ) : (
+              <div className="empty-hint">Chưa có dữ liệu giá cho {s.ticker}.</div>
+            )}
           </Section>
 
           <Section
             ai
             title="AI Thesis"
             meta="Tổng hợp từ 12 nguồn"
-            actions={<ConfChip conf={s.confidence} pct={s.confidencePct} />}
+            actions={
+              s.confidence ? (
+                <ConfChip conf={s.confidence} pct={s.confidencePct ?? undefined} />
+              ) : null
+            }
           >
             <div style={{ font: '13.5px/1.55 var(--font-body)', color: 'var(--fg-1)' }}>
               <p style={{ margin: '0 0 10px' }}>
@@ -1210,7 +1217,12 @@ export function ScreenStock({ data, ticker, onTicker }: ScreenStockProps) {
               </p>
               <p style={{ margin: '0 0 10px' }}>
                 Sentiment 24h:{' '}
-                <Sentiment tone={s.sentiment} score={s.sentScore} compact /> · {s.newsCount24h} tin.
+                {s.sentiment ? (
+                  <Sentiment tone={s.sentiment} score={s.sentScore ?? undefined} compact />
+                ) : (
+                  <span style={{ color: 'var(--fg-3)' }}>—</span>
+                )}{' '}
+                · {s.newsCount24h ?? '—'} tin.
                 Tin đáng chú ý:{' '}
                 <strong>
                   {relatedNews[0]?.title || `${s.ticker} duy trì xu hướng`}
@@ -1419,10 +1431,29 @@ function StockKGMini({ ticker, sector }: StockKGMiniProps) {
 interface ScreenNewsProps {
   data: DashboardData;
   onTicker: (ticker: string) => void;
+  items?: NewsItemData[];
+  page?: number;
+  limit?: number;
+  total?: number;
+  isLoading?: boolean;
+  isError?: boolean;
+  onPrevPage?: () => void;
+  onNextPage?: () => void;
 }
 
-export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
-  const news = data.news || [];
+export function ScreenNews({
+  data,
+  onTicker,
+  items,
+  page,
+  limit,
+  total,
+  isLoading,
+  isError,
+  onPrevPage,
+  onNextPage,
+}: ScreenNewsProps) {
+  const news = items ?? data.news ?? [];
   const jobs = data.jobs || [];
   const [sentF, setSentF] = useState<string>('all');
   const [statusF, setStatusF] = useState<string>('all');
@@ -1456,7 +1487,7 @@ export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
   const filterRate = stats.total > 0 ? ((stats.filtered / stats.total) * 100).toFixed(0) : '0';
 
   const sources = Array.from(new Set(news.map((n) => n.src).filter(Boolean)));
-  const sectors = Array.from(new Set(news.map((n) => n.sector).filter(Boolean)));
+  const sectors = Array.from(new Set(news.map((n) => n.sector).filter((s): s is string => Boolean(s))));
   const tickers = Array.from(new Set(news.flatMap((n) => n.tickers || []).filter(Boolean)));
 
   return (
@@ -1496,13 +1527,13 @@ export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
             label="Tin tích cực"
             value={fmtInt(stats.pos)}
             valueClass=""
-            delta={`${((stats.pos / stats.total) * 100).toFixed(0)}%`}
+            delta={`${stats.total > 0 ? ((stats.pos / stats.total) * 100).toFixed(0) : '0'}%`}
             deltaTone="up"
           />
           <KpiCard
             label="Tin tiêu cực"
             value={fmtInt(stats.neg)}
-            delta={`${((stats.neg / stats.total) * 100).toFixed(0)}%`}
+            delta={`${stats.total > 0 ? ((stats.neg / stats.total) * 100).toFixed(0) : '0'}%`}
             deltaTone="down"
           />
           <KpiCard
@@ -1618,12 +1649,61 @@ export function ScreenNews({ data, onTicker }: ScreenNewsProps) {
               </span>
             </div>
             <div className="scroll" style={{ maxHeight: 720 }}>
-              {filtered.length ? (
-                filtered.map((n) => <NewsItem key={n.id} n={n} onTicker={onTicker} />)
-              ) : (
-                <div className="empty-hint">Không tin nào khớp bộ lọc.</div>
+              {isLoading && (
+                <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={'sk' + i}
+                      className="skeleton"
+                      style={{ height: 64, borderRadius: 8, background: 'var(--bg-2)', opacity: 0.6 }}
+                    />
+                  ))}
+                </div>
               )}
+              {isError && !isLoading && (
+                <div style={{ padding: 16, font: 'var(--type-caption)', color: 'var(--fg-3)' }}>
+                  Không tải được tin tức. Vui lòng thử lại.
+                </div>
+              )}
+              {!isLoading &&
+                !isError &&
+                (filtered.length ? (
+                  filtered.map((n) => <NewsItem key={n.id} n={n} onTicker={onTicker} />)
+                ) : (
+                  <div className="empty-hint">Không tin nào khớp bộ lọc.</div>
+                ))}
             </div>
+            {total != null && limit != null && page != null && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  borderTop: '1px solid var(--border)',
+                }}
+              >
+                <span style={{ font: 'var(--type-caption)', color: 'var(--fg-3)' }}>
+                  Trang {page} / {Math.max(1, Math.ceil(total / limit))} · {total} tin
+                </span>
+                <span style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn ghost sm"
+                    disabled={page <= 1 || isLoading}
+                    onClick={onPrevPage}
+                  >
+                    Trang trước
+                  </button>
+                  <button
+                    className="btn ghost sm"
+                    disabled={page >= Math.ceil(total / limit) || isLoading}
+                    onClick={onNextPage}
+                  >
+                    Trang sau <Icon k="caretR" size={12} />
+                  </button>
+                </span>
+              </div>
+            )}
           </Section>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1680,6 +1760,7 @@ function SentimentTimeline({ news }: SentimentTimelineProps) {
   // Bucket by 4-hour buckets over 24h
   const buckets = Array.from({ length: 6 }, () => ({ pos: 0, neg: 0, neu: 0 }));
   news.forEach((n) => {
+    if (!n.tone) return;
     const hr = Math.floor(n.minutesAgo / 60);
     const b = Math.min(5, Math.floor(hr / 4));
     buckets[b][n.tone]++;
@@ -2671,9 +2752,11 @@ interface ScreenAlertsProps {
   data: DashboardData;
   onTicker: (ticker: string) => void;
   onDismissAlert?: (id: string) => void;
+  isLoading?: boolean;
+  isError?: boolean;
 }
 
-export function ScreenAlerts({ data, onTicker, onDismissAlert }: ScreenAlertsProps) {
+export function ScreenAlerts({ data, onTicker, onDismissAlert, isLoading, isError }: ScreenAlertsProps) {
   const { alerts } = data;
   const [tab, setTab] = useState<string>('history');
   const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
@@ -2796,15 +2879,32 @@ export function ScreenAlerts({ data, onTicker, onDismissAlert }: ScreenAlertsPro
                 <RuleList rules={allRules} />
               ) : (
                 <div className="scroll" style={{ maxHeight: 540 }}>
-                  {alerts.map((a) => (
-                    <AlertRow
-                      key={a.id}
-                      a={a}
-                      onTicker={onTicker}
-                      onDismiss={onDismissAlert ? () => onDismissAlert(a.id) : undefined}
-                      onClick={() => setSelectedAlert(a)}
-                    />
-                  ))}
+                  {isLoading && (
+                    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div
+                          key={'sk' + i}
+                          className="skeleton"
+                          style={{ height: 56, borderRadius: 8, background: 'var(--bg-2)', opacity: 0.6 }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {isError && !isLoading && (
+                    <div style={{ padding: 16, font: 'var(--type-caption)', color: 'var(--fg-3)' }}>
+                      Không tải được cảnh báo. Vui lòng thử lại.
+                    </div>
+                  )}
+                  {!isLoading && !isError &&
+                    alerts.map((a) => (
+                      <AlertRow
+                        key={a.id}
+                        a={a}
+                        onTicker={onTicker}
+                        onDismiss={onDismissAlert ? () => onDismissAlert(a.id) : undefined}
+                        onClick={() => setSelectedAlert(a)}
+                      />
+                    ))}
                   {/* extend with mock historical */}
                   {Array.from({ length: 6 }).map((_, i) => {
                     const mockA = {
