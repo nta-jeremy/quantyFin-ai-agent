@@ -112,41 +112,47 @@ def test_get_articles_filter_status(client: TestClient):
     assert items[0]["title"] == "VNM chi trả cổ tức bằng tiền mặt tỷ lệ cao"
 
 
-def test_post_ingest_news(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+def test_post_ingest_news(
+    client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch
+):
     """
     Test manual ingestion triggering.
+
+    Theo thiết kế 3 tầng mới: orchestrator chỉ thu thập các nguồn trong
+    ``active_sources`` (đọc từ CrawlerConfig khi gọi không tham số). Mock tầng 1
+    (discover_rss) và tầng 2 (extract_full_content) để tạo một bài đủ điều kiện
+    lưu, kiểm endpoint giữ nguyên các trường phản hồi cũ.
     """
-    # Mock HTTP response
-    class MockResponse:
-        def __init__(self, url):
-            self.url = url
-            self.status_code = 200
+    from app.models.crawler_config import CrawlerConfig
+    from app.services.extraction.content import ExtractionResult
+    from app.services.extraction.rss import ArticleStub
+    import app.services.crawler as crawler_mod
 
-        @property
-        def text(self):
-            return """<?xml version="1.0" encoding="UTF-8"?>
-            <rss version="2.0">
-                <channel>
-                    <item>
-                        <title>Cổ phiếu FPT tiếp tục lập đỉnh lịch sử</title>
-                        <link>https://cafef.vn/fpt-lap-dinh-lich-su-999.chn</link>
-                        <description><![CDATA[Doanh thu tăng trưởng mạnh mẽ kéo theo lợi nhuận bứt phá.]]></description>
-                        <pubDate>Sat, 06 Jun 2026 14:00:00 +0700</pubDate>
-                    </item>
-                </channel>
-            </rss>"""
+    # active_sources được đọc từ CrawlerConfig (R13.1).
+    session.add(CrawlerConfig(id=1, schedule_time="22:00", active_sources="cafef"))
+    session.commit()
 
-        @property
-        def content(self):
-            return self.text.encode("utf-8")
+    stub = ArticleStub(
+        title="Cổ phiếu FPT tiếp tục lập đỉnh lịch sử",
+        url="https://cafef.vn/fpt-lap-dinh-lich-su-999.chn",
+        teaser="Doanh thu tăng trưởng mạnh mẽ kéo theo lợi nhuận bứt phá.",
+        published_at=datetime(2026, 6, 6, 14, 0),
+        source="CafeF",
+    )
+    long_body = "FPT đạt lợi nhuận và doanh thu kỷ lục trong quý vừa qua. " * 40
 
-        def raise_for_status(self):
-            pass
+    def mock_discover_rss(source, http_client):
+        if source.name == "CafeF":
+            return [stub], "ok"
+        return [], "empty"
 
-    def mock_get(self_client, url, *args, **kwargs):
-        return MockResponse(url)
+    def mock_extract_full_content(url, http_client):
+        return ExtractionResult(
+            ok=True, body=long_body, http_status=200, needs_fallback=False
+        )
 
-    monkeypatch.setattr("httpx.Client.get", mock_get)
+    monkeypatch.setattr(crawler_mod, "discover_rss", mock_discover_rss)
+    monkeypatch.setattr(crawler_mod, "extract_full_content", mock_extract_full_content)
 
     response = client.post("/api/v1/news/ingest")
     assert response.status_code == 200
@@ -158,6 +164,75 @@ def test_post_ingest_news(client: TestClient, monkeypatch: pytest.MonkeyPatch):
     assert data["totalScraped"] > 0
     assert data["totalFiltered"] > 0
     assert data["totalSaved"] > 0
+
+
+def test_post_ingest_news_includes_source_health(
+    client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    Endpoint ``POST /api/v1/news/ingest`` phải giữ đủ các trường cũ
+    (``totalScraped/totalFiltered/totalSaved/errors``) VÀ bổ sung ``sourceHealth``
+    suy ra từ ``source_health`` của orchestrator (camelCase). (R8.8, R13.6)
+    """
+    from app.models.crawler_config import CrawlerConfig
+    from app.services.extraction.content import ExtractionResult
+    from app.services.extraction.rss import ArticleStub
+    import app.services.crawler as crawler_mod
+
+    session.add(CrawlerConfig(id=1, schedule_time="22:00", active_sources="cafef"))
+    session.commit()
+
+    stub = ArticleStub(
+        title="Cổ phiếu FPT tiếp tục lập đỉnh lịch sử",
+        url="https://cafef.vn/fpt-lap-dinh-lich-su-1001.chn",
+        teaser="Doanh thu tăng trưởng mạnh mẽ kéo theo lợi nhuận bứt phá.",
+        published_at=datetime(2026, 6, 6, 14, 0),
+        source="CafeF",
+    )
+    long_body = "FPT đạt lợi nhuận và doanh thu kỷ lục trong quý vừa qua. " * 40
+
+    def mock_discover_rss(source, http_client):
+        if source.name == "CafeF":
+            return [stub], "ok"
+        return [], "empty"
+
+    def mock_extract_full_content(url, http_client):
+        return ExtractionResult(
+            ok=True, body=long_body, http_status=200, needs_fallback=False
+        )
+
+    monkeypatch.setattr(crawler_mod, "discover_rss", mock_discover_rss)
+    monkeypatch.setattr(crawler_mod, "extract_full_content", mock_extract_full_content)
+
+    response = client.post("/api/v1/news/ingest")
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["error"] is None
+
+    data = json_data["data"]
+
+    # Các trường cũ vẫn còn (tương thích ngược).
+    for legacy_field in ("totalScraped", "totalFiltered", "totalSaved", "errors"):
+        assert legacy_field in data
+
+    # Trường mới sourceHealth được bổ sung.
+    assert "sourceHealth" in data
+    source_health = data["sourceHealth"]
+    assert isinstance(source_health, list)
+    assert len(source_health) >= 1
+
+    cafef_health = next(h for h in source_health if h["source"] == "CafeF")
+    # Các khóa camelCase đúng theo SourceHealth.to_camel().
+    assert set(cafef_health.keys()) == {
+        "source",
+        "status",
+        "articlesCount",
+        "durationMs",
+        "errorMessage",
+    }
+    assert cafef_health["status"] == "ok"
+    assert cafef_health["articlesCount"] >= 1
+    assert cafef_health["errorMessage"] is None
 
 
 def test_post_process_ai(client: TestClient, monkeypatch: pytest.MonkeyPatch):
@@ -216,3 +291,42 @@ def test_post_process_sync(client: TestClient, monkeypatch: pytest.MonkeyPatch):
     assert called is True
 
 
+
+def test_get_source_health_snapshot(client: TestClient):
+    """
+    Endpoint ``GET /api/v1/news/source-health`` trả snapshot lần chạy gần nhất.
+
+    Khi chưa có snapshot → trả danh sách rỗng; sau khi một lần chạy lưu snapshot
+    qua ``set_latest_source_health`` → trả đúng dữ liệu đó (R8.8).
+    """
+    import app.services.health as health_mod
+
+    # Trạng thái ban đầu: chưa có snapshot trong tiến trình test.
+    health_mod._latest_source_health = None
+
+    response = client.get("/api/v1/news/source-health")
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["error"] is None
+    assert "trace_id" in json_data["meta"]
+    assert json_data["data"]["sourceHealth"] == []
+    assert json_data["data"]["generatedAt"] is None
+
+    # Mô phỏng một lần chạy đã cập nhật snapshot.
+    sample = [
+        {
+            "source": "CafeF",
+            "status": "ok",
+            "articlesCount": 3,
+            "durationMs": 1200,
+            "errorMessage": None,
+        }
+    ]
+    health_mod.set_latest_source_health(sample, trace_id="trace-xyz")
+
+    response = client.get("/api/v1/news/source-health")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["sourceHealth"] == sample
+    assert data["traceId"] == "trace-xyz"
+    assert data["generatedAt"] is not None
