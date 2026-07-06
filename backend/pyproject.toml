@@ -15,17 +15,28 @@ dependencies = [
     "vnstock>=4.0.4",
     "crewai[google-genai]>=1.14.6",
     "litellm>=1.87.0",
+    "trafilatura>=2.0.0",
+    "playwright>=1.49.0",
 ]
 
 [dependency-groups]
+# Sau khi cài dev deps, chạy một lần: `uv run playwright install chromium`
+# để tải trình duyệt chromium cho Playwright_Fallback.
 dev = [
     "httpx>=0.28.1",
     "pytest>=9.0.3",
     "pytest-asyncio>=1.4.0",
+    "hypothesis>=6.100.0",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+# Mặc định loại các test cần mạng để suite không fail khi offline/CI.
+# Chạy chúng tường minh bằng: `pytest -m network`.
+addopts = "-m 'not network'"
+markers = [
+    "network: test gọi mạng thật tới nguồn ngoài (mặc định bị loại; chạy với `-m network`)",
+]
 
